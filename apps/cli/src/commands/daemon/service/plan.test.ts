@@ -7,6 +7,7 @@ import {
   SERVICE_NAME,
   LEGACY_WINDOWS_TASK_NAME,
   WINDOWS_RUN_VALUE,
+  windowsRunCommand,
   type ServicePlanInput,
 } from "./plan.js";
 
@@ -235,9 +236,15 @@ describe("Windows login launcher", () => {
       "/t",
       "REG_SZ",
       "/d",
-      `"${launcher}"`,
+      `conhost.exe --headless cmd.exe /d /c "${launcher}"`,
       "/f",
     ]);
+  });
+
+  test("runs the launcher at login through a headless console, so no window opens", () => {
+    expect(windowsRunCommand(launcher)).toMatch(/^conhost\.exe --headless cmd\.exe \/d \/c "/);
+    // The Run value is capped near 260 characters.
+    expect(windowsRunCommand(launcher).length).toBeLessThan(260);
   });
 
   test("starts the launcher now through cmd with verbatim quoting", () => {
