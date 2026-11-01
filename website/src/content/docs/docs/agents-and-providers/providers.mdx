@@ -188,6 +188,18 @@ link: for Claude, open it, approve, and paste the code the page shows back into 
 Codex, enter the one-time code the dialog shows on that page. Other providers show their CLI's
 own prompts in the dialog. Closing the dialog stops the login. No project is needed on the host.
 
+Signing in again on an account that is still signed in asks first: some providers (Codex) drop
+the current sign-in as soon as a new one starts, so stopping part-way leaves the account signed
+out.
+
+**Default launch flags (Claude).** In Frogg Next, **Settings → Accounts → Manage** on a Claude
+account takes extra CLI flags, such as `--chrome` or `--remote-control mac`. They are stored with
+the account in that host's config, so the same sign-in can carry different flags on each host.
+New sessions on that account start with them in the **Flags** field; a project's `agentDefaults`
+flags from `frogg.json` are added on top and win when both set the same flag. Saving a project's
+defaults from the new-session sheet leaves the account's flags out of `frogg.json`. Needs a daemon
+that advertises `providerAccountLaunchArgs`.
+
 A session that fails because its provider sign-in expired or is missing (for example "OAuth
 session expired and could not be refreshed", or `Account "work" is not signed in to provider
 "claude"`) shows **Signed out of the provider** with a **Sign in again** button that opens the

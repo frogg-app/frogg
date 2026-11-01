@@ -57,6 +57,38 @@ export function parseFlags(text: string): { args: ExtraArgs } | { error: string 
   return { args };
 }
 
+/** SDK extraArgs back to flag tokens: `--name` for a switch, `--name value` otherwise. */
+export function argsTokens(args: ExtraArgs): string[] {
+  return Object.entries(args).flatMap(([name, v]) =>
+    v === null ? [`--${name}`] : [`--${name}`, v],
+  );
+}
+
+/**
+ * The flags a new session starts with: the account's, then the project's on top (a flag both
+ * set takes the project's value). Unparseable input contributes nothing.
+ */
+export function mergeFlags(account: readonly string[], project: readonly string[]): string[] {
+  const parse = (t: readonly string[]) => {
+    const r = parseFlags(flagsText(t));
+    return "args" in r ? r.args : {};
+  };
+  return argsTokens({ ...parse(account), ...parse(project) });
+}
+
+/**
+ * Typed flags minus the ones the account already supplies with the same value, so saving a
+ * project's defaults never copies an account's flags into frogg.json.
+ */
+export function withoutAccountFlags(typed: string, account: readonly string[]): string[] {
+  const r = parseFlags(typed);
+  if (!("args" in r)) return tokenize(typed);
+  const own = parseFlags(flagsText(account));
+  const mine = "args" in own ? own.args : {};
+  const kept = Object.entries(r.args).filter(([k, v]) => !(k in mine && mine[k] === v));
+  return argsTokens(Object.fromEntries(kept));
+}
+
 // ---- accounts ----
 
 export interface AccountChoice {
@@ -91,6 +123,15 @@ export function accountChoices(
   const active = entry?.defaultAccountId;
   const initial = active && options.some((o) => o.value === active) ? active : primary;
   return { options, initial, primary };
+}
+
+/** The launch flags an account pick carries from its host-stored preferences. */
+export function accountLaunchArgs(
+  entry: Pick<Entry, "accounts"> | undefined,
+  pick: string | null,
+): string[] {
+  const account = entry?.accounts?.find((a) => a.id === pick);
+  return (account?.preferences as { launchArgs?: string[] } | undefined)?.launchArgs ?? [];
 }
 
 /** The create-agent `providerAccountId` for a pick: the primary config dir is `null`. */

@@ -16,11 +16,13 @@ import type { HostProviders } from "./create";
 import {
   accountChoices,
   accountIdFor,
+  accountLaunchArgs,
+  mergeFlags,
+  withoutAccountFlags,
   FLAG_PROVIDERS,
   flagsText,
   parseFlags,
   saveProjectAgentDefaults,
-  tokenize,
   useDraftFeatures,
   useProjectAgentDefaults,
   type ExtraArgs,
@@ -81,7 +83,8 @@ export function useLaunch(f: {
   const all = useProjectAgentDefaults(client, root, reload);
   const defaults = provider ? all?.[provider] : undefined;
   const flagsOn = flagsSupported && !!provider && FLAG_PROVIDERS.has(provider);
-  const seedFlags = flagsText(defaults?.args);
+  const accountArgs = useMemo(() => accountLaunchArgs(entry, account), [entry, account]);
+  const seedFlags = flagsText(mergeFlags(accountArgs, defaults?.args ?? []));
   const [flags, setFlags] = useState("");
   const [edits, setEdits] = useState<Record<string, unknown>>({});
   useEffect(() => {
@@ -127,7 +130,7 @@ export function useLaunch(f: {
     setSaving(true);
     setSaveError(null);
     saveProjectAgentDefaults(client, root, provider, {
-      args: flagsOn ? tokenize(flags) : (defaults?.args ?? []),
+      args: flagsOn ? withoutAccountFlags(flags, accountArgs) : (defaults?.args ?? []),
       featureValues,
     })
       .then(() => {
@@ -137,7 +140,7 @@ export function useLaunch(f: {
       })
       .catch((e: unknown) => setSaveError(e instanceof Error ? e.message : String(e)))
       .finally(() => setSaving(false));
-  }, [client, root, provider, error, flagsOn, flags, defaults?.args, featureValues]);
+  }, [client, root, provider, error, flagsOn, flags, accountArgs, defaults?.args, featureValues]);
 
   return {
     input,

@@ -5,6 +5,7 @@ import { useHosts, type Host } from "../../../daemon/hosts";
 import { getHostClient, useDaemon, useHostConn } from "../../../daemon/store";
 import { color } from "../../../theme/tokens";
 import { Button } from "../../Button";
+import { FLAG_PROVIDERS, flagsText, parseFlags, tokenize } from "../../sessions/launch";
 import { openSignIn } from "../../signin/store";
 import { T } from "../../Text";
 import { Area, Pill, Row, Section } from "../controls";
@@ -280,6 +281,7 @@ function AccountRow({
       {open ? (
         <View style={s.manage}>
           <ErrorLine text={act.error} />
+          {FLAG_PROVIDERS.has(a.provider) && <LaunchFlags account={a} reload={reload} />}
           <Acts>
             {a.isActive ? null : (
               <Button label="Make default" onPress={makeDefault} disabled={act.pending !== null} />
@@ -302,6 +304,61 @@ function AccountRow({
           </Acts>
         </View>
       ) : null}
+    </View>
+  );
+}
+
+/**
+ * Default launch flags for new sessions on this account (e.g. --chrome, --remote-control).
+ * Stored with the account on its host, so the same sign-in can differ per host.
+ */
+function LaunchFlags({ account: a, reload }: { account: Account; reload: () => void }) {
+  const hostId = useContext(HostCtx);
+  const saved = flagsText(a.preferences?.launchArgs);
+  const [text, setText] = useState(saved);
+  useEffect(() => setText(saved), [saved]);
+  const act = useAction();
+  const info = getHostClient(hostId)?.getLastServerInfoMessage() as {
+    features?: Record<string, unknown>;
+  } | null;
+  const supported = info?.features?.providerAccountLaunchArgs === true;
+  const parsed = parseFlags(text);
+  const invalid = "error" in parsed ? parsed.error : null;
+  const save = useCallback(async () => {
+    const ok = await act.run("flags", () =>
+      clientOrThrow(hostId).setProviderAccountPreferences({
+        accountId: a.id,
+        preferences: { ...a.preferences, launchArgs: tokenize(text) },
+      }),
+    );
+    if (ok) reload();
+  }, [act, a.id, a.preferences, hostId, reload, text]);
+  if (!supported)
+    return <T style={s.sub}>Update this host’s daemon to set default launch flags here.</T>;
+  return (
+    <View style={s.flags}>
+      <T style={s.flagsLabel}>Default launch flags</T>
+      <View style={s.addForm}>
+        <Field
+          grow
+          mono
+          value={text}
+          onChangeText={setText}
+          onSubmitEditing={save}
+          placeholder="--chrome --remote-control"
+          autoCapitalize="none"
+          autoCorrect={false}
+          accessibilityLabel={`Default launch flags for ${a.name}`}
+        />
+        <Button
+          label={act.pending === "flags" ? "Saving…" : "Save"}
+          onPress={save}
+          disabled={text.trim() === saved.trim() || Boolean(invalid) || act.pending !== null}
+        />
+      </View>
+      <T style={invalid ? s.flagsErr : s.sub}>
+        {invalid ?? "New sessions on this account on this host start with these flags."}
+      </T>
     </View>
   );
 }
@@ -513,4 +570,7 @@ const s = StyleSheet.create({
   manage: { paddingHorizontal: 16, paddingBottom: 12, paddingLeft: 37 },
   addRow: { flexDirection: "row", justifyContent: "flex-end", padding: 10 },
   addForm: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 },
+  flags: { gap: 6, marginBottom: 12 },
+  flagsLabel: { fontSize: 12.5, color: color.muted },
+  flagsErr: { color: color.coral, fontSize: 12, marginTop: 3 },
 });
