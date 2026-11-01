@@ -4,6 +4,7 @@ import { Buffer } from "buffer";
 import type { DaemonClient } from "@frogg/client/internal/daemon-client";
 import { getClient, openTimeline, useDaemon } from "../../daemon/store";
 import type { Agent } from "../../daemon/types";
+import { newMessageId, rememberSent } from "./sentAttachments";
 
 type Client = DaemonClient;
 export type SlashCommand = Awaited<ReturnType<Client["listCommands"]>>["commands"][number];
@@ -75,7 +76,11 @@ export async function sendWithAttachments(
     if (a.kind === "fork") return [a.context];
     return [];
   });
+  // The id comes back on the user message, so its bubble can show what was attached.
+  const messageId = newMessageId();
+  rememberSent(messageId, attachments);
   await client().sendMessage(agentId, text, {
+    messageId,
     ...(images.length ? { images } : {}),
     ...(files.length ? { attachments: files } : {}),
   });
