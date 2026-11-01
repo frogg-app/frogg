@@ -3,6 +3,7 @@ import { ChevronRight, Copy, Loader, Scissors } from "lucide-react-native";
 import { Animated, Pressable, StyleSheet, View, type LayoutChangeEvent } from "react-native";
 import { useScm, watchCheckout } from "../../daemon/scm";
 import { connect, useDaemon } from "../../daemon/store";
+import { useHosts } from "../../daemon/hosts";
 import { useSubWork } from "../../daemon/subwork";
 import {
   bucketOf,
@@ -27,6 +28,8 @@ import {
 } from "../nativeMotion";
 import { reducedMotion, usePresence } from "../presence";
 import { copyText } from "../shell/copy";
+import { authProblem } from "../signin/auth-error";
+import { openSignIn } from "../signin/store";
 import { StatusGlyph } from "../StatusGlyph";
 import { T } from "../Text";
 import { toast, toastError } from "../toast/store";
@@ -233,6 +236,17 @@ export function SessionState({
     void connect();
   }, []);
   const review = useCallback(() => useUi.getState().setTool("scm"), []);
+  const auth = bucket === "failed" ? authProblem(agent.lastError) : null;
+  const signIn = useCallback(
+    () =>
+      openSignIn({
+        hostId: useHosts.getState().activeId,
+        provider: agent.provider,
+        accountId: agent.providerAccountId ?? null,
+        accountName: auth?.account ?? null,
+      }),
+    [agent.provider, agent.providerAccountId, auth?.account],
+  );
   const changed = useChangedFiles(agent, online && bucket === "review");
   const pending = usePendingBackground(agent.id);
   if (!online)
@@ -275,6 +289,14 @@ export function SessionState({
       </Frame>
     );
   if (bucket !== "failed") return null;
+  if (auth)
+    return (
+      <Frame kind="failed" variant={variant}>
+        <Row title="Signed out of the provider" detail={agent.lastError ?? ""} mono>
+          <Button label="Sign in again" kind="primary" onPress={signIn} />
+        </Row>
+      </Frame>
+    );
   return (
     <Frame kind="failed" variant={variant}>
       <Row

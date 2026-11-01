@@ -1,5 +1,6 @@
 import { KeyboardFrame } from "../components/shell/KeyboardFrame";
 import { ToastHost } from "../components/toast/ToastHost";
+import { SignInDialog } from "../components/signin/SignInDialog";
 import { HostToasts } from "../components/toast/HostToasts";
 import { TitleBar } from "../components/shell/TitleBar";
 import { useCallback, useEffect, useMemo, type ReactNode } from "react";
@@ -225,6 +226,7 @@ export default function Shell() {
         <Palette />
         <NewSession />
         <ToastHost />
+        <SignInDialog />
         <Onboarding phone chipBottom={phoneHasDetail ? 16 : 76} />
       </SafeAreaView>
     );
@@ -270,6 +272,7 @@ export default function Shell() {
       <Palette />
       <NewSession />
       <ToastHost />
+      <SignInDialog />
       <Onboarding phone={false} chipBottom={40} chipLeft={224} />
     </SafeAreaView>
   );

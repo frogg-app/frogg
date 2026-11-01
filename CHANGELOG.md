@@ -15,6 +15,13 @@
   daemon controls are gone.
 - **Frogg Next connects to any daemon.** `frogg-next://app` is in the daemon's fixed CORS
   allowlist.
+- **Sign in to providers from Frogg Next.** Settings → Accounts runs the provider's headless
+  login on the host (`claude auth login`, `codex login --device-auth`) and shows its link, code
+  prompt or one-time code in a dialog, so an expired or missing sign-in no longer needs a
+  terminal. A session that failed on an expired sign-in offers **Sign in again**. The daemon now
+  starts account sign-in terminals on hosts with no project and for a provider's default account.
+- **Turn providers on and off in Frogg Next.** Settings → Providers & models has a per-provider
+  switch for host owners.
 
 ## 1.6.13-beta.2 — prototype design options on device
 

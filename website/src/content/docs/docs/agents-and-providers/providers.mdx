@@ -180,6 +180,19 @@ interactive login command with `CLAUDE_CONFIG_DIR` pointed at that account's dir
 you run `/login` inside it. An account shows as authenticated once its credential file
 (`.credentials.json`) exists.
 
+In Frogg Next, **Settings → Accounts** signs an account in without a terminal: **Sign in** on a
+signed-out account (or **Manage → Sign in again** on one whose sign-in expired) opens a dialog.
+The daemon runs the provider's headless login under that account's directory — `claude auth
+login` for Claude, `codex login --device-auth` for Codex — and the dialog shows its sign-in
+link: for Claude, open it, approve, and paste the code the page shows back into the dialog; for
+Codex, enter the one-time code the dialog shows on that page. Other providers show their CLI's
+own prompts in the dialog. Closing the dialog stops the login. No project is needed on the host.
+
+A session that fails because its provider sign-in expired or is missing (for example "OAuth
+session expired and could not be refreshed", or `Account "work" is not signed in to provider
+"claude"`) shows **Signed out of the provider** with a **Sign in again** button that opens the
+same dialog for that session's account.
+
 **Sign out** deletes just the account's credential files inside its own config directory,
 leaving the directory, the linked folders and everything else in it alone. It is refused for
 an account that is not signed in.
@@ -412,14 +425,15 @@ one tab per sign-in. Each account gets its own `CLAUDE_CONFIG_DIR` under
 `<home>/.claude-<name>`, keeping credentials, settings and history private while the folders
 you chose stay symlinked to the primary `~/.claude`.
 
-Frogg never signs an account in for you. **Sign in** opens a terminal with that account's
-config directory applied, equivalent to:
+In the classic app, **Sign in** opens a terminal with that account's config directory applied,
+equivalent to:
 
 ```sh
 CLAUDE_CONFIG_DIR="$HOME/.claude-<name>" claude
 ```
 
-then run `/login` inside it.
+then run `/login` inside it. Frogg Next runs `claude auth login` for you instead and shows its
+link and code prompt in the app (see [provider accounts](#provider-accounts-multi-sign-in)).
 
 :::caution[Removed in this fork]
 Earlier releases let you declare an extra Claude account as a custom provider with a

@@ -5,6 +5,7 @@ import { useHosts, type Host } from "../../../daemon/hosts";
 import { getHostClient, useDaemon, useHostConn } from "../../../daemon/store";
 import { color } from "../../../theme/tokens";
 import { Button } from "../../Button";
+import { openSignIn } from "../../signin/store";
 import { T } from "../../Text";
 import { Area, Pill, Row, Section } from "../controls";
 import {
@@ -234,6 +235,10 @@ function AccountRow({
     );
     if (ok) reload();
   }, [act, a.id, reload, hostId]);
+  const signIn = useCallback(
+    () => openSignIn({ hostId, provider: a.provider, accountId: a.id }),
+    [hostId, a.provider, a.id],
+  );
   const remove = useCallback(async () => {
     const ok = await act.run("delete", () =>
       clientOrThrow(hostId).deleteProviderAccount({ accountId: a.id }),
@@ -269,6 +274,7 @@ function AccountRow({
             ))}
           </View>
         ) : null}
+        {a.authenticated ? null : <Button kind="primary" label="Sign in" onPress={signIn} />}
         <Button label={open ? "Done" : "Manage"} onPress={toggle} />
       </View>
       {open ? (
@@ -278,6 +284,7 @@ function AccountRow({
             {a.isActive ? null : (
               <Button label="Make default" onPress={makeDefault} disabled={act.pending !== null} />
             )}
+            {a.authenticated ? <Button label="Sign in again" onPress={signIn} /> : null}
             {a.authenticated ? (
               <Confirm
                 label="Sign out"
@@ -382,7 +389,7 @@ function AddAccount({ provider, reload }: { provider: Provider; reload: () => vo
           disabled={!name.trim() || act.pending !== null}
         />
       </View>
-      <T style={s.sub}>Then sign in from a terminal session with this account selected.</T>
+      <T style={s.sub}>Then choose Sign in on the new account.</T>
     </Block>
   );
 }
