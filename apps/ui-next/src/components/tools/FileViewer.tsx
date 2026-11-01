@@ -83,6 +83,7 @@ function FileEditor({ path, onBack }: { path: string; onBack?: () => void }) {
   useEffect(() => {
     if (dirty || mode === "edit") pinTab(path);
   }, [dirty, mode, path]);
+  useSaveShortcut(dirty && !saving ? save : null);
   const text = doc && "text" in doc ? doc.text : null;
   const name = path.split("/").pop() ?? path;
   const crumbs = path.split("/").slice(0, -1);
@@ -163,6 +164,28 @@ function FileEditor({ path, onBack }: { path: string; onBack?: () => void }) {
       </View>
     </View>
   );
+}
+
+/**
+ * Ctrl+S / Cmd+S saves the open file (web and desktop). The browser's own "save page" is
+ * suppressed while an editor is open, even with nothing to save.
+ */
+function useSaveShortcut(save: (() => void) | null): void {
+  const latest = useRef(save);
+  latest.current = save;
+  useEffect(() => {
+    const doc = (globalThis as { document?: Document }).document;
+    if (!doc) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey || e.key.toLowerCase() !== "s")
+        return;
+      e.preventDefault();
+      latest.current?.();
+    };
+    // Capture: the editor's textarea handles its own keys before they would bubble here.
+    doc.addEventListener("keydown", onKey, true);
+    return () => doc.removeEventListener("keydown", onKey, true);
+  }, []);
 }
 
 function DocumentBody({
