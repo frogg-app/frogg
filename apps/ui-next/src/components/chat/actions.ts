@@ -102,6 +102,11 @@ export async function denyWithMessage(
   await client().respondToPermission(agentId, requestId, { behavior: "deny", message });
 }
 
+/** Stops a subagent session belonging to the agent that started it (drops its parent label). */
+export async function detachSession(agentId: string): Promise<void> {
+  await client().detachAgent(agentId);
+}
+
 export async function renameSession(agentId: string, name: string): Promise<void> {
   await client().updateAgent(agentId, { name });
 }

@@ -190,6 +190,18 @@ The display menu at the top of the sidebar controls how sessions are arranged.
 Grouping and sort are saved on the device. The sidebar starts on **Recent activity**, including
 after updating from a version without sorting; your saved drag order is kept for **Manual**.
 
+In Frogg Next, grouping by status gives five sections, each with a one-line caption saying what
+it holds: **Needs you** (waiting for your approval or answer), **Failed** (stopped with an
+error), **Ready to review** (finished a turn you have not opened yet), **Working** (running a
+turn now) and **Idle** (waiting for your next message).
+
+A [subagent](/docs/using-frogg/agents/#subagents) session is listed under the session that
+started it, never as a session of its own and never in another project's or host's section. It
+shows in its parent's sub-work list, and the parent sits in the most urgent section of the two,
+so a subagent waiting on an approval puts its parent under **Needs you**. Searching for a
+subagent's title shows its parent. A subagent whose parent is archived, and one that has been
+detached, is listed on its own.
+
 ## Hide projects and sessions
 
 Several people can share one daemon, so each device can hide the projects and sessions it is

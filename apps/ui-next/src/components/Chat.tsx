@@ -1,4 +1,5 @@
-import { ArrowLeft } from "lucide-react-native";
+import { PARENT_AGENT_ID_LABEL } from "@frogg/protocol/agent-labels";
+import { ArrowLeft, CornerLeftUp } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { loadConfig, useConfig } from "../daemon/config";
@@ -7,6 +8,7 @@ import { useViewers } from "../daemon/viewers";
 import { cancelTurn, openTimeline, setAgentMode, setAgentModel, useDaemon } from "../daemon/store";
 import { bucketOf, type Agent, type Session, type TimelineEntry } from "../daemon/types";
 import { color, motion } from "../theme/tokens";
+import { useUi } from "../ui-store";
 import { providerLabel } from "../util";
 import { AccountChip } from "./chat/AccountChip";
 import { ContextMeter } from "./chat/ContextMeter";
@@ -127,9 +129,12 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
   return (
     <View style={s.root}>
       <View style={s.head}>
-        <T v="mono" numberOfLines={1} style={s.crumb}>
-          {[session.project?.projectName, branch].filter(Boolean).join(" / ")}
-        </T>
+        <View style={s.crumbRow}>
+          <T v="mono" numberOfLines={1} style={s.crumb}>
+            {[session.project?.projectName, branch].filter(Boolean).join(" / ")}
+          </T>
+          <ParentLink agent={a} />
+        </View>
         <View style={s.titleRow}>
           {onBack && (
             <Pressable onPress={onBack} hitSlop={10} accessibilityLabel="Back">
@@ -218,6 +223,37 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
         </>
       )}
     </View>
+  );
+}
+
+/** A subagent's way back: names the session that started it and opens it. */
+function ParentLink({ agent }: { agent: Agent }) {
+  const parentId = agent.labels?.[PARENT_AGENT_ID_LABEL];
+  const title = useDaemon((st) =>
+    parentId ? (st.sessions[parentId]?.agent.title ?? null) : undefined,
+  );
+  const open = useCallback(() => {
+    if (parentId) useUi.getState().select(parentId);
+  }, [parentId]);
+  // Not loaded here (archived, or another host's id): nothing to open.
+  if (!parentId || title === undefined) return null;
+  return (
+    <Pressable
+      onPress={open}
+      accessibilityRole="link"
+      accessibilityLabel={`Subagent of ${title || "a session"}, open it`}
+      hitSlop={6}
+      style={s.parent}
+    >
+      {({ hovered }) => (
+        <>
+          <CornerLeftUp size={11} color={hovered ? color.text : color.violet} />
+          <T numberOfLines={1} style={[s.parentT, hovered && s.parentHover]}>
+            Subagent of {title || "Untitled session"}
+          </T>
+        </>
+      )}
+    </Pressable>
   );
 }
 
@@ -335,7 +371,11 @@ const s = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: color.line,
   },
-  crumb: { fontSize: 11 },
+  crumbRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  crumb: { fontSize: 11, flexShrink: 1 },
+  parent: { flexDirection: "row", alignItems: "center", gap: 4, flexShrink: 1, minWidth: 0 },
+  parentT: { fontSize: 11.5, color: color.muted, flexShrink: 1 },
+  parentHover: { color: color.text },
   titleRow: {
     flexDirection: "row",
     alignItems: "center",

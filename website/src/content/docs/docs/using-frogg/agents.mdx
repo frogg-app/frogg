@@ -108,8 +108,13 @@ the same rows from history.
 A [clean cut](/docs/using-frogg/clean-cut/#subagents) of a parent also cuts its idle Frogg
 subagents, each from its own timeline.
 
+In Frogg Next a subagent's chat header reads **Subagent of *parent***; select it to go back to the
+parent. Subagents are [listed under their parent](/docs/using-frogg/projects-and-sessions/#organize-the-sidebar)
+in the sessions list.
+
 Make a subagent independent without stopping it. Detaching is not confirmed: nothing is lost,
-the agent keeps its history, and the app opens it and confirms with a toast.
+the agent keeps its history, and the app opens it and confirms with a toast. In Frogg Next, use
+**Detach from parent** in the subagent's session menu (⋯).
 
 ```sh
 frogg agent detach <child-id>
