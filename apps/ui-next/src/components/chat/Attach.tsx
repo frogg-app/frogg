@@ -5,22 +5,28 @@ import { color } from "../../theme/tokens";
 import { T } from "../Text";
 import { toastError } from "../toast/store";
 import { Menu, useAnchor, type MenuEntry } from "../tools/Menu";
-import { prepareAttachment, type Attachment } from "./actions";
+import { attachPicked, type Attachment } from "./actions";
 import { canPickFiles, pickFiles } from "./pickFiles";
+import { cancelUpload, formatBytes, useUploads } from "./upload";
 
 /** The composer's + button: pick images or files to send with the next message. */
-export function AttachMenu({ onAdd }: { onAdd: (a: Attachment[]) => void }) {
+export function AttachMenu({
+  onAdd,
+  onRemove,
+}: {
+  onAdd: (a: Attachment[]) => void;
+  onRemove: (id: string) => void;
+}) {
   const anchor = useAnchor();
   const pick = useCallback(
     async (images: boolean) => {
       try {
-        const picked = await pickFiles({ images });
-        if (picked.length) onAdd(await Promise.all(picked.map(prepareAttachment)));
+        attachPicked(await pickFiles({ images }), onAdd, onRemove);
       } catch (e) {
         toastError("Could not attach", e);
       }
     },
-    [onAdd],
+    [onAdd, onRemove],
   );
   const items = useMemo<MenuEntry[]>(
     () => [
@@ -54,7 +60,7 @@ export function AttachMenu({ onAdd }: { onAdd: (a: Attachment[]) => void }) {
   );
 }
 
-const iconFor = { image: ImageIcon, file: FileText, fork: GitFork };
+const iconFor = { image: ImageIcon, file: FileText, fork: GitFork, upload: FileText };
 
 export function AttachChips({
   items,
@@ -73,7 +79,11 @@ export function AttachChips({
 }
 
 function Chip({ a, onRemove }: { a: Attachment; onRemove: (id: string) => void }) {
-  const remove = useCallback(() => onRemove(a.id), [a.id, onRemove]);
+  const uploading = a.kind === "upload";
+  const remove = useCallback(
+    () => (uploading ? cancelUpload(a.id) : onRemove(a.id)),
+    [a.id, onRemove, uploading],
+  );
   const Icon = iconFor[a.kind];
   return (
     <View style={s.chip}>
@@ -81,11 +91,31 @@ function Chip({ a, onRemove }: { a: Attachment; onRemove: (id: string) => void }
       <T v="mono" style={s.name} numberOfLines={1}>
         {a.name}
       </T>
-      <Pressable onPress={remove} hitSlop={6} accessibilityLabel={`Remove ${a.name}`}>
+      {uploading && <UploadProgress id={a.id} size={a.size} />}
+      <Pressable
+        onPress={remove}
+        hitSlop={6}
+        accessibilityLabel={uploading ? `Cancel uploading ${a.name}` : `Remove ${a.name}`}
+      >
         <X size={11} color={color.faint} />
       </Pressable>
+      {uploading && <UploadBar id={a.id} />}
     </View>
   );
+}
+
+export function UploadProgress({ id, size }: { id: string; size: number }) {
+  const sent = useUploads((st) => st[id]?.sent ?? 0);
+  return (
+    <T v="mono" style={s.pct}>
+      {`${Math.floor((sent / Math.max(size, 1)) * 100)}% of ${formatBytes(size)}`}
+    </T>
+  );
+}
+
+export function UploadBar({ id }: { id: string }) {
+  const frac = useUploads((st) => (st[id] ? st[id].sent / Math.max(st[id].total, 1) : 0));
+  return <View style={[s.bar, { width: `${frac * 100}%` }]} />;
 }
 
 const s = StyleSheet.create({
@@ -100,6 +130,9 @@ const s = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     maxWidth: 260,
+    overflow: "hidden",
   },
   name: { color: color.text, flexShrink: 1 },
+  pct: { color: color.muted, fontVariant: ["tabular-nums"] },
+  bar: { position: "absolute", left: 0, bottom: 0, height: 2, backgroundColor: color.mint },
 });

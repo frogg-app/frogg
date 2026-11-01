@@ -520,7 +520,8 @@ export class WorkspaceFilesSession {
   }
 
   handleFileUploadRequest(request: FileUploadRequest): void {
-    this.fileUploads.beginUpload(request);
+    const rejected = this.fileUploads.beginUpload(request);
+    if (rejected) this.host.emit(rejected);
   }
 
   async handleFileTransferFrame(frame: FileTransferFrame): Promise<void> {

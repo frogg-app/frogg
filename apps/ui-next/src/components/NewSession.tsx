@@ -32,6 +32,8 @@ import { Cut } from "./Cut";
 import { Seg } from "./settings/controls";
 import { Select } from "./Select";
 import { canPickFiles, pickFiles } from "./chat/pickFiles";
+import { UploadBar, UploadProgress } from "./chat/Attach";
+import { cancelUpload, useUploads } from "./chat/upload";
 import {
   isImage,
   loadBranches,
@@ -1249,17 +1251,28 @@ function DraftChips({ drafts, onRemove }: { drafts: Draft[]; onRemove: (id: stri
 }
 
 function DraftChip({ d, onRemove }: { d: Draft; onRemove: (id: string) => void }) {
-  const remove = useCallback(() => onRemove(d.id), [d.id, onRemove]);
+  // While the session is being created the file is streaming to the host: X cancels that.
+  const uploading = useUploads((st) => !!st[d.id]);
+  const remove = useCallback(
+    () => (uploading ? cancelUpload(d.id) : onRemove(d.id)),
+    [d.id, onRemove, uploading],
+  );
   const Icon = isImage(d) ? ImageIcon : FileText;
   return (
-    <View style={s.chip}>
+    <View style={[s.chip, s.chipClip]}>
       <Icon size={12} color={color.muted} />
       <T v="mono" style={s.chipName} numberOfLines={1}>
         {d.name}
       </T>
-      <Pressable onPress={remove} hitSlop={6} accessibilityLabel={`Remove ${d.name}`}>
+      {uploading && <UploadProgress id={d.id} size={d.size} />}
+      <Pressable
+        onPress={remove}
+        hitSlop={6}
+        accessibilityLabel={uploading ? `Cancel uploading ${d.name}` : `Remove ${d.name}`}
+      >
         <X size={11} color={color.faint} />
       </Pressable>
+      {uploading && <UploadBar id={d.id} />}
     </View>
   );
 }
@@ -1343,6 +1356,7 @@ const s = StyleSheet.create({
   attachTOn: { fontSize: 12.5, color: color.text },
   nameWide: { width: 240 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  chipClip: { overflow: "hidden" },
   chip: {
     flexDirection: "row",
     alignItems: "center",

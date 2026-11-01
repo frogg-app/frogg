@@ -16,7 +16,7 @@ import { AttachChips, AttachMenu } from "./chat/Attach";
 import { useComposerHeight } from "./chat/composerSize";
 import { usePasteImages } from "./chat/pasteImages";
 import { SlashMenu, matchCommands } from "./chat/SlashMenu";
-import { toastError } from "./toast/store";
+import { toast, toastError } from "./toast/store";
 import { Cut } from "./Cut";
 import { Floating } from "./Floating";
 import { T } from "./Text";
@@ -128,6 +128,10 @@ export function Composer({
   const submit = useCallback(async () => {
     const t = text.trim();
     if (disabled || sending || (!t && atts.length === 0)) return;
+    if (atts.some((a) => a.kind === "upload")) {
+      toast({ title: "Still uploading", detail: "Send once the files finish uploading." });
+      return;
+    }
     setSending(true);
     try {
       await onSend(t, atts);
@@ -167,11 +171,14 @@ export function Composer({
     },
     [slashOpen, matches, hi, pickCommand, submit],
   );
-  const addAtts = useCallback((more: Attachment[]) => setAtts((a) => [...a, ...more]), []);
+  const addAtts = useCallback(
+    (more: Attachment[]) => setAtts((a) => upsertAttachments(a, more)),
+    [],
+  );
   const removeAtt = useCallback((id: string) => setAtts((a) => a.filter((x) => x.id !== id)), []);
   const anchor = useRef<View>(null);
   const input = useRef<TextInput>(null);
-  usePasteImages(input, addAtts, !!attach && !disabled);
+  usePasteImages(input, addAtts, removeAtt, !!attach && !disabled);
   const highlight = Math.min(hi, Math.max(0, matches.length - 1));
   const slashMenu = useCallback(
     (p: { up: boolean; maxHeight: number }) => (
@@ -225,7 +232,11 @@ export function Composer({
           />
         </Animated.View>
         <View style={s.bar}>
-          {attach ? <AttachMenu onAdd={addAtts} /> : <Plus size={16} color={color.muted} />}
+          {attach ? (
+            <AttachMenu onAdd={addAtts} onRemove={removeAtt} />
+          ) : (
+            <Plus size={16} color={color.muted} />
+          )}
           {chips.map((c, n) => (
             <View key={c} style={s.chip}>
               {n === 0 && <View style={s.chipDot} />}
@@ -362,3 +373,11 @@ const s = StyleSheet.create({
     }),
   },
 });
+
+/** Adds attachments, replacing any with the same id (an upload chip becoming its file). */
+function upsertAttachments(list: Attachment[], more: Attachment[]): Attachment[] {
+  const byId = new Map(more.map((m) => [m.id, m]));
+  const kept = list.map((x) => byId.get(x.id) ?? x);
+  const known = new Set(list.map((x) => x.id));
+  return [...kept, ...more.filter((m) => !known.has(m.id))];
+}

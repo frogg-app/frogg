@@ -1,31 +1,25 @@
 // Chat-side daemon calls that the shared store does not wrap: slash commands, attachments,
 // questions, rename, fork, rewind, clean cut, accounts and auto-resume.
-import { Buffer } from "buffer";
 import type { DaemonClient } from "@frogg/client/internal/daemon-client";
 import { getClient, openTimeline, useDaemon } from "../../daemon/store";
 import type { Agent } from "../../daemon/types";
+import { toastError } from "../toast/store";
+import { isCancelled, uploadPicked, type Picked, type UploadedFile } from "./upload";
+
+export type { Picked, UploadedFile };
 
 type Client = DaemonClient;
 export type SlashCommand = Awaited<ReturnType<Client["listCommands"]>>["commands"][number];
 export type Account = Awaited<ReturnType<Client["listProviderAccounts"]>>["accounts"][number];
-export type UploadedFile = NonNullable<Awaited<ReturnType<Client["uploadFile"]>>["file"]>;
 export type ForkContext = NonNullable<
   Awaited<ReturnType<Client["buildAgentForkContext"]>>["attachment"]
 >;
-
-/** A picked file, before it goes to the daemon. */
-export interface Picked {
-  name: string;
-  mimeType: string;
-  /** base64, no data: prefix */
-  base64: string;
-  size: number;
-}
 
 /** What rides along with the next message: images inline, other files uploaded to the host. */
 export type Attachment =
   | { kind: "image"; id: string; name: string; mimeType: string; data: string }
   | { kind: "file"; id: string; name: string; file: UploadedFile }
+  | { kind: "upload"; id: string; name: string; size: number }
   | { kind: "fork"; id: string; name: string; context: ForkContext };
 
 function client(): Client {
@@ -48,18 +42,32 @@ export async function listCommands(agentId: string): Promise<SlashCommand[]> {
 }
 
 let attachSeq = 0;
-export async function prepareAttachment(p: Picked): Promise<Attachment> {
-  attachSeq += 1;
-  const id = `a${attachSeq}`;
-  if (p.mimeType.startsWith("image/"))
-    return { kind: "image", id, name: p.name, mimeType: p.mimeType, data: p.base64 };
-  const res = await client().uploadFile({
-    fileName: p.name,
-    mimeType: p.mimeType || "application/octet-stream",
-    bytes: base64ToBytes(p.base64),
-  });
-  if (res.error || !res.file) throw new Error(res.error ?? "Upload failed");
-  return { kind: "file", id, name: p.name, file: res.file };
+
+/**
+ * Turns picks into attachments: small images at once, other files as an upload chip that
+ * streams to the host and becomes a file attachment when it lands. `add` replaces by id.
+ */
+export function attachPicked(
+  picked: Picked[],
+  add: (a: Attachment[]) => void,
+  remove: (id: string) => void,
+): void {
+  for (const p of picked) {
+    attachSeq += 1;
+    const id = `a${attachSeq}`;
+    if (p.base64) {
+      add([{ kind: "image", id, name: p.name, mimeType: p.mimeType, data: p.base64 }]);
+      continue;
+    }
+    add([{ kind: "upload", id, name: p.name, size: p.size }]);
+    uploadPicked(client(), p, id).then(
+      (file) => add([{ kind: "file", id, name: p.name, file }]),
+      (err: unknown) => {
+        remove(id);
+        if (!isCancelled(err)) toastError(`Could not upload ${p.name}`, err);
+      },
+    );
+  }
 }
 
 export async function sendWithAttachments(
@@ -194,8 +202,4 @@ export async function checkoutRisk(
     unpushed: st.aheadOfOrigin ?? 0,
     branch: st.currentBranch ?? null,
   };
-}
-
-function base64ToBytes(b64: string): Uint8Array {
-  return new Uint8Array(Buffer.from(b64, "base64"));
 }

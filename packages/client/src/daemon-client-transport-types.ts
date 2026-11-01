@@ -5,6 +5,8 @@ export interface DaemonTransport {
   onOpen: (handler: () => void) => () => void;
   onClose: (handler: (event?: unknown) => void) => () => void;
   onError: (handler: (event?: unknown) => void) => () => void;
+  /** Bytes queued for the network but not yet sent, when the transport can tell. */
+  bufferedAmount?: () => number;
 }
 
 export type DaemonTransportFactory = (options: {
@@ -20,6 +22,7 @@ export type WebSocketFactory = (
 
 export interface WebSocketLike {
   readyState: number;
+  bufferedAmount?: number;
   send: (data: string | Uint8Array | ArrayBuffer) => void;
   close: (code?: number, reason?: string) => void;
   binaryType?: string;

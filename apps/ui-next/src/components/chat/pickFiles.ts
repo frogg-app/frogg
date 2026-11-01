@@ -1,4 +1,4 @@
-import type { Picked } from "./actions";
+import type { Picked } from "./upload";
 
 /** Native has no document or image picker module in this build; the attach menu says so. */
 export const canPickFiles = false;
