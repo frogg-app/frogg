@@ -88,6 +88,12 @@ export function FilesEditor() {
         <Row label="Copy on select">
           <Toggle value={p.copyOnSelect} onChange={prefSetter("copyOnSelect")} />
         </Row>
+        <Row
+          label="List terminals from every host"
+          hint="Off: the Terminals panel lists only the active host's terminals"
+        >
+          <Toggle value={p.terminalsAllHosts} onChange={prefSetter("terminalsAllHosts")} />
+        </Row>
         <Row label="Legacy renderer" hint="Use only if text renders incorrectly" last>
           <Toggle value={p.legacyRenderer} onChange={prefSetter("legacyRenderer")} />
         </Row>
