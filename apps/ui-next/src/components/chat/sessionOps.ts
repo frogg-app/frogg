@@ -3,10 +3,13 @@
 // is refused instead of running both, and the composer shows the running one.
 import { create } from "zustand";
 import { dismissToast, toast, toastError } from "../toast/store";
+import { settleQueue } from "./cutQueue";
 
 export interface SessionOp {
   /** Present-tense progress line, e.g. "Moving the conversation to work". */
   label: string;
+  /** When it started (ms), for the elapsed time on the progress strip. */
+  startedAt: number;
 }
 
 export const useSessionOps = create<Record<string, SessionOp | undefined>>(() => ({}));
@@ -32,7 +35,7 @@ export function runSessionOp(
     });
     return false;
   }
-  useSessionOps.setState({ [agentId]: { label: op.label } });
+  useSessionOps.setState({ [agentId]: { label: op.label, startedAt: Date.now() } });
   const progress = toast({ title: `${op.label}…`, kind: "info", sticky: true, source: agentId });
   const finish = () => {
     dismissToast(progress);
@@ -41,10 +44,13 @@ export function runSessionOp(
   fn().then(
     () => {
       finish();
+      // A message typed while it ran goes out now, onto the new conversation.
+      settleQueue(agentId, true).catch((e: unknown) => toastError("Message not sent", e));
       return toast({ title: op.done, detail: op.doneDetail, source: agentId });
     },
     (e: unknown) => {
       finish();
+      void settleQueue(agentId, false);
       toastError(op.failed, e);
     },
   );

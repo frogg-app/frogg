@@ -30,7 +30,7 @@ import { copyText } from "../shell/copy";
 import { StatusGlyph } from "../StatusGlyph";
 import { T } from "../Text";
 import { toast, toastError } from "../toast/store";
-import { cutMove } from "./cleanCut";
+import { cutMove, endsAtCleanCut } from "./cleanCut";
 
 /**
  * Visual treatment (lab compares them; the app uses the default):
@@ -235,6 +235,8 @@ export function SessionState({
   const review = useCallback(() => useUi.getState().setTool("scm"), []);
   const changed = useChangedFiles(agent, online && bucket === "review");
   const pending = usePendingBackground(agent.id);
+  // An older daemon keeps the error a clean cut moved past; the cut marker is the latest word.
+  const cutSince = useDaemon((st) => bucket === "failed" && endsAtCleanCut(st.timelines[agent.id]));
   if (!online)
     return (
       <Frame kind="offline" variant={variant}>
@@ -274,7 +276,7 @@ export function SessionState({
         </Row>
       </Frame>
     );
-  if (bucket !== "failed") return null;
+  if (bucket !== "failed" || cutSince) return null;
   return (
     <Frame kind="failed" variant={variant}>
       <Row

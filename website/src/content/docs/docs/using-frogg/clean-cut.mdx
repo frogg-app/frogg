@@ -34,9 +34,19 @@ before making a clean cut." The entry points:
 | Account pill above the composer → **Clean cut to this account** | Cuts onto the selected account of the same provider, instead of **Move conversation**, which copies the whole transcript over |
 | Model picker → a model from another provider | Asks **Switch provider** first; **Clean cut and switch** cuts onto that provider and model |
 | Frogg Next: provider chip in the composer → **Switch to *provider*...** | Opens **Switch to *provider*** with that provider's models, its default preselected; **Clean cut and switch** cuts onto it |
+| Frogg Next: the scissors button beside **Send** | Cuts on the same provider, account and model, then sends what you typed into the fresh conversation. Hovering it says what it does, or why it is unavailable: during a turn, or before there is anything to summarise |
+| Frogg Next: session menu (⋯) → **Clean cut** | Cuts on the same provider, account and model |
 
 While the summary is being written the button reads **Summarising...**. A failure is shown in
 the sheet or as a toast, and the agent stays on its old conversation.
+
+In Frogg Next a strip above the composer shows the running cut with its elapsed time and a moving
+bar. Anything you send while it runs, with either send button, is queued under it and goes out
+once the cut is done, into the fresh conversation. **Cancel** drops it. If the cut fails, the
+queued message is kept but not sent; choose **Send now** or **Discard**.
+
+A cut also clears the failed state of a session that had stopped with an error, since the fresh
+conversation starts past it.
 
 If nothing new was said since the last clean cut, a same-place cut does nothing. Moving to
 another account, provider or model still goes ahead, reusing the previous summary at no cost.
@@ -79,7 +89,9 @@ The cut leaves a **Clean cut: new conversation** divider in the timeline. Under 
 - **Summary sent to the agent**, with the model that wrote it, collapsed by default. Expand it
   to read exactly what the agent was given.
 - **Copy previous conversation ID**, the provider session ID of the old conversation, for when
-  you need to find it in the provider's own history.
+  you need to find it in the provider's own history. That old conversation stays part of this
+  session, so **Import** does not offer it as a separate one. Neither does it list the
+  summariser's own runs.
 - The provider change, for example `claude → codex`, when the cut switched provider. Frogg Next
   names the models too (`Claude Code · opus → Codex · gpt-5`) and shows a model-only change.
 - Frogg Next: **Summary carried over: no new cost**, when the cut reused the previous cut's summary

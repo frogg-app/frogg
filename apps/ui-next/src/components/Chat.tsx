@@ -15,12 +15,21 @@ import { ComposerNotices } from "./chat/Notices";
 import { SessionMenu } from "./chat/SessionMenu";
 import { SessionState } from "./chat/SessionState";
 import { headerTitle } from "./chat/title";
-import { forkDrafts, listCommands, sendWithAttachments, type Attachment } from "./chat/actions";
+import {
+  cleanCut,
+  forkDrafts,
+  hasFeature,
+  listCommands,
+  sendWithAttachments,
+  type Attachment,
+} from "./chat/actions";
+import { queueMessage, setQueueSender } from "./chat/cutQueue";
+import { CUT, runSessionOp, useSessionOps } from "./chat/sessionOps";
 import { useBottomAnchor } from "./chat/useBottomAnchor";
 import { SubWorkDetail } from "./subwork/Detail";
 import { SubWorkStrip } from "./subwork/Strip";
 import { toastError } from "./toast/store";
-import { Composer } from "./Composer";
+import { Composer, type CutSend } from "./Composer";
 import { ImageRoot } from "./markdown/HostImage";
 import { PermissionCard } from "./PermissionCard";
 import { Select } from "./Select";
@@ -33,6 +42,18 @@ import { Viewers } from "./chat/Viewers";
 
 // The provider chip is live (ProviderChip), not a static composer chip.
 const NO_CHIPS: string[] = [];
+
+// Messages held behind a clean cut go out through the same path as a typed one.
+setQueueSender(sendWithAttachments);
+
+const busy = (agentId: string) => !!useSessionOps.getState()[agentId];
+
+/** Why the scissors send cannot cut now, or null. */
+function cutBlocked(entries: TimelineEntry[] | undefined, running: boolean): string | null {
+  if (running) return "Wait for the turn to finish to make a clean cut";
+  if (!entries?.some((e) => e.item.type === "user_message")) return "Nothing to summarise yet";
+  return null;
+}
 
 const bucketText = {
   needs: "Needs you",
@@ -69,11 +90,27 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
   const running = a.status === "running";
   const onSend = useCallback(
     async (t: string, attachments: Attachment[]) => {
-      await sendWithAttachments(a.id, t, attachments);
+      // A move or clean cut is rewriting the conversation: hold the message until it lands.
+      if (busy(a.id)) queueMessage(a.id, t, attachments);
+      else await sendWithAttachments(a.id, t, attachments);
       forkDrafts.delete(a.id);
     },
     [a.id],
   );
+  const blocked = useMemo(() => cutBlocked(entries, running), [entries, running]);
+  const canCut = online && hasFeature("agentCleanCut");
+  const cut = useMemo<CutSend | undefined>(() => {
+    if (!canCut) return undefined;
+    return {
+      blocked,
+      onSend: (t, attachments) => {
+        queueMessage(a.id, t, attachments);
+        forkDrafts.delete(a.id);
+        // Already cutting (from the menu or the cache notice): the message just waits for it.
+        if (!busy(a.id)) runSessionOp(a.id, CUT, () => cleanCut(a.id));
+      },
+    };
+  }, [a.id, blocked, canCut]);
   const commands = useCallback(() => listCommands(a.id), [a.id]);
   const initialAttachments = useMemo(() => {
     const draft = forkDrafts.get(a.id);
@@ -170,6 +207,7 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
               sizeKey={a.id}
               onTyping={setTyping}
               above={here}
+              cut={cut}
             >
               <ProviderChip agent={a} compact={!!onBack} />
               <AgentControls agent={a} />
