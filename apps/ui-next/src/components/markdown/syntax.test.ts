@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { parseTable, resolveImage, splitImages, splitRow, type Cell } from "./syntax";
+import {
+  classifyLine,
+  INLINE,
+  inlineToken,
+  parseTable,
+  resolveImage,
+  safeHref,
+  splitImages,
+  splitRow,
+  type Cell,
+} from "./syntax";
 
 const texts = (row: Cell[]) => row.map((c) => c.text);
 
@@ -89,5 +99,53 @@ describe("resolveImage", () => {
     });
     expect(resolveImage("shots/a.png", undefined)).toBeNull();
     expect(resolveImage("ftp://x/a.png", "/repo")).toBeNull();
+  });
+});
+
+describe("classifyLine", () => {
+  it("tells fences, rules, headings, quotes and prose apart", () => {
+    expect(classifyLine("```ts")).toEqual({ kind: "fence" });
+    expect(classifyLine("~~~")).toEqual({ kind: "fence" });
+    expect(classifyLine("---")).toEqual({ kind: "hr" });
+    expect(classifyLine("* * *")).toEqual({ kind: "hr" });
+    expect(classifyLine("###### Six")).toEqual({ kind: "h", level: 6, cut: 7 });
+    expect(classifyLine("> quoted")).toEqual({ kind: "quote", cut: 2 });
+    expect(classifyLine("**bold** start")).toBeNull();
+    expect(classifyLine("plain")).toBeNull();
+  });
+
+  it("reads list markers, numbers, tasks and nesting", () => {
+    expect(classifyLine("- item")).toMatchObject({ kind: "li", marker: "•", depth: 0, cut: 2 });
+    expect(classifyLine("  * nested")).toMatchObject({ marker: "•", depth: 1 });
+    expect(classifyLine("12. twelfth")).toMatchObject({ marker: "12.", ordered: true, cut: 4 });
+    expect(classifyLine("3) third")).toMatchObject({ marker: "3." });
+    expect(classifyLine("- [ ] todo")).toMatchObject({ marker: "☐", cut: 6 });
+    expect(classifyLine("- [x] done")).toMatchObject({ marker: "☑" });
+  });
+});
+
+describe("inline tokens", () => {
+  const parts = (t: string) => t.split(INLINE).filter(Boolean).map(inlineToken);
+
+  it("finds links, bare URLs and strikethrough", () => {
+    expect(parts("see [the docs](https://frogg.app/docs) now")).toEqual([
+      { kind: "text", text: "see ", off: 0 },
+      { kind: "link", text: "the docs", off: 1, href: "https://frogg.app/docs" },
+      { kind: "text", text: " now", off: 0 },
+    ]);
+    expect(parts("at https://x.dev/a.")[1]).toEqual({
+      kind: "link",
+      text: "https://x.dev/a",
+      off: 0,
+      href: "https://x.dev/a",
+    });
+    expect(parts("~~old~~")[0]).toEqual({ kind: "strike", text: "old", off: 2 });
+  });
+
+  it("only opens web and mail links", () => {
+    expect(safeHref("https://a.b")).toBe("https://a.b");
+    expect(safeHref("mailto:a@b.c")).toBe("mailto:a@b.c");
+    expect(safeHref("javascript:alert(1)")).toBeNull();
+    expect(safeHref("src/app.ts")).toBeNull();
   });
 });
