@@ -2133,6 +2133,8 @@ export class VoiceAssistantWebSocketServer {
         ...(this.providerAccountsEnabled ? { agentProviderAccountTransfer: true } : {}),
         // COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27.
         agentCleanCut: true,
+        // COMPAT(agentShellEscape): added in v1.6.14, remove after 2027-11-02.
+        agentShellEscape: true,
         // COMPAT(plugins): added in v1.6.2, remove gate after 2027-09-27.
         ...this.pluginFeatureFlags(),
         // COMPAT(workspaceLabels): added in v0.5.0, remove after 2027-08-14.

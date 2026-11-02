@@ -4,6 +4,7 @@ import {
   accountIdFor,
   flagsText,
   parseFlags,
+  plainFlags,
   PRIMARY_ACCOUNT,
   tokenize,
   accountLaunchArgs,
@@ -92,5 +93,13 @@ describe("account launch flags", () => {
     expect(accountLaunchArgs(entry, "a")).toEqual(["--chrome"]);
     expect(accountLaunchArgs(entry, "b")).toEqual([]);
     expect(accountLaunchArgs(entry, null)).toEqual([]);
+  });
+});
+
+describe("plainFlags", () => {
+  it("turns smart dashes and quotes back into what was typed", () => {
+    expect(plainFlags("\u2014chrome")).toBe("--chrome");
+    expect(plainFlags("\u2013add-dir \u201c/a b\u201d")).toBe('--add-dir "/a b"');
+    expect(plainFlags("--chrome")).toBe("--chrome");
   });
 });

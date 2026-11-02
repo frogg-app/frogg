@@ -159,6 +159,7 @@ function answer(id: string, requestId: string, allow: boolean): void {
 
 const features = {
   agentCleanCut: true,
+  agentShellEscape: true,
   providerAccounts: true,
   providerUsageAccountScoped: true,
   agentProviderAccountTransfer: true,
@@ -288,6 +289,10 @@ const known: Record<string, (...args: never[]) => unknown> = {
   },
   setAgentModel: async (id: string, model: string) => patchAgent(id, { model }),
   setAgentMode: async (id: string, currentModeId: string) => patchAgent(id, { currentModeId }),
+  setAgentThinkingOption: async (id: string, thinkingOptionId: string | null) => {
+    patchAgent(id, { thinkingOptionId });
+    return null;
+  },
   clearAgentAttention: async (ids: string[]) => {
     for (const id of ids) patchAgent(id, { requiresAttention: false, attentionReason: null });
     return {};

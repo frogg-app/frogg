@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- **`!command` in the agent view.** A message starting with `!` runs as a shell command on the
+  host in the session's folder, shows as a shell tool call, and its output goes to the agent with
+  the next message, as in Claude Code's bash mode. Works for every provider; advertised as
+  `server_info.features.agentShellEscape`.
+- **Frogg Next composer.** Drop files and pictures on the composer to attach them, and on a
+  terminal to upload them and type their paths. The **+** opens the file chooser in one step.
+  Ctrl+S stashes the draft until the next send (the file editor's Ctrl+S save no longer fires
+  while another field has focus). Sending from the expanded composer folds it back. A running
+  agent's thinking level can be changed from the agent view.
+- **New Session flags field** turns macOS smart dashes and quotes back into `--` and straight
+  quotes, and no longer slides while **Save for project** appears.
 - **No more side-by-side frogg beta.** Prereleases ship as Frogg Next. The classic desktop and
   Android apps follow stable releases only: the beta update channel, the Release channel row
   and the stable app's "install frogg beta beside this app" bridge are gone.

@@ -4,7 +4,7 @@ import { Chat } from "../../components/Chat";
 import { AccountChip } from "../../components/chat/AccountChip";
 import { ContextMeter } from "../../components/chat/ContextMeter";
 import type { Attachment, SlashCommand } from "../../components/chat/actions";
-import { AttachChips, AttachMenu } from "../../components/chat/Attach";
+import { AttachChips, AttachButton } from "../../components/chat/Attach";
 import { SessionMenu } from "../../components/chat/SessionMenu";
 import { SlashMenu } from "../../components/chat/SlashMenu";
 import { Composer } from "../../components/Composer";
@@ -393,8 +393,8 @@ function Attachments() {
   const add = useCallback((a: Attachment[]) => setItems((l) => [...l, ...a]), []);
   return (
     <Cases>
-      <Case name="AttachMenu" props="onAdd" note="Click + for the menu (web file picker)." plain>
-        <AttachMenu onAdd={add} onRemove={remove} />
+      <Case name="AttachButton" props="onAdd" note="Click + to open the file chooser (web)." plain>
+        <AttachButton onAdd={add} onRemove={remove} />
       </Case>
       <Case
         name="AttachChips"
@@ -564,7 +564,7 @@ export const chat: Entry[] = [
   },
   {
     id: "attach",
-    name: "AttachMenu / AttachChips",
+    name: "AttachButton / AttachChips",
     category: "Chat",
     path: "components/chat/Attach.tsx",
     purpose: "The + menu (web file picker) and removable chips for images, files and fork context.",

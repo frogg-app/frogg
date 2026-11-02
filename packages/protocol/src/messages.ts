@@ -4427,6 +4427,10 @@ export const ServerInfoStatusPayloadSchema = z
         // COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27.
         // agent.clean_cut is available.
         agentCleanCut: z.boolean().optional(),
+        // COMPAT(agentShellEscape): added in v1.6.14, remove after 2027-11-02.
+        // A `!cmd` prompt runs on the daemon in the agent's folder and its output
+        // goes to the model with the next turn.
+        agentShellEscape: z.boolean().optional(),
         // COMPAT(spokenNotifications): added in v0.1.14, remove gate after 2027-09-03.
         spokenNotifications: z.boolean().optional(),
         // COMPAT(checkoutForgeSetAutoMerge): added in v0.2.0-beta.1. Remove the

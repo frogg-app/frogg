@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { parseShellEscape, prependShellContext, shellEscape } from "./shell-escape.js";
 import type { SkillLaunchPolicy } from "../skills/catalog.js";
 import { resolve } from "node:path";
 import { stat } from "node:fs/promises";
@@ -754,6 +755,8 @@ export class AgentManager {
   private readonly providerEnabled = new Map<AgentProvider, boolean>();
   private readonly providerDefinitions = new Map<AgentProvider, ProviderEnabledFlag>();
   private readonly agents = new Map<string, LiveManagedAgent>();
+  /** Output of `!cmd` runs not yet handed to the model; it rides along with the next turn. */
+  private readonly pendingShellContext = new Map<string, string[]>();
   private readonly timelineStore = new InMemoryAgentTimelineStore();
   private readonly providerSubagents = new ProviderSubagentStore();
   private readonly agentsAwaitingInitialSnapshotPersist = new Set<string>();
@@ -2370,7 +2373,10 @@ export class AgentManager {
    */
   tryRunOutOfBand(agentId: string, prompt: AgentPromptInput, options?: AgentRunOptions): boolean {
     const agent = this.requireSessionAgent(agentId);
-    const handler = agent.session.tryHandleOutOfBand?.(prompt);
+    const shellCommand = parseShellEscape(prompt);
+    const handler = shellCommand
+      ? this.shellEscapeHandler(agent, shellCommand)
+      : agent.session.tryHandleOutOfBand?.(prompt);
     if (!handler) {
       return false;
     }
@@ -2406,6 +2412,33 @@ export class AgentManager {
       }
     })();
     return true;
+  }
+
+  /** `!cmd`: runs on the daemon for every provider, since none takes Claude Code's bash mode. */
+  private shellEscapeHandler(
+    agent: ActiveManagedAgent,
+    command: string,
+  ): { run: (ctx: { emit: (event: AgentStreamEvent) => void }) => Promise<void> } {
+    return {
+      run: async ({ emit }) => {
+        const context = await shellEscape({
+          command,
+          cwd: agent.cwd,
+          provider: agent.provider,
+          emit,
+        });
+        const pending = this.pendingShellContext.get(agent.id) ?? [];
+        this.pendingShellContext.set(agent.id, [...pending, context]);
+      },
+    };
+  }
+
+  /** The prompt with any pending `!cmd` output ahead of it; the output is then handed over. */
+  private takeShellContext(agentId: string, prompt: AgentPromptInput): AgentPromptInput {
+    const pending = this.pendingShellContext.get(agentId);
+    if (!pending?.length) return prompt;
+    this.pendingShellContext.delete(agentId);
+    return prependShellContext(prompt, pending);
   }
 
   async appendTimelineItem(
@@ -2452,7 +2485,7 @@ export class AgentManager {
   }): Promise<string> {
     const { agent, agentId, pendingRun, prompt, options } = params;
     try {
-      const result = await agent.session.startTurn(prompt, options);
+      const result = await agent.session.startTurn(this.takeShellContext(agentId, prompt), options);
       if (pendingRun.settled) {
         throw new Error(`Agent ${agentId} run was canceled before its turn started`);
       }

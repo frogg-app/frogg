@@ -36,7 +36,7 @@ export function usePasteImages(
         const ext = f.type.split("/")[1] ?? "png";
         return new File([f], `Pasted image ${pasted}.${ext}`, { type: f.type });
       });
-      Promise.all(named.map(readFile)).then(
+      Promise.all(named.map((f) => readFile(f))).then(
         (picked) => attachPicked(picked, onAdd, onRemove),
         (err: unknown) => toastError("Could not attach the pasted image", err),
       );

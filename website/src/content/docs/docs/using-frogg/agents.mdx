@@ -39,6 +39,23 @@ rejected with an error before Frogg reads them. On desktop and web you can also 
 (a screenshot, or an image copied from a browser or file manager) straight into the composer.
 A copy from a document that carries its text along with a picture of it pastes the text.
 
+In Frogg Next the **+** opens the file chooser straight away: small pictures go to the model,
+anything else uploads to the host. Change the **thinking** level of a running agent from the
+picker beside **Model**; providers that can't switch mid-turn apply it from the next turn.
+
+### Composer shortcuts (Frogg Next)
+
+- **Ctrl+S** stashes what you've typed, as in Claude Code: the composer clears, and the draft
+  comes back after your next message is sent. Press Ctrl+S again with an empty composer to
+  bring it back sooner, or with something typed to swap the two. Files still uploading stay in
+  the composer.
+- **`!command`** runs a shell command on the host in the session's folder, as Claude Code's
+  bash mode does. It shows in the timeline as a shell tool call, without starting a turn, and its
+  output goes to the agent along with your next message. Commands are stopped after two
+  minutes; the last 30,000 characters of output are kept. This works with every provider and
+  needs a daemon that supports it.
+- Sending from the expanded composer folds it back to its small size.
+
 In Frogg Next, what you attached shows on your message in the conversation: pictures inline,
 other files as named chips. Pictures stay visible while the app runs; after a reload, and on
 other devices, Frogg Next shows a named chip instead, because the host keeps only the message's

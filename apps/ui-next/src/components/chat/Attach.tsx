@@ -1,62 +1,46 @@
 import { FileText, GitFork, Image as ImageIcon, Plus, X } from "lucide-react-native";
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { color } from "../../theme/tokens";
 import { T } from "../Text";
-import { toastError } from "../toast/store";
-import { Menu, useAnchor, type MenuEntry } from "../tools/Menu";
+import { toast, toastError } from "../toast/store";
 import { attachPicked, type Attachment } from "./actions";
 import { canPickFiles, pickFiles } from "./pickFiles";
 import { cancelUpload, formatBytes, useUploads } from "./upload";
 
-/** The composer's + button: pick images or files to send with the next message. */
-export function AttachMenu({
+/**
+ * The composer's + button: opens the file chooser straight away. Small images go to the model;
+ * everything else uploads to the host.
+ */
+export function AttachButton({
   onAdd,
   onRemove,
 }: {
   onAdd: (a: Attachment[]) => void;
   onRemove: (id: string) => void;
 }) {
-  const anchor = useAnchor();
-  const pick = useCallback(
-    async (images: boolean) => {
-      try {
-        attachPicked(await pickFiles({ images }), onAdd, onRemove);
-      } catch (e) {
-        toastError("Could not attach", e);
-      }
-    },
-    [onAdd, onRemove],
-  );
-  const items = useMemo<MenuEntry[]>(
-    () => [
-      {
-        label: "Image or file",
-        icon: FileText,
-        hint: canPickFiles
-          ? "Files go to the host; images go to the model"
-          : "Not available on this device yet",
-        disabled: !canPickFiles,
-        onPress: () => void pick(false),
-      },
-      {
-        label: "Image",
-        icon: ImageIcon,
-        disabled: !canPickFiles,
-        onPress: () => void pick(true),
-      },
-    ],
-    [pick],
-  );
+  const pick = useCallback(async () => {
+    if (!canPickFiles) {
+      toast({ title: "Attaching isn't available on this device yet" });
+      return;
+    }
+    try {
+      attachPicked(await pickFiles(), onAdd, onRemove);
+    } catch (e) {
+      toastError("Could not attach", e);
+    }
+  }, [onAdd, onRemove]);
+  const press = useCallback(() => void pick(), [pick]);
   return (
-    <>
-      <View ref={anchor.ref} collapsable={false}>
-        <Pressable onPress={anchor.open} accessibilityLabel="Attach" hitSlop={6}>
-          {({ hovered }) => <Plus size={16} color={hovered ? color.text : color.muted} />}
-        </Pressable>
-      </View>
-      <Menu rect={anchor.rect} onClose={anchor.close} items={items} width={280} />
-    </>
+    <Pressable
+      onPress={press}
+      accessibilityRole="button"
+      accessibilityLabel="Attach images or files"
+      accessibilityHint="Images go to the model; files go to the host"
+      hitSlop={6}
+    >
+      {({ hovered }) => <Plus size={16} color={hovered ? color.text : color.muted} />}
+    </Pressable>
   );
 }
 

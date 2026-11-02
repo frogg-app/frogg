@@ -11,9 +11,11 @@ import {
   type TextInputKeyPressEventData,
 } from "react-native";
 import { color, ease, font, web } from "../theme/tokens";
-import type { Attachment, SlashCommand } from "./chat/actions";
-import { AttachChips, AttachMenu } from "./chat/Attach";
+import { attachPicked, type Attachment, type SlashCommand } from "./chat/actions";
+import type { Picked } from "./chat/upload";
+import { AttachChips, AttachButton } from "./chat/Attach";
 import { useComposerHeight } from "./chat/composerSize";
+import { useDropFiles } from "./chat/dropFiles";
 import { usePasteImages } from "./chat/pasteImages";
 import { SlashMenu, matchCommands } from "./chat/SlashMenu";
 import { toast, toastError } from "./toast/store";
@@ -29,7 +31,20 @@ export interface CutSend {
   blocked: string | null;
 }
 
-type KeyEvent = NativeSyntheticEvent<TextInputKeyPressEventData & { shiftKey?: boolean }>;
+type KeyEvent = NativeSyntheticEvent<
+  TextInputKeyPressEventData & {
+    shiftKey?: boolean;
+    ctrlKey?: boolean;
+    metaKey?: boolean;
+    altKey?: boolean;
+  }
+>;
+
+/** A draft set aside with Ctrl+S: it comes back after the next send. */
+interface Stash {
+  text: string;
+  atts: Attachment[];
+}
 
 export function Composer({
   placeholder,
@@ -48,6 +63,7 @@ export function Composer({
   onTyping,
   above,
   cut,
+  shellEscape,
   disabled = false,
 }: {
   placeholder: string;
@@ -78,6 +94,8 @@ export function Composer({
   above?: ReactNode;
   /** A second send button (scissors) that sends the message after a clean cut. */
   cut?: CutSend;
+  /** `!cmd` runs on the host (the daemon supports it): say so while one is typed. */
+  shellEscape?: { cwd: string };
 }) {
   const [sending, setSending] = useState(false);
   const [commandError, setCommandError] = useState(false);
@@ -86,12 +104,13 @@ export function Composer({
   const [commands, setCommands] = useState<SlashCommand[] | null>(null);
   const [hi, setHi] = useState(0);
   const [slashClosed, setSlashClosed] = useState(false);
+  const [stash, setStash] = useState<Stash | null>(null);
   const empty = !text.trim() && atts.length === 0;
   const typing = !!text.trim();
   useEffect(() => onTyping?.(typing), [onTyping, typing]);
   useEffect(() => () => onTyping?.(false), [onTyping]);
   const size = useComposerHeight(sizeKey, compact ? 40 : 48);
-  const { setContent } = size;
+  const { setContent, collapse } = size;
   const measure = useCallback(
     (e: LayoutChangeEvent) => setContent(e.nativeEvent.layout.height),
     [setContent],
@@ -144,16 +163,32 @@ export function Composer({
       setSending(true);
       try {
         await via(t, atts);
-        setText("");
-        setAtts([]);
+        // A stashed draft comes back once the message it made way for has gone.
+        setText(stash?.text ?? "");
+        setAtts(stash?.atts ?? []);
+        setStash(null);
+        collapse();
       } catch (error) {
         toastError("Message not sent", error);
       } finally {
         setSending(false);
       }
     },
-    [text, atts, disabled, sending],
+    [text, atts, disabled, sending, stash, collapse],
   );
+  // Ctrl+S, as in Claude Code: set the draft aside (or swap it with the one set aside). Files
+  // still uploading stay put, since their upload lands on the composer's current list.
+  const toggleStash = useCallback(() => {
+    const keep = atts.filter((a) => a.kind !== "upload");
+    const uploading = atts.filter((a) => a.kind === "upload");
+    const draft = text || keep.length ? { text, atts: keep } : null;
+    if (!draft && !stash) return;
+    setText(stash?.text ?? "");
+    setAtts([...(stash?.atts ?? []), ...uploading]);
+    setStash(draft);
+    setHi(0);
+    setSlashClosed(false);
+  }, [text, atts, stash]);
   const submit = useCallback(() => send(onSend), [send, onSend]);
   const cutSend = cut?.onSend;
   const submitCut = useCallback(() => {
@@ -163,6 +198,12 @@ export function Composer({
   const onKeyPress = useCallback(
     (e: KeyEvent) => {
       const k = e.nativeEvent.key;
+      const ev = e.nativeEvent;
+      if ((ev.ctrlKey || ev.metaKey) && !ev.altKey && !ev.shiftKey && k.toLowerCase() === "s") {
+        e.preventDefault();
+        toggleStash();
+        return;
+      }
       if (slashOpen && matches.length > 0) {
         if (k === "ArrowDown" || k === "ArrowUp") {
           e.preventDefault();
@@ -185,7 +226,7 @@ export function Composer({
         submit();
       }
     },
-    [slashOpen, matches, hi, pickCommand, submit],
+    [slashOpen, matches, hi, pickCommand, submit, toggleStash],
   );
   const addAtts = useCallback(
     (more: Attachment[]) => setAtts((a) => upsertAttachments(a, more)),
@@ -195,6 +236,12 @@ export function Composer({
   const anchor = useRef<View>(null);
   const input = useRef<TextInput>(null);
   usePasteImages(input, addAtts, removeAtt, !!attach && !disabled);
+  const box = useRef<View>(null);
+  const dropped = useCallback(
+    (picked: Picked[]) => attachPicked(picked, addAtts, removeAtt),
+    [addAtts, removeAtt],
+  );
+  const dragOver = useDropFiles(box, dropped, { enabled: !!attach && !disabled });
   const highlight = Math.min(hi, Math.max(0, matches.length - 1));
   const slashMenu = useCallback(
     (p: { up: boolean; maxHeight: number }) => (
@@ -218,80 +265,111 @@ export function Composer({
           {slashMenu}
         </Floating>
       )}
-      <Cut size={10} style={s.box}>
-        {notices}
-        {atts.length > 0 && <AttachChips items={atts} onRemove={removeAtt} />}
-        {expandable && (
-          <View
-            {...size.grip}
-            style={s.grip}
-            accessibilityRole="adjustable"
-            accessibilityLabel="Drag to resize the message box"
-          >
-            <View style={[s.gripBar, size.dragging && s.gripOn]} />
-          </View>
-        )}
-        <Animated.View style={inputBox}>
-          <T pointerEvents="none" style={s.mirror} onLayout={measure}>
-            {mirror}
-          </T>
-          <TextInput
-            ref={input}
-            editable={!sending}
-            value={text}
-            onChangeText={onChange}
-            placeholder={placeholder}
-            placeholderTextColor={color.faint}
-            multiline
-            style={s.input}
-            onKeyPress={onKeyPress}
-          />
-        </Animated.View>
-        <View style={s.bar}>
-          {attach ? (
-            <AttachMenu onAdd={addAtts} onRemove={removeAtt} />
-          ) : (
-            <Plus size={16} color={color.muted} />
-          )}
-          {chips.map((c, n) => (
-            <View key={c} style={s.chip}>
-              {n === 0 && <View style={s.chipDot} />}
-              <T v="mono" style={s.chipT}>
-                {c}
-              </T>
-            </View>
-          ))}
-          {children}
-          <View style={s.spacer} />
-          {right}
+      <View ref={box} collapsable={false}>
+        <Cut size={10} style={[s.box, dragOver && s.boxDrop]}>
+          {notices}
+          {stash && <StashNote stash={stash} />}
+          {shellEscape && !atts.length && <ShellNote text={text} cwd={shellEscape.cwd} />}
+          {atts.length > 0 && <AttachChips items={atts} onRemove={removeAtt} />}
           {expandable && (
-            <Pressable
-              onPress={size.toggle}
-              hitSlop={6}
-              accessibilityRole="button"
-              accessibilityLabel={
-                size.expanded ? "Shrink the message box" : "Expand the message box"
-              }
+            <View
+              {...size.grip}
+              style={s.grip}
+              accessibilityRole="adjustable"
+              accessibilityLabel="Drag to resize the message box"
             >
-              {({ hovered }) =>
-                size.expanded ? (
-                  <Minimize2 size={14} color={hovered ? color.text : color.muted} />
-                ) : (
-                  <Maximize2 size={14} color={hovered ? color.text : color.muted} />
-                )
-              }
-            </Pressable>
+              <View style={[s.gripBar, size.dragging && s.gripOn]} />
+            </View>
           )}
-          <Mic size={16} color={color.muted} />
-          <SendControls
-            stop={onStop && empty ? onStop : undefined}
-            idle={empty || disabled || sending}
-            onSend={submit}
-            cut={cut}
-            onCut={submitCut}
-          />
-        </View>
-      </Cut>
+          <Animated.View style={inputBox}>
+            <T pointerEvents="none" style={s.mirror} onLayout={measure}>
+              {mirror}
+            </T>
+            <TextInput
+              ref={input}
+              editable={!sending}
+              value={text}
+              onChangeText={onChange}
+              placeholder={placeholder}
+              placeholderTextColor={color.faint}
+              multiline
+              style={s.input}
+              onKeyPress={onKeyPress}
+            />
+          </Animated.View>
+          <View style={s.bar}>
+            {attach ? (
+              <AttachButton onAdd={addAtts} onRemove={removeAtt} />
+            ) : (
+              <Plus size={16} color={color.muted} />
+            )}
+            {chips.map((c, n) => (
+              <View key={c} style={s.chip}>
+                {n === 0 && <View style={s.chipDot} />}
+                <T v="mono" style={s.chipT}>
+                  {c}
+                </T>
+              </View>
+            ))}
+            {children}
+            <View style={s.spacer} />
+            {right}
+            {expandable && (
+              <Pressable
+                onPress={size.toggle}
+                hitSlop={6}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  size.expanded ? "Shrink the message box" : "Expand the message box"
+                }
+              >
+                {({ hovered }) =>
+                  size.expanded ? (
+                    <Minimize2 size={14} color={hovered ? color.text : color.muted} />
+                  ) : (
+                    <Maximize2 size={14} color={hovered ? color.text : color.muted} />
+                  )
+                }
+              </Pressable>
+            )}
+            <Mic size={16} color={color.muted} />
+            <SendControls
+              stop={onStop && empty ? onStop : undefined}
+              idle={empty || disabled || sending}
+              onSend={submit}
+              cut={cut}
+              onCut={submitCut}
+            />
+          </View>
+        </Cut>
+      </View>
+    </View>
+  );
+}
+
+/** While a `!cmd` is typed: where it runs and where its output goes. */
+function ShellNote({ text, cwd }: { text: string; cwd: string }) {
+  if (!/^\s*!\S/.test(text)) return null;
+  return (
+    <View style={s.stash}>
+      <T v="mono" style={s.shellT} numberOfLines={1}>
+        {`Shell command · runs in ${cwd}; the output goes to the agent with your next message`}
+      </T>
+    </View>
+  );
+}
+
+/** Says a draft is set aside and how it comes back. */
+function StashNote({ stash }: { stash: Stash }) {
+  const first = stash.text.split("\n")[0].trim();
+  const what = first
+    ? `“${first.length > 48 ? `${first.slice(0, 48)}…` : first}”`
+    : `${stash.atts.length} attachment${stash.atts.length === 1 ? "" : "s"}`;
+  return (
+    <View style={s.stash}>
+      <T v="mono" style={s.stashT} numberOfLines={1}>
+        {`Stashed ${what} · back after you send · Ctrl+S to restore now`}
+      </T>
     </View>
   );
 }
@@ -392,7 +470,12 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     paddingTop: 10,
     paddingBottom: 8,
+    ...web({ transition: `border-color 140ms ${ease}, background-color 140ms ${ease}` }),
   },
+  boxDrop: { borderColor: color.cyan2, backgroundColor: color.wash2 },
+  stash: { marginBottom: 6 },
+  stashT: { fontSize: 11, color: color.muted },
+  shellT: { fontSize: 11, color: color.cyan2 },
   inputBox: { position: "relative", overflow: "hidden" },
   input: {
     flex: 1,
