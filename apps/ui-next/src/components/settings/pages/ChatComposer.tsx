@@ -1,5 +1,6 @@
 import { usePrefs, prefSetter } from "../../../prefs";
 import { setPrefs as setListPrefs, useDirectory, type Sort } from "../../sessions/directory";
+import { kbd } from "../../../kbd";
 import { Row, Section, Seg, Toggle } from "../controls";
 
 const BUSY: Array<["steer" | "queue" | "interrupt", string]> = [
@@ -43,7 +44,7 @@ export function ChatComposer() {
   return (
     <>
       <Section title="Sending">
-        <Row label="While the agent is working, ⏎" hint="⌘⏎ does the other one" last>
+        <Row label="While the agent is working, ⏎" hint={`${kbd("⌘⏎")} does the other one`} last>
           <Seg options={BUSY} value={p.busyEnter} onChange={prefSetter("busyEnter")} />
         </Row>
       </Section>

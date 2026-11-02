@@ -63,6 +63,7 @@ import { ResourcesStorage } from "./pages/ResourcesStorage";
 import { DaemonUpdates } from "./pages/DaemonUpdates";
 import { Providers } from "./pages/Providers";
 import { OnboardingSettings } from "../onboarding/OnboardingSettings";
+import { kbd } from "../../kbd";
 
 type Scope = "You" | "Agents" | "Host" | "Project" | "App";
 interface Page {
@@ -171,7 +172,7 @@ function Shortcuts() {
       {SHORTCUTS.map(([label, k]) => (
         <Row key={label} label={label} last={label === SHORTCUTS.at(-1)?.[0]}>
           <T v="mono" style={s.kbd}>
-            {k}
+            {kbd(k)}
           </T>
         </Row>
       ))}

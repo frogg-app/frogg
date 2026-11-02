@@ -1,8 +1,13 @@
-const { app, BrowserWindow, Menu, net, protocol, shell } = require("electron");
+const { app, BrowserWindow, ipcMain, Menu, net, protocol, shell } = require("electron");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 const { loadPackagedIdentity } = require("./identity.cjs");
 const { resolveAsset } = require("./resolve-asset.cjs");
+const {
+  parseSessionWindowRequest,
+  sessionWindowKey,
+  sessionWindowQuery,
+} = require("./session-window.cjs");
 const { createUpdater } = require("./updater.cjs");
 const { acceleratorFor, chromeMode, windowChromeOptions } = require("./window-chrome.cjs");
 
@@ -14,9 +19,10 @@ app.setPath("userData", path.join(app.getPath("appData"), identity.userDataDir))
 
 // One instance per data folder: a second process would find the saved hosts locked by the first
 // and come up unpaired. A second launch focuses the running window instead, passing on any link.
-if (!app.requestSingleInstanceLock()) {
-  app.exit(0);
-}
+// The lock is taken before `ready`, so two launches racing from a double click still yield one
+// owner; the loser never registers handlers or opens a window while it exits.
+const primary = app.requestSingleInstanceLock();
+if (!primary) app.exit(0);
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -29,8 +35,13 @@ protocol.registerSchemesAsPrivileged([
 const linkFrom = (argv) => argv.find((arg) => arg.startsWith(`${scheme}://pair`)) ?? null;
 let pendingLink = linkFrom(process.argv);
 
+/** The main window (not a popped-out session): links and re-launches land here. */
+let mainWindow = null;
+/** Popped-out session windows by host and session id. */
+const sessionWindows = new Map();
+
 function deliverLink(url) {
-  const [window] = BrowserWindow.getAllWindows();
+  const window = mainWindow ?? BrowserWindow.getAllWindows()[0];
   if (!window) {
     pendingLink = url;
     return;
@@ -63,13 +74,12 @@ function runAccelerator(window, action) {
   else if (action === "zoomReset") contents.setZoomLevel(0);
 }
 
-function createWindow() {
+function createWindow({ route = {}, size = { width: 1440, height: 960 } } = {}) {
   const window = new BrowserWindow({
     title: identity.name,
-    width: 1440,
-    height: 960,
-    minWidth: 800,
-    minHeight: 600,
+    ...size,
+    minWidth: route.popout ? 480 : 800,
+    minHeight: route.popout ? 400 : 600,
     backgroundColor: "#080b0d",
     ...windowChromeOptions(process.platform),
     webPreferences: {
@@ -104,13 +114,45 @@ function createWindow() {
   const query = new URLSearchParams({
     daemon: identity.defaultDaemon,
     chrome: chromeMode(process.platform),
+    ...route,
   });
-  if (pendingLink) query.set("pair", pendingLink);
-  pendingLink = null;
+  if (!route.popout) {
+    if (pendingLink) query.set("pair", pendingLink);
+    pendingLink = null;
+  }
   void window.loadURL(`${scheme}://app/?${query}`);
+  return window;
+}
+
+function createMainWindow() {
+  mainWindow = createWindow();
+  mainWindow.on("closed", () => {
+    mainWindow = null;
+  });
+}
+
+/** Pops a session out into its own window, or focuses the one already showing it. */
+function openSessionWindow(input) {
+  const request = parseSessionWindowRequest(input);
+  if (!request) return false;
+  const key = sessionWindowKey(request);
+  const open = sessionWindows.get(key);
+  if (open && !open.isDestroyed()) {
+    if (open.isMinimized()) open.restore();
+    open.focus();
+    return true;
+  }
+  const window = createWindow({
+    route: sessionWindowQuery(request),
+    size: { width: 900, height: 820 },
+  });
+  sessionWindows.set(key, window);
+  window.on("closed", () => sessionWindows.delete(key));
+  return true;
 }
 
 app.whenReady().then(() => {
+  if (!primary) return null;
   // macOS keeps its app menu (Edit carries copy/paste there); elsewhere the bar is gone.
   if (process.platform !== "darwin") Menu.setApplicationMenu(null);
   const root = path.join(__dirname, "web");
@@ -121,10 +163,13 @@ app.whenReady().then(() => {
       ? net.fetch(pathToFileURL(asset).href)
       : new Response("Not found", { status: 404 });
   });
-  createWindow();
+  // The window shows as soon as it exists (index.html paints a splash before the UI bundle
+  // parses), so a click on the taskbar or Start menu gets an answer at once.
+  createMainWindow();
   createUpdater(identity);
+  ipcMain.handle("frogg-next:open-session-window", (_event, request) => openSessionWindow(request));
   app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (!mainWindow) createMainWindow();
   });
   return null;
 });

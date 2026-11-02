@@ -3,6 +3,8 @@ import { ToastHost } from "../components/toast/ToastHost";
 import { SignInDialog } from "../components/signin/SignInDialog";
 import { HostToasts } from "../components/toast/HostToasts";
 import { TitleBar } from "../components/shell/TitleBar";
+import { SessionWindow } from "../components/shell/SessionWindow";
+import { popout } from "../popout";
 import { useCallback, useEffect, useMemo, type ReactNode } from "react";
 import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
@@ -164,7 +166,12 @@ function hasDetailFor(
   return false;
 }
 
-export default function Shell() {
+/** The main window, or a session popped out into its own desktop window. */
+export default function Index() {
+  return popout ? <SessionWindow route={popout} /> : <Shell />;
+}
+
+function Shell() {
   const ff = useFormFactor();
   const docked = useWindowDimensions().width >= 900;
   const ui = useUi();

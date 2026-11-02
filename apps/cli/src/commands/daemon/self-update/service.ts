@@ -279,6 +279,8 @@ export function createUnmanagedServiceManager(options: UnmanagedServiceOptions):
         detached: true,
         stdio: "ignore",
         shell: options.platform === "win32",
+        // Detached on Windows means a new console; keep it hidden.
+        windowsHide: true,
         env: {
           ...process.env,
           ...(options.home ? { [`${brand.envPrefix}_HOME`]: options.home } : {}),

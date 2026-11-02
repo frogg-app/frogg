@@ -10,6 +10,7 @@ import { stateOf } from "./PrsPanel";
 import { useActiveCwd } from "./ScmPanel";
 import { useBuckets } from "./SessionList";
 import { T } from "./Text";
+import { kbd } from "../kbd";
 
 type Checks = { done: number; total: number; failed: number } | null;
 
@@ -103,7 +104,7 @@ export function StatusBar() {
       )}
       <Pressable style={s.seg} onPress={openPalette}>
         <T v="mono" style={s.t}>
-          ⌘K
+          {kbd("⌘K")}
         </T>
       </Pressable>
     </View>

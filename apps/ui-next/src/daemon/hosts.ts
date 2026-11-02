@@ -8,6 +8,7 @@ import {
   shouldUseTlsForDefaultHostedRelay,
 } from "@frogg/protocol/daemon-endpoints";
 import { create } from "zustand";
+import { popout } from "../popout";
 
 export interface Host {
   id: string;
@@ -83,6 +84,9 @@ export const hostsReady: Promise<void> = AsyncStorage.getItem(KEY)
   })
   .catch(() => undefined /* corrupt or unavailable: start fresh */)
   .finally(() => {
+    // A popped-out session window reads the saved hosts but never writes them back, so it
+    // cannot overwrite a host the main window paired or renamed after it opened.
+    if (popout) return;
     useHosts.subscribe(
       (s) => void AsyncStorage.setItem(KEY, JSON.stringify(s)).catch(() => undefined),
     );
