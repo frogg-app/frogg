@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Button } from "../../components/Button";
 import { ComposerNotices } from "../../components/chat/Notices";
+import { useCutQueue } from "../../components/chat/cutQueue";
 import { useSessionOps } from "../../components/chat/sessionOps";
 import {
   Compaction,
@@ -420,8 +421,37 @@ const resumeAgent = agent({
   autoResume: { resumeAt: ahead(47), resetsAt: ahead(47), detectedAt: ago(2) },
 });
 const opAgent = agent({ id: "x-op" });
-const setupNotices = () =>
-  useSessionOps.setState({ "x-op": { label: "Moving the conversation to work" } });
+const queuedAgent = agent({ id: "x-queued" });
+const failedQueueAgent = agent({ id: "x-queued-failed" });
+const setupNotices = () => {
+  const startedAt = Date.now() - 12_000;
+  useSessionOps.setState({
+    "x-op": { label: "Moving the conversation to work", startedAt },
+    "x-queued": { label: "Clean cut: summarising the conversation", startedAt },
+  });
+  useCutQueue.setState({
+    "x-queued": {
+      text: "Now wire the retry into the webhook worker and add a test for it",
+      attachments: [],
+      state: "waiting",
+    },
+    "x-queued-failed": {
+      text: "Now wire the retry into the webhook worker and add a test for it",
+      attachments: [],
+      state: "failed",
+    },
+  });
+};
+const Queued = () => (
+  <Cases>
+    <Case name="ComposerNotices" props="clean cut running, a message queued behind it" w={CHAT}>
+      <ComposerNotices agent={queuedAgent} />
+    </Case>
+    <Case name="ComposerNotices" props="the cut failed: the queued message was not sent" w={CHAT}>
+      <ComposerNotices agent={failedQueueAgent} />
+    </Case>
+  </Cases>
+);
 const Moving = () => (
   <Cases>
     <Case name="ComposerNotices" props="runSessionOp in flight (move / clean cut)" w={CHAT}>
@@ -624,6 +654,7 @@ export const feedback: Entry[] = [
     polish: "none; the countdown ticks every 1s",
     variants: [
       { id: "moving", label: "Move or clean cut running", C: Moving },
+      { id: "queued", label: "Message queued behind a clean cut", C: Queued },
       { id: "cold", label: "Cold prompt cache", C: Cold },
       { id: "resume", label: "Auto-resume pending", C: Resume },
     ],

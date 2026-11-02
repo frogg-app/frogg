@@ -1,4 +1,4 @@
-import { ArrowUpRight, Bot } from "lucide-react-native";
+import { ArrowUpRight, Bot, Image as ImageIcon, Paperclip } from "lucide-react-native";
 import { useCallback, useMemo } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { useDaemon } from "../../daemon/store";
@@ -9,28 +9,58 @@ import { splitImages } from "../markdown/syntax";
 import { Markdown } from "../Markdown";
 import { T } from "../Text";
 import { parseRelay, resolveSender, type Relay } from "./relay";
+import { useSentAttachments, type SentAttachment } from "./sentAttachments";
 
 /** A user turn: the user's own bubble, or a message relayed from another agent. */
-export function UserMessage({ text }: { text: string }) {
+export function UserMessage({ text, messageId }: { text: string; messageId?: string }) {
   const relay = useMemo(() => parseRelay(text), [text]);
   if (relay) return <RelayMessage relay={relay} />;
-  return <UserBubble text={text} />;
+  return <UserBubble text={text} messageId={messageId} />;
 }
 
-/** The user's bubble; attached images (Claude Code writes them as markdown) render inline. */
-function UserBubble({ text }: { text: string }) {
+const NONE: SentAttachment[] = [];
+
+/**
+ * The user's bubble. Images written into the text as markdown (Claude Code's history) render
+ * inline; what this device attached when sending shows under the text, pictures first.
+ */
+function UserBubble({ text, messageId }: { text: string; messageId?: string }) {
   const pieces = useMemo(() => splitImages(text), [text]);
-  const images = pieces.some((p) => p.kind === "img");
+  const sent = useSentAttachments((st) => (messageId ? (st[messageId] ?? NONE) : NONE));
+  const pictures = sent.filter((x) => x.uri);
+  const chips = sent.filter((x) => !x.uri);
+  const images = pieces.some((p) => p.kind === "img") || pictures.length > 0;
   return (
     <View style={[s.user, images && s.userWide]}>
       {pieces.map((p) =>
         p.kind === "img" ? (
           <HostImage key={`i${p.off}`} src={p.src} alt={p.alt} />
         ) : (
-          <T key={`t${p.off}`} selectable style={s.userT}>
-            {images ? p.text.trim() : p.text}
-          </T>
+          !!p.text.trim() && (
+            <T key={`t${p.off}`} selectable style={s.userT}>
+              {images ? p.text.trim() : p.text}
+            </T>
+          )
         ),
+      )}
+      {pictures.map((x) => (
+        <HostImage key={x.id} src={x.uri ?? ""} alt={x.name} />
+      ))}
+      {chips.length > 0 && (
+        <View style={s.chips}>
+          {chips.map((x) => (
+            <View key={x.id} style={s.chip}>
+              {x.kind === "image" ? (
+                <ImageIcon size={12} color={color.muted} />
+              ) : (
+                <Paperclip size={12} color={color.muted} />
+              )}
+              <T v="mono" numberOfLines={1} style={s.chipT}>
+                {x.name}
+              </T>
+            </View>
+          ))}
+        </View>
       )}
     </View>
   );
@@ -90,6 +120,17 @@ const s = StyleSheet.create({
   },
   userWide: { width: 440 },
   userT: { fontSize: 14.5, lineHeight: 22 },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    maxWidth: "100%",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: color.wash,
+  },
+  chipT: { fontSize: 11.5, color: color.text, flexShrink: 1 },
   relay: {
     marginTop: 14,
     marginRight: "10%",

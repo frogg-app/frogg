@@ -2,6 +2,7 @@ import { useEffect, type RefObject } from "react";
 import type { TextInput } from "react-native";
 import { toastError } from "../toast/store";
 import { prepareAttachment, type Attachment } from "./actions";
+import { picturesToAttach } from "./pasteRules";
 import { readFile } from "./pickFiles.web";
 
 let pasted = 0;
@@ -18,9 +19,15 @@ export function usePasteImages(
     if (!enabled || !el?.addEventListener) return;
     const onPaste = (e: ClipboardEvent) => {
       const data = e.clipboardData;
-      const images = Array.from(data?.files ?? []).filter((f) => f.type.startsWith("image/"));
-      // Copying from a document puts its text plus a rendered picture of it: paste the text.
-      if (!images.length || data?.getData("text/plain")) return;
+      // Some browsers expose a pasted picture only as an item, not in `files`.
+      const files = Array.from(data?.files ?? []);
+      if (!files.length)
+        for (const item of Array.from(data?.items ?? [])) {
+          const f = item.kind === "file" ? item.getAsFile() : null;
+          if (f) files.push(f);
+        }
+      const images = picturesToAttach(files, data?.getData("text/plain") ?? "");
+      if (!images.length) return;
       e.preventDefault();
       const named = images.map((f) => {
         if (f.name && f.name !== "image.png") return f;

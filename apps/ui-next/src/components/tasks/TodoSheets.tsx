@@ -7,7 +7,6 @@ import {
   createTodo,
   deleteTodo,
   PRIORITIES,
-  setTodoStatus,
   STATUSES,
   updateTodo,
   useTodos,
@@ -22,6 +21,7 @@ import { Button } from "../Button";
 import { Select } from "../Select";
 import { Field } from "../settings/pages/kit";
 import { T } from "../Text";
+import { moveTodo } from "./moves";
 import { toastError } from "../toast/store";
 import { useConfirm } from "../tools/Confirm";
 import { Dialog } from "../tools/Dialog";
@@ -221,7 +221,7 @@ function TodoEditor({
   const onSave = useCallback(() => void save(), [save]);
   const move = useCallback(
     (status: TodoStatus) =>
-      void setTodoStatus(projectId, todo.id, status).catch((e: unknown) =>
+      void moveTodo(projectId, todo.id, status).catch((e: unknown) =>
         toastError("Couldn't move the to-do", e),
       ),
     [projectId, todo.id],

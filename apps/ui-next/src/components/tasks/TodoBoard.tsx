@@ -13,6 +13,7 @@ import {
 } from "../../daemon/todos";
 import { color, motion } from "../../theme/tokens";
 import { T } from "../Text";
+import { FilterNote } from "./FilterNote";
 import { STATUS_TINT, TodoCard, tintStyle } from "./TodoCard";
 
 const PRIORITY_ORDER = { urgent: 0, high: 1, medium: 2, low: 3 } as const;
@@ -81,6 +82,7 @@ export function TodoBoard() {
         <T v="mono" style={s.sub}>
           {total} to-dos · agents claim from Ready and move cards as they work
         </T>
+        <FilterNote inset={24} />
       </View>
       <ScrollView horizontal contentContainerStyle={s.cols}>
         {STATUSES.map((x) => (

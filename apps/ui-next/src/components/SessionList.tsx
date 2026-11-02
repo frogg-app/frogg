@@ -25,6 +25,7 @@ import { useRowSubWork } from "./subwork/hooks";
 import { SubWorkBody, SubWorkChip } from "./subwork/views";
 import { useContextMenu } from "./sessions/contextMenu";
 import { isChat, openSheet, projectIdOf, useDirectory, type Prefs } from "./sessions/directory";
+import { buildFamily, familyRows, sessionKey } from "./sessions/family";
 import { ageGroup, HistoryList } from "./sessions/history";
 import { DisplayMenu, ScopeMenu, SessionMenu } from "./sessions/menus";
 import { LabelChip, SessionSheets } from "./sessions/sheets";
@@ -33,12 +34,13 @@ import { StatusGlyph } from "./StatusGlyph";
 import { T } from "./Text";
 import { useAnchor, type Rect } from "./tools/Menu";
 
-const ORDER: Array<{ b: Bucket; label: string }> = [
-  { b: "needs", label: "Needs you" },
-  { b: "failed", label: "Failed" },
-  { b: "review", label: "Ready to review" },
-  { b: "working", label: "Working" },
-  { b: "idle", label: "Idle" },
+/** State sections, most urgent first. A session sits in the most urgent state of itself and its subagents. */
+const ORDER: Array<{ b: Bucket; label: string; hint: string }> = [
+  { b: "needs", label: "Needs you", hint: "Waiting for your approval or answer" },
+  { b: "failed", label: "Failed", hint: "Stopped with an error" },
+  { b: "review", label: "Ready to review", hint: "Finished a turn you have not opened yet" },
+  { b: "working", label: "Working", hint: "Running a turn now" },
+  { b: "idle", label: "Idle", hint: "Waiting for your next message" },
 ];
 
 export function useBuckets() {
@@ -64,6 +66,8 @@ const openImport = () => openSheet({ kind: "import" });
 interface Group {
   key: string;
   label: string;
+  /** What the section means, under its label (state sections). */
+  hint?: string;
   list: Session[];
 }
 
@@ -104,21 +108,24 @@ function useListModel(needle: string) {
     const pool =
       scope === "all" ? [...Object.values(sessions), ...others] : Object.values(sessions);
     const hostName = (x: Session) => hosts.find((h) => h.id === x.hostId)?.name ?? "host";
-    const inScope = pool.filter((x) => {
-      if (isChat(x, dir) !== chats) return false;
-      if (!chats && scope !== "all" && projectIdOf(x, dir) !== scope) return false;
-      return true;
+    // Children take their root's scope and section; their rows live under the parent's.
+    const fam = buildFamily(pool);
+    const { inScope, roots, nested, withKids } = familyRows(pool, fam, {
+      inScope: (root) =>
+        isChat(root, dir) === chats &&
+        (chats || scope === "all" || projectIdOf(root, dir) === scope),
+      passes: (root) =>
+        (prefs.showHidden || !hidden.includes(root.agent.id)) &&
+        (!prefs.label || labelsOf(root).includes(prefs.label)),
+      matches: (x) =>
+        !needle ||
+        `${x.agent.title ?? ""} ${projectName(x)} ${branchOf(x) ?? ""}`
+          .toLowerCase()
+          .includes(needle),
     });
     const counts: Record<Bucket, number> = { needs: 0, failed: 0, review: 0, working: 0, idle: 0 };
     for (const x of inScope) counts[bucketOf(x.agent)] += 1;
-    const visible = inScope.filter((x) => {
-      if (!prefs.showHidden && hidden.includes(x.agent.id)) return false;
-      if (prefs.label && !labelsOf(x).includes(prefs.label)) return false;
-      if (!needle) return true;
-      const hay = `${x.agent.title ?? ""} ${projectName(x)} ${branchOf(x) ?? ""}`.toLowerCase();
-      return hay.includes(needle);
-    });
-    visible.sort(sorter(prefs.sort, pinned));
+    const visible = roots.sort(sorter(prefs.sort, pinned));
     const groups: Group[] = [];
     const push = (key: string, label: string, x: Session) => {
       let g = groups.find((y) => y.key === key);
@@ -150,8 +157,8 @@ function useListModel(needle: string) {
       groups.sort((a, b) => a.label.localeCompare(b.label));
     } else {
       for (const o of ORDER) {
-        const list = visible.filter((x) => bucketOf(x.agent) === o.b);
-        if (list.length) groups.push({ key: o.b, label: o.label, list });
+        const list = visible.filter((x) => fam.bucketOf(x) === o.b);
+        if (list.length) groups.push({ key: o.b, label: o.label, hint: o.hint, list });
       }
     }
     const activeName = hosts.find((h) => h.id === useHosts.getState().activeId)?.name;
@@ -161,7 +168,8 @@ function useListModel(needle: string) {
       if (x.hostId) return hostName(x);
       return mixed ? activeName : undefined;
     };
-    return { groups, counts, total: inScope.length, scopeName: scopeName(dir), hostOf };
+    for (const g of groups) g.list = withKids(g.list);
+    return { groups, counts, total: inScope.length, scopeName: scopeName(dir), hostOf, nested };
   }, [sessions, others, hosts, dir, needle]);
 }
 
@@ -183,7 +191,7 @@ export function SessionList() {
   const [q, setQ] = useState("");
   const scope = useDirectory((d) => d.scope);
   const needle = q.trim().toLowerCase();
-  const { groups, counts, total, scopeName: name, hostOf } = useListModel(needle);
+  const { groups, counts, total, scopeName: name, hostOf, nested } = useListModel(needle);
   // Sub-work is read from the active host, so only its own sessions are asked about.
   const ids = useMemo(
     () => groups.flatMap((g) => g.list.filter((x) => !x.hostId).map((x) => x.agent.id)),
@@ -221,7 +229,14 @@ export function SessionList() {
             {groups.map((g) => (
               <View key={g.key}>
                 <View style={s.groupHead}>
-                  <T v="label">{g.label}</T>
+                  <View style={s.groupText}>
+                    <T v="label">{g.label}</T>
+                    {g.hint && (
+                      <T style={s.groupHint} numberOfLines={1}>
+                        {g.hint}
+                      </T>
+                    )}
+                  </View>
                   <T v="mono" style={s.groupN}>
                     {g.list.length}
                   </T>
@@ -232,6 +247,7 @@ export function SessionList() {
                     sess={sess}
                     chat={chats}
                     host={hostOf(sess)}
+                    nested={nested.has(sessionKey(sess))}
                     onMenu={openMenu}
                   />
                 ))}
@@ -317,10 +333,13 @@ function Row({
   sess,
   chat,
   host,
+  nested,
   onMenu,
 }: {
   sess: Session;
   chat: boolean;
+  /** Another host's subagent, drawn indented under its parent's row. */
+  nested?: boolean;
   /** Host name, shown when the list mixes sessions from several hosts. */
   host?: string;
   onMenu: (id: string, r: Rect) => void;
@@ -366,7 +385,15 @@ function Row({
     <View ref={ref} collapsable={false}>
       <Pressable onPress={open} onLongPress={longPress} delayLongPress={350}>
         {({ hovered }) => (
-          <View style={[s.row, hovered && s.rowHover, selected && s.rowOn, hidden && s.rowHidden]}>
+          <View
+            style={[
+              s.row,
+              nested && s.rowNested,
+              hovered && s.rowHover,
+              selected && s.rowOn,
+              hidden && s.rowHidden,
+            ]}
+          >
             <Brackets on={selected} />
             <View style={s.rowTop}>
               <View style={s.glyph}>
@@ -391,6 +418,11 @@ function Row({
               </T>
             </View>
             <View style={s.meta}>
+              {nested && (
+                <T v="mono" style={s.branch}>
+                  subagent
+                </T>
+              )}
               {host && (
                 <T v="mono" numberOfLines={1} style={s.host}>
                   {host}
@@ -587,6 +619,9 @@ const s = StyleSheet.create({
     paddingBottom: 6,
   },
   groupN: { color: color.faint, fontSize: 10.5 },
+  groupText: { flex: 1, gap: 2 },
+  groupHint: { fontSize: 11, color: color.faint },
+  rowNested: { marginLeft: 26, borderLeftWidth: 1, borderLeftColor: color.line },
   row: {
     marginHorizontal: 8,
     paddingHorizontal: 8,
