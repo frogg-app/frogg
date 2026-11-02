@@ -94,6 +94,12 @@ export function FilesEditor() {
         >
           <Toggle value={p.terminalsAllHosts} onChange={prefSetter("terminalsAllHosts")} />
         </Row>
+        <Row
+          label="Show terminals in the Sessions list"
+          hint="Lists each host's terminals under its sessions, grouped by host, and hides the Terminals tool"
+        >
+          <Toggle value={p.sessionsWithTerminals} onChange={prefSetter("sessionsWithTerminals")} />
+        </Row>
         <Row label="Legacy renderer" hint="Use only if text renders incorrectly" last>
           <Toggle value={p.legacyRenderer} onChange={prefSetter("legacyRenderer")} />
         </Row>

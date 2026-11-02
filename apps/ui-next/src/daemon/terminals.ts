@@ -41,6 +41,11 @@ onHostSwitch(() => {
 const setGroup = (cwd: string, list: TerminalInfo[]) =>
   useTerminals.setState((s) => ({ groups: { ...s.groups, [cwd]: list } }));
 
+/** Re-reads the active host's whole terminal list. */
+export async function refreshHostTerminals(): Promise<void> {
+  return refreshAll();
+}
+
 async function refreshAll(): Promise<void> {
   const c = getClient();
   if (!c) return;

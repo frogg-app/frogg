@@ -60,9 +60,14 @@ export const GROUPS = [0, 1, 2].map((g) => TOOLS.filter((t) => t.group === g));
 export function useToolShown(): (id: Tool) => boolean {
   const companion = usePluginGate((g) => g.companion);
   const companionPref = usePrefs((p) => p.companion);
+  // Terminals listed in the Sessions list replace the Terminals tool.
+  const merged = usePrefs((p) => p.sessionsWithTerminals);
   return useCallback(
-    (id: Tool) => id !== "companion" || (companion && companionPref),
-    [companion, companionPref],
+    (id: Tool) => {
+      if (id === "terminals") return !merged;
+      return id !== "companion" || (companion && companionPref);
+    },
+    [companion, companionPref, merged],
   );
 }
 

@@ -27,6 +27,13 @@ interface UiState {
   /** Terminals: the one filling the main pane. */
   terminalId: string | null;
   openTerminal: (id: string | null) => void;
+  /**
+   * Sessions tool, with terminals listed among sessions: whether the main pane shows the open
+   * chat or `terminalId`. Picking a session goes back to the chat.
+   */
+  sessionsPane: "chat" | "terminal";
+  /** Opens a terminal from the Sessions list (terminals merged into it). */
+  openSessionTerminal: (id: string | null) => void;
   /** Inbox: the session whose notification fills the main pane. */
   inboxId: string | null;
   openInbox: (id: string | null) => void;
@@ -52,6 +59,9 @@ export const useUi = create<UiState>((set) => ({
   openDiff: (diffPath) => set({ diffPath, listOpen: false }),
   terminalId: null,
   openTerminal: (terminalId) => set({ terminalId, listOpen: false }),
+  sessionsPane: "chat",
+  openSessionTerminal: (terminalId) =>
+    set({ terminalId, sessionsPane: terminalId ? "terminal" : "chat", listOpen: false }),
   inboxId: null,
   openInbox: (inboxId) => set({ inboxId, listOpen: false }),
   filePath: null,
@@ -65,7 +75,7 @@ export const useUi = create<UiState>((set) => ({
   paletteOpen: false,
   setPalette: (paletteOpen) => set({ paletteOpen }),
   setTool: (tool) => set({ tool, listOpen: true }),
-  select: (selected) => set({ selected, listOpen: false }),
+  select: (selected) => set({ selected, listOpen: false, sessionsPane: "chat" }),
   setListOpen: (listOpen) => set({ listOpen }),
 }));
 
@@ -75,8 +85,17 @@ onHostSwitch(() =>
     selected: null,
     diffPath: null,
     terminalId: null,
+    sessionsPane: "chat",
     inboxId: null,
     filePath: null,
     listOpen: false,
   }),
 );
+
+/** The terminal the Sessions tool shows in its main pane, when one is open there. */
+export const sessionsTerminal = (ui: {
+  tool: Tool;
+  sessionsPane: UiState["sessionsPane"];
+  terminalId: string | null;
+}): string | null =>
+  ui.tool === "sessions" && ui.sessionsPane === "terminal" ? ui.terminalId : null;

@@ -221,7 +221,7 @@ function Group({
   );
 }
 
-function TerminalRow({
+export function TerminalRow({
   t,
   on,
   onOpen,
