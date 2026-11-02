@@ -67,6 +67,16 @@ hosts) and forwards a connection to the daemon's port on the remote host. Nothin
 exposed on the network. If no daemon is installed there, the app offers to **deploy**
 one with the same install script; see [desktop app](/docs/desktop-mobile-cli/desktop/#remote-ssh).
 
+### Over Tailscale
+
+A host added at a Tailscale address (`100.64.0.0/10`, `fd7a:115c:a1e0::/48` or a `*.ts.net`
+name) shows **Connected over Tailscale** in Frogg Next's Hosts view. When Tailscale is installed
+on the daemon's machine, the daemon reads `tailscale status --json` at start and hourly and
+reports that machine's node name and key expiry. The host's **Tailscale** card then shows when
+the node key expires; from 14 days out it warns, with a toast once a day, that the machine needs
+a Tailscale re-login (`tailscale up` or the Tailscale app) or key expiry disabled for it in the
+Tailscale admin console. An expired key cuts the connection until someone does that on the host.
+
 ## Pair a device with a code
 
 `frogg pair` is the short way: it mints an 8-symbol code, valid for 10 minutes by default,
