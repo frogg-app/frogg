@@ -1,4 +1,4 @@
-import { ArrowUp, Maximize2, Mic, Minimize2, Plus, Square } from "lucide-react-native";
+import { ArrowUp, Maximize2, Mic, Minimize2, Plus, Scissors, Square } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Animated,
@@ -21,6 +21,14 @@ import { Cut } from "./Cut";
 import { Floating } from "./Floating";
 import { T } from "./Text";
 
+type SendFn = (text: string, attachments: Attachment[]) => void | Promise<void>;
+
+export interface CutSend {
+  onSend: SendFn;
+  /** Why it cannot cut right now (nothing to summarise yet); null when it can. */
+  blocked: string | null;
+}
+
 type KeyEvent = NativeSyntheticEvent<TextInputKeyPressEventData & { shiftKey?: boolean }>;
 
 export function Composer({
@@ -39,6 +47,7 @@ export function Composer({
   sizeKey,
   onTyping,
   above,
+  cut,
   disabled = false,
 }: {
   placeholder: string;
@@ -67,6 +76,8 @@ export function Composer({
   onTyping?: (typing: boolean) => void;
   /** Drawn above the box, on the composer column (who else is here). */
   above?: ReactNode;
+  /** A second send button (scissors) that sends the message after a clean cut. */
+  cut?: CutSend;
 }) {
   const [sending, setSending] = useState(false);
   const [commandError, setCommandError] = useState(false);
@@ -88,10 +99,6 @@ export function Composer({
   // The mirror wraps exactly like the input; a trailing newline needs a character to take a line.
   const mirror = text.endsWith("\n") || !text ? `${text} ` : text;
   const inputBox = useMemo(() => [s.inputBox, { height: size.height }], [size.height]);
-  const sendState = useMemo(
-    () => ({ disabled: disabled || sending || empty }),
-    [disabled, sending, empty],
-  );
 
   const slashQuery = /^\/\S*$/.test(text) && !slashClosed ? text.slice(1) : null;
   useEffect(() => {
@@ -125,24 +132,33 @@ export function Composer({
     setText(`/${c.name} `);
     setSlashClosed(true);
   }, []);
-  const submit = useCallback(async () => {
-    const t = text.trim();
-    if (disabled || sending || (!t && atts.length === 0)) return;
-    if (atts.some((a) => a.kind === "upload")) {
-      toast({ title: "Still uploading", detail: "Send once the files finish uploading." });
-      return;
-    }
-    setSending(true);
-    try {
-      await onSend(t, atts);
-      setText("");
-      setAtts([]);
-    } catch (error) {
-      toastError("Message not sent", error);
-    } finally {
-      setSending(false);
-    }
-  }, [text, atts, onSend, disabled, sending]);
+  const send = useCallback(
+    async (via: SendFn) => {
+      const t = text.trim();
+      if (disabled || sending || (!t && atts.length === 0)) return;
+      // Both sends (plain and clean cut) wait for uploads: a half-sent file can't ride along.
+      if (atts.some((a) => a.kind === "upload")) {
+        toast({ title: "Still uploading", detail: "Send once the files finish uploading." });
+        return;
+      }
+      setSending(true);
+      try {
+        await via(t, atts);
+        setText("");
+        setAtts([]);
+      } catch (error) {
+        toastError("Message not sent", error);
+      } finally {
+        setSending(false);
+      }
+    },
+    [text, atts, disabled, sending],
+  );
+  const submit = useCallback(() => send(onSend), [send, onSend]);
+  const cutSend = cut?.onSend;
+  const submitCut = useCallback(() => {
+    if (cutSend) void send(cutSend);
+  }, [send, cutSend]);
   // Enter sends, Shift+Enter breaks the line (hardware keyboards; mobile soft keyboards send with the button).
   const onKeyPress = useCallback(
     (e: KeyEvent) => {
@@ -267,28 +283,103 @@ export function Composer({
             </Pressable>
           )}
           <Mic size={16} color={color.muted} />
-          {onStop && empty ? (
-            <Pressable onPress={onStop} accessibilityLabel="Stop">
-              <Cut size={6} style={[s.send, s.stop]}>
-                <Square size={11} color={color.coral} fill={color.coral} />
-              </Cut>
-            </Pressable>
-          ) : (
-            <Pressable
-              onPress={submit}
-              disabled={disabled || sending || empty}
-              accessibilityRole="button"
-              accessibilityState={sendState}
-              accessibilityLabel="Send"
-            >
-              <Cut size={6} style={[s.send, (empty || disabled || sending) && s.idle]}>
-                <ArrowUp size={16} color={color.onAccent} strokeWidth={2.2} />
-              </Cut>
-            </Pressable>
-          )}
+          <SendControls
+            stop={onStop && empty ? onStop : undefined}
+            idle={empty || disabled || sending}
+            onSend={submit}
+            cut={cut}
+            onCut={submitCut}
+          />
         </View>
       </Cut>
     </View>
+  );
+}
+
+/** Stop while a turn runs and nothing is typed; otherwise send, with the clean-cut send beside it. */
+function SendControls({
+  stop,
+  idle,
+  onSend,
+  cut,
+  onCut,
+}: {
+  stop?: () => void;
+  idle: boolean;
+  onSend: () => void;
+  cut?: CutSend;
+  onCut: () => void;
+}) {
+  const sendState = useMemo(() => ({ disabled: idle }), [idle]);
+  if (stop)
+    return (
+      <Pressable onPress={stop} accessibilityLabel="Stop">
+        <Cut size={6} style={[s.send, s.stop]}>
+          <Square size={11} color={color.coral} fill={color.coral} />
+        </Cut>
+      </Pressable>
+    );
+  return (
+    <>
+      {cut && <CutButton onPress={onCut} blocked={cut.blocked} idle={idle} />}
+      <Pressable
+        onPress={onSend}
+        disabled={idle}
+        accessibilityRole="button"
+        accessibilityState={sendState}
+        accessibilityLabel="Send"
+      >
+        <Cut size={6} style={[s.send, idle && s.idle]}>
+          <ArrowUp size={16} color={color.onAccent} strokeWidth={2.2} />
+        </Cut>
+      </Pressable>
+    </>
+  );
+}
+
+/**
+ * Send with a clean cut: the conversation is summarised into a fresh one first, then this message
+ * goes to it. Outlined beside the filled send so the two never read as the same action; hovering
+ * names what it does.
+ */
+function CutButton({
+  onPress,
+  blocked,
+  idle,
+}: {
+  onPress: () => void;
+  blocked: string | null;
+  idle: boolean;
+}) {
+  const off = idle || !!blocked;
+  const state = useMemo(() => ({ disabled: off }), [off]);
+  // Not `disabled`: a disabled Pressable reports no hover, and the hover says why it is off.
+  const press = useCallback(() => {
+    if (!off) onPress();
+  }, [off, onPress]);
+  return (
+    <Pressable
+      onPress={press}
+      accessibilityRole="button"
+      accessibilityState={state}
+      accessibilityLabel="Send with a clean cut"
+      accessibilityHint={blocked ?? "Summarises the conversation into a fresh one, then sends"}
+    >
+      {({ hovered }) => (
+        <View>
+          {hovered && (
+            <View style={s.tip} pointerEvents="none">
+              <T v="mono" style={s.tipT} numberOfLines={1}>
+                {blocked ?? "Send with a clean cut"}
+              </T>
+            </View>
+          )}
+          <Cut size={6} style={[s.cutBtn, hovered && !off && s.cutHover, off && s.idle]}>
+            <Scissors size={14} color={hovered && !off ? color.text : color.cyan2} />
+          </Cut>
+        </View>
+      )}
+    </Pressable>
   );
 }
 
@@ -362,6 +453,29 @@ const s = StyleSheet.create({
     ...web({ backgroundImage: "none" }),
   },
   idle: { opacity: 0.55 },
+  cutBtn: {
+    width: 30,
+    height: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: color.line2,
+    backgroundColor: color.raise,
+    ...web({ transition: `background-color 140ms ${ease}, border-color 140ms ${ease}` }),
+  },
+  cutHover: { backgroundColor: color.wash2, borderColor: color.cyan2 },
+  tip: {
+    position: "absolute",
+    bottom: 36,
+    right: 0,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: color.panel,
+    borderWidth: 1,
+    borderColor: color.line,
+    ...web({ whiteSpace: "nowrap" }),
+  },
+  tipT: { fontSize: 11, color: color.text },
   send: {
     width: 30,
     height: 30,

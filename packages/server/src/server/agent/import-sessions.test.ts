@@ -21,6 +21,7 @@ import {
   listImportableProviderSessions,
   normalizeImportAgentRequest,
 } from "./import-sessions.js";
+import { CLEAN_CUT_SUMMARY_PROMPT_FIRST_LINE } from "./clean-cut.js";
 
 const directorySymlinkType = process.platform === "win32" ? "junction" : "dir";
 const importTestDirectories: string[] = [];
@@ -315,6 +316,61 @@ test("listImportableProviderSessions looks past already-imported rows to fill th
   });
   expect(result.entries.map((entry) => entry.providerHandleId)).toEqual(["available"]);
   expect(result.filteredAlreadyImportedCount).toBe(1);
+});
+
+test("listImportableProviderSessions hides the provider session a clean cut replaced and summariser runs", async () => {
+  const cwd = "/tmp/project";
+  const agent = makeManagedAgent({
+    id: "agent-1",
+    provider: "claude",
+    cwd,
+    sessionId: "after-cut",
+  });
+  const result = await listImportableProviderSessions({
+    request: makeRequest({ cwd, providers: ["claude"] }),
+    agentManager: {
+      listAgents: () => [agent],
+      getTimeline: () => [
+        { type: "user_message", text: "hello" },
+        {
+          type: "compaction",
+          status: "completed",
+          trigger: "manual",
+          cleanCut: { summary: "S", previousSessionId: "before-cut", previousProvider: "claude" },
+        },
+      ],
+      listImportableSessions: async () => [
+        makeImportableSession({
+          provider: "claude",
+          sessionId: "after-cut",
+          cwd,
+          lastActivityAt: "2026-04-30T12:03:00.000Z",
+        }),
+        makeImportableSession({
+          provider: "claude",
+          sessionId: "before-cut",
+          cwd,
+          lastActivityAt: "2026-04-30T12:02:00.000Z",
+        }),
+        makeImportableSession({
+          provider: "claude",
+          sessionId: "summariser",
+          cwd,
+          lastActivityAt: "2026-04-30T12:01:00.000Z",
+          firstPrompt: `${CLEAN_CUT_SUMMARY_PROMPT_FIRST_LINE}\nDo not use any tools`,
+        }),
+        makeImportableSession({
+          provider: "claude",
+          sessionId: "unrelated",
+          cwd,
+          lastActivityAt: "2026-04-30T12:00:00.000Z",
+        }),
+      ],
+    },
+    agentStorage: { list: async () => [] },
+    providerSnapshotManager: { getProviderLabel: () => "Claude Code" },
+  });
+  expect(result.entries.map((entry) => entry.providerHandleId)).toEqual(["unrelated"]);
 });
 
 test("listImportableProviderSessions includes a provider session after its Frogg agent is archived", async () => {

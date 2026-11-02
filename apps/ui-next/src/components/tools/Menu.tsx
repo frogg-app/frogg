@@ -14,6 +14,7 @@ import { color, web } from "../../theme/tokens";
 import { Cut } from "../Cut";
 import { useModalLayer } from "../shell/modalStack";
 import { T } from "../Text";
+import { kbd } from "../../kbd";
 
 export interface Rect {
   x: number;
@@ -186,7 +187,7 @@ function MenuRow({ item, onClose }: { item: Item; onClose: () => void }) {
           </View>
           {item.kbd && (
             <T v="mono" style={s.kbd}>
-              {item.kbd}
+              {kbd(item.kbd)}
             </T>
           )}
           {item.on && <Check size={13} color={color.cyan2} />}

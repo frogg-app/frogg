@@ -101,6 +101,16 @@ ${line}\r
 `;
 }
 
+/**
+ * What the Run key executes at login. Started directly, a `.cmd` opens a console window (or a
+ * Windows Terminal tab where that is the default terminal) that stays up while `daemon start`
+ * waits for the daemon. A headless conhost runs the same script with no window; the daemon it
+ * starts is detached and hidden, so nothing is left on screen.
+ */
+export function windowsRunCommand(launcher: string): string {
+  return `conhost.exe --headless cmd.exe /d /c "${launcher}"`;
+}
+
 function systemdUnitPath(input: ServicePlanInput): string {
   const configHome = input.env.XDG_CONFIG_HOME?.trim() || path.join(input.homeDir, ".config");
   return path.join(configHome, "systemd", "user", `${SERVICE_NAME}.service`);
@@ -268,7 +278,7 @@ export function resolveServicePlan(input: ServicePlanInput): ServicePlan {
           "/t",
           "REG_SZ",
           "/d",
-          `"${launcher}"`,
+          windowsRunCommand(launcher),
           "/f",
         ],
       },

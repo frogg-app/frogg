@@ -897,6 +897,8 @@ function normalizePreferences(
   if (defaultModelId) next.defaultModelId = defaultModelId;
   const defaultThinkingOptionId = preferences.defaultThinkingOptionId?.trim();
   if (defaultThinkingOptionId) next.defaultThinkingOptionId = defaultThinkingOptionId;
+  const launchArgs = (preferences.launchArgs ?? []).map((arg) => arg.trim()).filter(Boolean);
+  if (launchArgs.length) next.launchArgs = launchArgs;
   return Object.keys(next).length > 0 ? next : null;
 }
 

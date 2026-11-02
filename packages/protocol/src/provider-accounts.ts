@@ -321,6 +321,11 @@ export function findProviderAccountCapability(
   return PROVIDER_ACCOUNT_CAPABILITIES.find((entry) => entry.provider === provider);
 }
 
+/** Most flag tokens an account's launchArgs may hold. */
+export const PROVIDER_ACCOUNT_LAUNCH_ARGS_MAX = 50;
+/** Longest single flag token in launchArgs. */
+export const PROVIDER_ACCOUNT_LAUNCH_ARG_MAX_LENGTH = 500;
+
 /**
  * COMPAT(providerAccountPreferences): added in v1.5.5, remove after 2027-09-19.
  * Per-account launch and display preferences. Every field is optional; absent
@@ -335,6 +340,16 @@ export const ProviderAccountPreferencesSchema = z.object({
   defaultModelId: z.string().min(1).optional(),
   /** Thinking option a new agent on this account starts with. */
   defaultThinkingOptionId: z.string().min(1).optional(),
+  /**
+   * COMPAT(providerAccountLaunchArgs): added in v1.6.14, remove after 2027-11-01.
+   * Extra CLI flags a new agent on this account starts with, as tokens (`["--chrome"]`,
+   * `["--remote-control", "mac"]`). Clients pre-fill the launch flags with them; they are
+   * stored per host because accounts are. Older daemons drop the field.
+   */
+  launchArgs: z
+    .array(z.string().min(1).max(PROVIDER_ACCOUNT_LAUNCH_ARG_MAX_LENGTH))
+    .max(PROVIDER_ACCOUNT_LAUNCH_ARGS_MAX)
+    .optional(),
 });
 
 export type ProviderAccountPreferences = z.infer<typeof ProviderAccountPreferencesSchema>;

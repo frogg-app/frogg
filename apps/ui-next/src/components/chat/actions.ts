@@ -4,6 +4,7 @@ import type { DaemonClient } from "@frogg/client/internal/daemon-client";
 import { getClient, openTimeline, useDaemon } from "../../daemon/store";
 import type { Agent } from "../../daemon/types";
 import { toastError } from "../toast/store";
+import { newMessageId, rememberSent } from "./sentAttachments";
 import { isCancelled, uploadPicked, type Picked, type UploadedFile } from "./upload";
 
 export type { Picked, UploadedFile };
@@ -83,7 +84,11 @@ export async function sendWithAttachments(
     if (a.kind === "fork") return [a.context];
     return [];
   });
+  // The id comes back on the user message, so its bubble can show what was attached.
+  const messageId = newMessageId();
+  rememberSent(messageId, attachments);
   await client().sendMessage(agentId, text, {
+    messageId,
     ...(images.length ? { images } : {}),
     ...(files.length ? { attachments: files } : {}),
   });
@@ -108,6 +113,11 @@ export async function denyWithMessage(
   message: string,
 ): Promise<void> {
   await client().respondToPermission(agentId, requestId, { behavior: "deny", message });
+}
+
+/** Stops a subagent session belonging to the agent that started it (drops its parent label). */
+export async function detachSession(agentId: string): Promise<void> {
+  await client().detachAgent(agentId);
 }
 
 export async function renameSession(agentId: string, name: string): Promise<void> {

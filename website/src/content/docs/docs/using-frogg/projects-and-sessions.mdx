@@ -209,6 +209,18 @@ The display menu at the top of the sidebar controls how sessions are arranged.
 Grouping and sort are saved on the device. The sidebar starts on **Recent activity**, including
 after updating from a version without sorting; your saved drag order is kept for **Manual**.
 
+In Frogg Next, grouping by status gives five sections, each with a one-line caption saying what
+it holds: **Needs you** (waiting for your approval or answer), **Failed** (stopped with an
+error), **Ready to review** (finished a turn you have not opened yet), **Working** (running a
+turn now) and **Idle** (waiting for your next message).
+
+A [subagent](/docs/using-frogg/agents/#subagents) session is listed under the session that
+started it, never as a session of its own and never in another project's or host's section. It
+shows in its parent's sub-work list, and the parent sits in the most urgent section of the two,
+so a subagent waiting on an approval puts its parent under **Needs you**. Searching for a
+subagent's title shows its parent. A subagent whose parent is archived, and one that has been
+detached, is listed on its own.
+
 ## Hide projects and sessions
 
 Several people can share one daemon, so each device can hide the projects and sessions it is
@@ -242,6 +254,10 @@ else.
   look-alike letters. Use **Copy session ID** in a session's menu, or copy it from the hover
   card. Subagents have their own session IDs, which you can copy from their rows.
 - **Copy branch name** appears only for sessions that are on a git branch.
+- In the Frogg Next desktop app, **Open in new window** in the chat header's ⋯ menu pops the
+  session out into its own window, showing just that chat. It uses the same saved hosts and
+  pairing as the main window and keeps its own connection, so both stay in step. Opening the
+  same session again focuses its window.
 - Hold <kbd>Ctrl</kbd> to turn the menu button on the selected and hovered
   sessions into icon buttons: rename, pin to top, labels, copy session ID, hide and archive. They
   sit at the right edge of the row, in the same place on every row, and cover the row's diff

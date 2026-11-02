@@ -41,6 +41,8 @@ interface TodoState {
   /** Filters shared by the list and the board: one project (null = all) and a text match. */
   scope: string | null;
   query: string;
+  /** The card the user just moved, so it can mark itself in its new column. */
+  moved: { projectId: string; todoId: string; seq: number } | null;
 }
 
 export const useTodos = create<TodoState>(() => ({
@@ -50,6 +52,7 @@ export const useTodos = create<TodoState>(() => ({
   open: null,
   scope: null,
   query: "",
+  moved: null,
 }));
 
 const watched = new Set<string>();
@@ -164,6 +167,22 @@ export async function deleteTodo(projectId: string, todoId: string): Promise<voi
   if (r.error) throw new Error(r.error.message);
   remove(projectId, todoId);
 }
+
+let moveSeq = 0;
+
+/** Marks the card the user just moved, so it can show itself in its new column. */
+export function markMoved(projectId: string, todoId: string): void {
+  moveSeq += 1;
+  useTodos.setState({ moved: { projectId, todoId, seq: moveSeq } });
+}
+
+/** How many to-dos the filters hide: shown against the total so a short list is explained. */
+export function filterSummary(s: TodoState): { shown: number; total: number } {
+  const total = Object.values(s.items).reduce((n, list) => n + (list?.length ?? 0), 0);
+  return { shown: filterTodos(s).length, total };
+}
+
+export const clearTodoFilters = () => useTodos.setState({ scope: null, query: "" });
 
 export const openTodo = (projectId: string, todoId: string) =>
   useTodos.setState({ open: { projectId, todoId } });

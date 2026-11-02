@@ -1,12 +1,12 @@
 import { ChevronRight } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
-import { useConfig } from "../../../daemon/config";
+import { loadConfig, patchConfig, useConfig } from "../../../daemon/config";
 import { getClient } from "../../../daemon/store";
 import { color, ease, glide, motion, web } from "../../../theme/tokens";
 import { agoText, providerLabel } from "../../../util";
 import { T } from "../../Text";
-import { Pill, Section } from "../controls";
+import { Note, Pill, Section, Toggle } from "../controls";
 
 type Snapshot = NonNullable<ReturnType<typeof useConfig.getState>["providers"]>;
 type Entry = Snapshot["entries"][number];
@@ -29,26 +29,60 @@ function statusTint(st: string): string {
 const EXPANDED = { expanded: true };
 const COLLAPSED = { expanded: false };
 
+/** Re-read while any provider is still probing its CLI (just enabled, or the host just started). */
+const PROBE_MS = 2500;
+
+/** Owners change host config; an older daemon reports no role and acts as owner. */
+const isOwner = () => {
+  const role = (getClient()?.getLastServerInfoMessage() as { callerRole?: string } | null)
+    ?.callerRole;
+  return !role || role === "owner";
+};
+
+/** Turns a provider on or off in the host's config.json, then re-reads its status. */
+async function setProviderEnabled(provider: string, enabled: boolean): Promise<void> {
+  await patchConfig({ providers: { [provider]: { enabled } } });
+  const client = getClient();
+  if (enabled)
+    await client?.refreshProvidersSnapshot({ providers: [provider as never] }).catch(() => null);
+  await loadConfig();
+}
+
 const tokens = (n: number) => (n >= 1_000_000 ? `${n / 1_000_000}M` : `${Math.round(n / 1000)}k`);
 
 /** Settings → Providers & models: every installed provider; open one to see all its models. */
 export function Providers() {
   const providers = useConfig((st) => st.providers);
   const [open, setOpen] = useState<string | null>(null);
+  const probing = providers?.entries.some((e) => e.status === "loading") ?? false;
+  useEffect(() => {
+    if (!probing) return;
+    const t = setTimeout(() => void loadConfig(), PROBE_MS);
+    return () => clearTimeout(t);
+  }, [probing, providers]);
   if (!providers) return <T v="label">loading…</T>;
   const last = providers.entries.at(-1)?.provider;
+  const owner = isOwner();
   return (
-    <Section title="Installed providers">
-      {providers.entries.map((p) => (
-        <ProviderRow
-          key={p.provider}
-          entry={p}
-          open={open === p.provider}
-          onToggle={setOpen}
-          last={p.provider === last}
-        />
-      ))}
-    </Section>
+    <>
+      <Section title="Installed providers">
+        {providers.entries.map((p) => (
+          <ProviderRow
+            key={p.provider}
+            entry={p}
+            open={open === p.provider}
+            onToggle={setOpen}
+            canEdit={owner}
+            last={p.provider === last}
+          />
+        ))}
+      </Section>
+      <Note>
+        {owner
+          ? "A provider that is off stays installed but can't start new agents on this host."
+          : "Only the host's owner can turn providers on or off."}
+      </Note>
+    </>
   );
 }
 
@@ -56,13 +90,23 @@ function ProviderRow({
   entry: p,
   open,
   onToggle,
+  canEdit,
   last,
 }: {
   entry: Entry;
   open: boolean;
   onToggle: (id: string | null) => void;
+  canEdit: boolean;
   last: boolean;
 }) {
+  const [busy, setBusy] = useState(false);
+  const setEnabled = useCallback(
+    (on: boolean) => {
+      setBusy(true);
+      void setProviderEnabled(p.provider, on).finally(() => setBusy(false));
+    },
+    [p.provider],
+  );
   const toggle = useCallback(
     () => onToggle(open ? null : p.provider),
     [onToggle, open, p.provider],
@@ -74,28 +118,42 @@ function ProviderRow({
     `${count} model${count === 1 ? "" : "s"}${p.fetchedAt ? ` · checked ${agoText(p.fetchedAt)}` : ""}`;
   return (
     <View style={!last && s.line}>
-      <Pressable
-        onPress={toggle}
-        accessibilityRole="button"
-        accessibilityState={open ? EXPANDED : COLLAPSED}
-        accessibilityLabel={`${open ? "Hide" : "Show"} ${p.label ?? providerLabel(p.provider)} models`}
-      >
-        {({ hovered }) => (
-          <View style={[s.row, hovered && s.hover]}>
-            <View style={[s.chev, open && s.chevOpen]}>
-              <ChevronRight size={13} color={open ? color.cyan2 : color.faint} />
+      <View style={s.head}>
+        <Pressable
+          style={s.grow}
+          onPress={toggle}
+          accessibilityRole="button"
+          accessibilityState={open ? EXPANDED : COLLAPSED}
+          accessibilityLabel={`${open ? "Hide" : "Show"} ${p.label ?? providerLabel(p.provider)} models`}
+        >
+          {({ hovered }) => (
+            <View style={[s.row, hovered && s.hover]}>
+              <View style={[s.chev, open && s.chevOpen]}>
+                <ChevronRight size={13} color={open ? color.cyan2 : color.faint} />
+              </View>
+              <View style={s.text}>
+                <T style={s.label}>{p.label ?? providerLabel(p.provider)}</T>
+                <T style={p.error ? s.err : s.hint}>{hint}</T>
+              </View>
+              <View style={s.pills}>
+                {p.enabled ? (
+                  <Pill text={p.status} tint={statusTint(p.status)} />
+                ) : (
+                  <Pill text="off" />
+                )}
+              </View>
             </View>
-            <View style={s.text}>
-              <T style={s.label}>{p.label ?? providerLabel(p.provider)}</T>
-              <T style={p.error ? s.err : s.hint}>{hint}</T>
-            </View>
-            <View style={s.pills}>
-              {!p.enabled && <Pill text="disabled" />}
-              <Pill text={p.status} tint={statusTint(p.status)} />
-            </View>
-          </View>
-        )}
-      </Pressable>
+          )}
+        </Pressable>
+        <View style={s.switch}>
+          <Toggle
+            value={p.enabled}
+            onChange={setEnabled}
+            disabled={!canEdit || busy}
+            label={`${p.enabled ? "Turn off" : "Turn on"} ${p.label ?? providerLabel(p.provider)}`}
+          />
+        </View>
+      </View>
       {open && (
         <View style={s.models}>
           {models.list.map((m) => (
@@ -166,6 +224,9 @@ function ModelRow({ m }: { m: Model }) {
 
 const s = StyleSheet.create({
   line: { borderBottomWidth: 1, borderBottomColor: color.line },
+  head: { flexDirection: "row", alignItems: "center" },
+  grow: { flex: 1 },
+  switch: { paddingRight: 16 },
   row: {
     flexDirection: "row",
     alignItems: "center",

@@ -224,8 +224,14 @@ const known: Record<string, (...args: never[]) => unknown> = {
     entries: useDaemon.getState().timelines[id] ?? [],
   }),
   setAgentTimelineSubscription: async () => ({}),
-  sendMessage: async (id: string, text: string) => {
-    push(id, { type: "user_message", text, messageId: `u-${Date.now()}` } as TimelineItem);
+  sendMessage: async (id: string, text: string, opts?: { messageId?: string }) => {
+    // Like the daemon, the client's message id comes back as the user message's clientMessageId.
+    push(id, {
+      type: "user_message",
+      text,
+      messageId: `u-${Date.now()}`,
+      ...(opts?.messageId ? { clientMessageId: opts.messageId } : {}),
+    } as TimelineItem);
     void playTurn(id);
     return {};
   },

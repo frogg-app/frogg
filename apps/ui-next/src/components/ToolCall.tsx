@@ -32,6 +32,7 @@ import { Clamp } from "./chat/Clamp";
 import { Collapse } from "./subwork/Collapse";
 import { CodeBlock } from "./Code";
 import { Markdown } from "./Markdown";
+import { HostImage } from "./markdown/HostImage";
 import { StatusGlyph } from "./StatusGlyph";
 import { SpawnedElapsed, SpawnedLink } from "./subwork/Link";
 import { T } from "./Text";
@@ -132,11 +133,15 @@ function summary(
   }
 }
 
+const IMAGE_FILE = /\.(png|jpe?g|gif|webp|bmp|svg)$/i;
+
 function Body({ d }: { d: Detail }) {
   switch (d.type) {
     case "shell":
       return d.output ? <Pre text={d.output} /> : null;
     case "read":
+      // A screenshot or other picture the agent looked at shows as the picture, not its bytes.
+      if (d.filePath && IMAGE_FILE.test(d.filePath)) return <HostImage src={d.filePath} alt="" />;
       return d.content ? <CodeBlock code={d.content} filename={d.filePath} /> : null;
     case "write":
       return d.content ? <CodeBlock code={d.content} filename={d.filePath} /> : null;

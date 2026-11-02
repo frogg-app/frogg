@@ -164,9 +164,13 @@ export function buildCleanCutTranscript(items: readonly AgentTimelineItem[]): st
   ].join("");
 }
 
+/** The summariser prompt's first line; the import list uses it to hide summariser transcripts. */
+export const CLEAN_CUT_SUMMARY_PROMPT_FIRST_LINE =
+  "You are writing a handover note so a fresh coding agent can continue a session without its history.";
+
 export function buildCleanCutSummaryPrompt(input: { transcript: string; cwd: string }): string {
   return [
-    "You are writing a handover note so a fresh coding agent can continue a session without its history.",
+    CLEAN_CUT_SUMMARY_PROMPT_FIRST_LINE,
     "Do not use any tools: you have no access to the workspace. Answer from the transcript alone,",
     "in a single reply.",
     "",

@@ -57,7 +57,7 @@ export function TimelineItem({
   const it = e.item;
   switch (it.type) {
     case "user_message":
-      return <UserMessage text={it.text} />;
+      return <UserMessage text={it.text} messageId={it.clientMessageId} />;
     case "assistant_message":
       return (
         <View style={s.reply}>

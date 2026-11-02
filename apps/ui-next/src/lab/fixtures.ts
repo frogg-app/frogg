@@ -341,6 +341,7 @@ export const ID = {
   working: "s-working",
   review: "s-review",
   idle: "s-idle",
+  child: "s-child",
 } as const;
 
 function session(a: Agent, project: string, branch: string | null): Session {
@@ -431,6 +432,17 @@ export function sessions(): Record<string, Session> {
     ),
     session(
       agent({ id: ID.idle, title: "Docs: pairing guide", updatedAt: ago(60 * 26) }),
+      "website",
+      "docs/pairing",
+    ),
+    // A subagent the pairing guide session started: listed under it, never as its own row.
+    session(
+      agent({
+        id: ID.child,
+        title: "Refresh pairing screenshots",
+        labels: { "frogg.parent-agent-id": ID.idle },
+        updatedAt: ago(60 * 26),
+      }),
       "website",
       "docs/pairing",
     ),

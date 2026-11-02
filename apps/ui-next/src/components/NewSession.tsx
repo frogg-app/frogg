@@ -49,6 +49,7 @@ import { LaunchFields, useLaunch, type Launch, type LaunchInput } from "./sessio
 import { FolderBrowser } from "./sessions/sheets";
 import { useModalLayer } from "./shell/modalStack";
 import { T } from "./Text";
+import { kbd } from "../kbd";
 
 type Isolation = "worktree" | "local";
 const NO_PROJECTS: Project[] = [];
@@ -997,7 +998,7 @@ function DeskSheet({
             <View style={s.headRow}>
               <View style={s.flex}>
                 <T v="mono" style={s.kbd}>
-                  ⌘N
+                  {kbd("⌘N")}
                 </T>
                 <T v="display" style={s.heading}>
                   New session

@@ -137,3 +137,87 @@ function rootOf(abs: string): string {
   const drive = /^([A-Za-z]:)[\\/]/.exec(abs);
   return drive ? `${drive[1]}/` : "/";
 }
+
+// ---- lines --------------------------------------------------------------------------------------
+
+export type LineKind =
+  | { kind: "fence" }
+  | { kind: "hr" }
+  | { kind: "h"; level: number; cut: number }
+  | {
+      kind: "li";
+      cut: number;
+      /** Nesting level from the indent (two spaces or a tab per level). */
+      depth: number;
+      /** `•` for bullets, `3.` for numbered items, `☐`/`☑` for task items. */
+      marker: string;
+      ordered: boolean;
+    }
+  | { kind: "quote"; cut: number };
+
+const FENCE = /^\s{0,3}(```|~~~)/;
+const RULE = /^\s{0,3}([-*_])(\s*\1){2,}\s*$/;
+const HEADING = /^#{1,6}\s/;
+const ITEM = /^(\s*)([-*+]|\d+[.)])\s+(\[([ xX])\]\s+)?/;
+const QUOTE = /^\s{0,3}>\s?/;
+
+/** What a markdown line starts: a fence, rule, heading, list item or quote; null for prose. */
+export function classifyLine(line: string): LineKind | null {
+  if (FENCE.test(line)) return { kind: "fence" };
+  if (RULE.test(line)) return { kind: "hr" };
+  if (HEADING.test(line)) {
+    const level = line.indexOf(" ");
+    return { kind: "h", level, cut: level + 1 };
+  }
+  const item = ITEM.exec(line);
+  if (item) {
+    const indent = item[1].replace(/\t/g, "  ").length;
+    const task = item[4];
+    const bullet = /^[-*+]$/.test(item[2]);
+    let marker = bullet ? "•" : item[2].replace(")", ".");
+    if (task !== undefined) marker = task === " " ? "☐" : "☑";
+    return {
+      kind: "li",
+      cut: item[0].length,
+      depth: Math.min(4, Math.floor(indent / 2)),
+      marker,
+      ordered: !bullet && task === undefined,
+    };
+  }
+  const quote = QUOTE.exec(line);
+  if (quote) return { kind: "quote", cut: quote[0].length };
+  return null;
+}
+
+// ---- inline -------------------------------------------------------------------------------------
+
+/**
+ * Inline tokens: code, bold, strikethrough, links, bare URLs, italics. Split with it; a part that
+ * matched is one token, `inlineToken` says which.
+ */
+export const INLINE =
+  /(`[^`]+`|\*\*[^*]+\*\*|~~[^~]+~~|\[[^\]]+\]\([^)\s]+\)|https?:\/\/[^\s<>()]+[^\s<>().,;:!?'"]|(?<![\w*])[_*][^_*\s][^_*]*[_*](?![\w*]))/g;
+
+export type InlineToken =
+  | { kind: "code" | "bold" | "strike" | "italic"; text: string; off: number }
+  | { kind: "link"; text: string; off: number; href: string }
+  | { kind: "text"; text: string; off: 0 };
+
+/** What one part of `text.split(INLINE)` is; `off` is where its visible text starts in the part. */
+export function inlineToken(part: string): InlineToken {
+  if (part.length > 1 && part.startsWith("`") && part.endsWith("`"))
+    return { kind: "code", text: part.slice(1, -1), off: 1 };
+  if (part.length > 4 && part.startsWith("**") && part.endsWith("**"))
+    return { kind: "bold", text: part.slice(2, -2), off: 2 };
+  if (part.length > 4 && part.startsWith("~~") && part.endsWith("~~"))
+    return { kind: "strike", text: part.slice(2, -2), off: 2 };
+  const link = /^\[([^\]]+)\]\(([^)\s]+)\)$/.exec(part);
+  if (link) return { kind: "link", text: link[1], off: 1, href: link[2] };
+  if (/^https?:\/\/\S+$/.test(part)) return { kind: "link", text: part, off: 0, href: part };
+  if (/^[_*].+[_*]$/.test(part)) return { kind: "italic", text: part.slice(1, -1), off: 1 };
+  return { kind: "text", text: part, off: 0 };
+}
+
+/** Only web links open from a reply; anything else (paths, javascript:) stays text. */
+export const safeHref = (href: string): string | null =>
+  /^(https?:|mailto:)/i.test(href) ? href : null;
