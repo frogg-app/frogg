@@ -2,15 +2,15 @@ import { PARENT_AGENT_ID_LABEL } from "@frogg/protocol/agent-labels";
 import { ArrowLeft, CornerLeftUp } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { loadConfig, useConfig } from "../daemon/config";
 import { useSubWorkStore } from "../daemon/subwork";
 import { useViewers } from "../daemon/viewers";
-import { cancelTurn, openTimeline, setAgentMode, setAgentModel, useDaemon } from "../daemon/store";
+import { cancelTurn, openTimeline, useDaemon } from "../daemon/store";
 import { bucketOf, type Agent, type Session, type TimelineEntry } from "../daemon/types";
 import { color, motion } from "../theme/tokens";
 import { useUi } from "../ui-store";
 import { providerLabel } from "../util";
 import { AccountChip } from "./chat/AccountChip";
+import { AgentControls } from "./chat/AgentControls";
 import { ContextMeter } from "./chat/ContextMeter";
 import { ProviderChip } from "./chat/ProviderChip";
 import { ComposerNotices } from "./chat/Notices";
@@ -34,7 +34,6 @@ import { toastError } from "./toast/store";
 import { Composer, type CutSend } from "./Composer";
 import { ImageRoot } from "./markdown/HostImage";
 import { PermissionCard } from "./PermissionCard";
-import { Select } from "./Select";
 import { bucketColor, StatusGlyph } from "./StatusGlyph";
 import { T } from "./Text";
 import { RevealHeading } from "./chat/TextReveal";
@@ -295,71 +294,6 @@ function Thinking({
         {activity(entries, waiting)}
       </T>
     </View>
-  );
-}
-
-/** Model and mode pickers for a live session, fed by the host's provider snapshot. */
-function AgentControls({ agent }: { agent: Agent }) {
-  const providers = useConfig((st) => st.providers);
-  useEffect(() => {
-    if (!providers) void loadConfig();
-  }, [providers]);
-  const model = agent.runtimeInfo?.model ?? agent.model;
-  const models = useMemo(
-    () =>
-      (providers?.entries.find((p) => p.provider === agent.provider)?.models ?? []).map((m) => ({
-        value: m.id,
-        label: m.label,
-        hint: m.description,
-      })),
-    [providers, agent.provider],
-  );
-  const modes = useMemo(
-    () =>
-      agent.availableModes.map((m) => ({
-        value: m.id,
-        label: m.label,
-        hint: m.description,
-      })),
-    [agent.availableModes],
-  );
-  const pickModel = useCallback(
-    (v: string) =>
-      void setAgentModel(agent.id, v).catch((e) => toastError("Could not change model", e)),
-    [agent.id],
-  );
-  const pickMode = useCallback(
-    (v: string) =>
-      void setAgentMode(agent.id, v).catch((e) => toastError("Could not change mode", e)),
-    [agent.id],
-  );
-  return (
-    <>
-      <Select
-        label="Model"
-        chip
-        mono
-        up
-        width="auto"
-        menuWidth={240}
-        value={model ?? null}
-        placeholder={model ?? "default model"}
-        options={models}
-        onChange={pickModel}
-      />
-      {modes.length > 0 && (
-        <Select
-          label="Mode"
-          chip
-          up
-          width="auto"
-          menuWidth={240}
-          value={agent.currentModeId}
-          options={modes}
-          onChange={pickMode}
-        />
-      )}
-    </>
   );
 }
 
