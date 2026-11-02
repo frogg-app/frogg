@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Chat } from "../../components/Chat";
 import { AccountChip } from "../../components/chat/AccountChip";
@@ -19,6 +19,7 @@ import { color } from "../../theme/tokens";
 import { useUi } from "../../ui-store";
 import { commands as COMMANDS, entry, ID, toolDetails, toolItem } from "../fixtures";
 import { LAB_ATTACHMENTS } from "../sim/fs";
+import { useUploads } from "../../components/chat/upload";
 import { Above, Case, Cases, Fill, W, type Entry } from "../kit";
 
 type ToolItem = Extract<TimelineItem, { type: "tool_call" }>;
@@ -393,7 +394,7 @@ function Attachments() {
   return (
     <Cases>
       <Case name="AttachMenu" props="onAdd" note="Click + for the menu (web file picker)." plain>
-        <AttachMenu onAdd={add} />
+        <AttachMenu onAdd={add} onRemove={remove} />
       </Case>
       <Case
         name="AttachChips"
@@ -404,7 +405,29 @@ function Attachments() {
       >
         <AttachChips items={items} onRemove={remove} />
       </Case>
+      <Case
+        name="AttachChips · uploading"
+        props="items={[upload]}"
+        note="A large file streams to the host with progress; × cancels the upload."
+        w={W.phone}
+        plain
+      >
+        <UploadingChip />
+      </Case>
     </Cases>
+  );
+}
+
+const UPLOAD_SIZE = 1_997_000_000;
+function UploadingChip() {
+  useEffect(() => {
+    useUploads.setState({ lab: { sent: UPLOAD_SIZE * 0.42, total: UPLOAD_SIZE } });
+  }, []);
+  return (
+    <AttachChips
+      items={[{ kind: "upload", id: "lab", name: "project-backup.zip", size: UPLOAD_SIZE }]}
+      onRemove={noop}
+    />
   );
 }
 

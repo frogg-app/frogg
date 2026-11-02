@@ -2,10 +2,15 @@ import { PanelLeftClose, PanelLeftOpen, Plus, SquareTerminal, X } from "lucide-r
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useDaemon } from "../daemon/store";
+import { useHosts } from "../daemon/hosts";
 import {
   killTerminal,
+  killTerminalOnHost,
+  openTerminalOnHost,
+  refreshFleetTerminals,
   type TerminalInfo,
   newTerminal,
+  useFleetTerminals,
   useTerminals,
   watchTerminals,
 } from "../daemon/terminals";
@@ -132,6 +137,7 @@ export function TerminalsPanel() {
               onOpen={openTerminal}
             />
           )}
+          <OtherHosts />
           {error && (
             <T v="mono" style={st.error}>
               {error}
@@ -143,18 +149,62 @@ export function TerminalsPanel() {
   );
 }
 
+/** How often other hosts' terminal lists refresh while the panel is open. */
+const FLEET_REFRESH_MS = 5000;
+
+/**
+ * Terminals on the other connected hosts, one group per host (Settings → Terminal can limit the
+ * list to the active host). Opening one makes its host active, as opening its session would.
+ */
+function OtherHosts() {
+  const on = usePrefs((p) => p.terminalsAllHosts);
+  const fleet = useFleetTerminals();
+  const hosts = useHosts((h) => h.hosts);
+  const activeId = useHosts((h) => h.activeId);
+  useEffect(() => {
+    if (!on) return;
+    void refreshFleetTerminals();
+    const timer = setInterval(() => void refreshFleetTerminals(), FLEET_REFRESH_MS);
+    return () => clearInterval(timer);
+  }, [on, activeId]);
+  if (!on) return null;
+  return hosts
+    .filter((h) => h.id !== activeId && (fleet[h.id]?.length ?? 0) > 0)
+    .map((h) => <HostGroup key={h.id} hostId={h.id} name={h.name} list={fleet[h.id]} />);
+}
+
+function HostGroup({ hostId, name, list }: { hostId: string; name: string; list: TerminalInfo[] }) {
+  const open = useCallback(
+    (id: string) => void openTerminalOnHost(hostId, () => useUi.getState().openTerminal(id)),
+    [hostId],
+  );
+  const kill = useCallback((id: string) => killTerminalOnHost(hostId, id), [hostId]);
+  return (
+    <Group
+      title={name}
+      sub="another host · opening a terminal switches to it"
+      list={list}
+      selected={null}
+      onOpen={open}
+      onKill={kill}
+    />
+  );
+}
+
 function Group({
   title,
   sub,
   list,
   selected,
   onOpen,
+  onKill = killTerminal,
 }: {
   title: string;
   sub?: string;
   list: TerminalInfo[] | null;
   selected: string | null;
   onOpen: (id: string) => void;
+  onKill?: (id: string) => Promise<void>;
 }) {
   return (
     <View>
@@ -165,20 +215,22 @@ function Group({
         </T>
       )}
       {list?.map((t) => (
-        <TerminalRow key={t.id} t={t} on={t.id === selected} onOpen={onOpen} />
+        <TerminalRow key={t.id} t={t} on={t.id === selected} onOpen={onOpen} onKill={onKill} />
       ))}
     </View>
   );
 }
 
-function TerminalRow({
+export function TerminalRow({
   t,
   on,
   onOpen,
+  onKill,
 }: {
   t: TerminalInfo;
   on: boolean;
   onOpen: (id: string) => void;
+  onKill: (id: string) => Promise<void>;
 }) {
   const press = useCallback(() => onOpen(t.id), [onOpen, t.id]);
   const confirm = useConfirm();
@@ -190,12 +242,10 @@ function TerminalRow({
         action: "Close terminal",
         danger: true,
         run: () => {
-          void killTerminal(t.id).catch((e: unknown) =>
-            useTerminals.setState({ error: String(e) }),
-          );
+          void onKill(t.id).catch((e: unknown) => useTerminals.setState({ error: String(e) }));
         },
       }),
-    [confirm, t],
+    [confirm, t, onKill],
   );
   return (
     <View>

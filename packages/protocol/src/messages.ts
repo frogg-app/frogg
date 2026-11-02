@@ -3435,6 +3435,12 @@ export const FileDownloadTokenRequestSchema = z.object({
   requestId: z.string(),
 });
 
+/**
+ * Largest file a client may upload to a host in one transfer. Uploads stream to disk in chunks,
+ * so this bounds disk use and transfer time rather than memory.
+ */
+export const FILE_UPLOAD_MAX_BYTES = 4 * 1024 * 1024 * 1024;
+
 export const FileUploadRequestSchema = z.object({
   type: z.literal("file.upload.request"),
   fileName: z.string().min(1),

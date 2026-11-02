@@ -28,6 +28,9 @@ import { isChat, openSheet, projectIdOf, useDirectory, type Prefs } from "./sess
 import { buildFamily, familyRows, sessionKey } from "./sessions/family";
 import { ageGroup, HistoryList } from "./sessions/history";
 import { DisplayMenu, ScopeMenu, SessionMenu } from "./sessions/menus";
+import { groupByHost, HostTerminals, useMergedTerminals } from "./sessions/merged";
+import type { TerminalInfo } from "../daemon/terminals";
+import { usePrefs } from "../prefs";
 import { LabelChip, SessionSheets } from "./sessions/sheets";
 import { StatusSummary } from "./sessions/StatusSummary";
 import { StatusGlyph } from "./StatusGlyph";
@@ -69,6 +72,8 @@ interface Group {
   /** What the section means, under its label (state sections). */
   hint?: string;
   list: Session[];
+  /** Grouped by host (terminals merged in): whose terminals follow the sessions. */
+  hostId?: string | null;
 }
 
 const branchOf = (x: Session) =>
@@ -92,7 +97,7 @@ function sorter(sort: Prefs["sort"], pinned: (x: Session) => boolean) {
 }
 
 /** The scoped, filtered, grouped rows the list shows, plus per-bucket counts for the meter. */
-function useListModel(needle: string) {
+function useListModel(needle: string, terminals: Record<string, TerminalInfo[]> | null) {
   const sessions = useDaemon((s) => s.sessions);
   const others = useOtherHostSessions();
   const hosts = useHosts((s) => s.hosts);
@@ -141,6 +146,15 @@ function useListModel(needle: string) {
         const g = ageGroup(x.agent.updatedAt);
         push(g, g, x);
       }
+    } else if (terminals) {
+      const activeId = useHosts.getState().activeId;
+      const withTerminals = new Set(
+        Object.entries(terminals)
+          // A project scope is the active host's, so only its terminals join it.
+          .filter(([id, l]) => l.length > 0 && (scope === "all" || id === activeId))
+          .map(([id]) => id),
+      );
+      groups.push(...groupByHost(visible, hosts, activeId, withTerminals));
     } else if (prefs.group === "project") {
       for (const x of visible) {
         if (x.hostId)
@@ -170,7 +184,7 @@ function useListModel(needle: string) {
     };
     for (const g of groups) g.list = withKids(g.list);
     return { groups, counts, total: inScope.length, scopeName: scopeName(dir), hostOf, nested };
-  }, [sessions, others, hosts, dir, needle]);
+  }, [sessions, others, hosts, dir, needle, terminals]);
 }
 
 function scopeName(d: ReturnType<typeof useDirectory.getState>): string {
@@ -191,7 +205,19 @@ export function SessionList() {
   const [q, setQ] = useState("");
   const scope = useDirectory((d) => d.scope);
   const needle = q.trim().toLowerCase();
-  const { groups, counts, total, scopeName: name, hostOf, nested } = useListModel(needle);
+  // Terminals merged into this list (opt-in): grouped by host, outside the chats and history views.
+  const mergePref = usePrefs((p) => p.sessionsWithTerminals);
+  const merged = mergePref && scope !== "chats" && scope !== "archived";
+  const terminals = useMergedTerminals(merged);
+  const {
+    groups,
+    counts,
+    total,
+    scopeName: name,
+    hostOf,
+    nested,
+  } = useListModel(needle, merged ? terminals : null);
+  const terminalCount = merged ? Object.values(terminals).reduce((n, l) => n + l.length, 0) : 0;
   // Sub-work is read from the active host, so only its own sessions are asked about.
   const ids = useMemo(
     () => groups.flatMap((g) => g.list.filter((x) => !x.hostId).map((x) => x.agent.id)),
@@ -207,7 +233,8 @@ export function SessionList() {
   const history = scope === "archived";
   let body: ReactNode;
   if (history) body = <HistoryList />;
-  else if (!total) body = <Empty name={name} chats={chats} all={scope === "all"} />;
+  else if (!total && !terminalCount)
+    body = <Empty name={name} chats={chats} all={scope === "all"} />;
   else
     body = (
       <>
@@ -238,7 +265,7 @@ export function SessionList() {
                     )}
                   </View>
                   <T v="mono" style={s.groupN}>
-                    {g.list.length}
+                    {g.list.length + (g.hostId ? (terminals[g.hostId]?.length ?? 0) : 0)}
                   </T>
                 </View>
                 {g.list.map((sess) => (
@@ -251,6 +278,13 @@ export function SessionList() {
                     onMenu={openMenu}
                   />
                 ))}
+                {merged && g.hostId && (
+                  <HostTerminals
+                    hostId={g.hostId}
+                    list={terminals[g.hostId] ?? []}
+                    needle={needle}
+                  />
+                )}
               </View>
             ))}
           </BracketScope>

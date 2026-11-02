@@ -611,6 +611,18 @@ export interface FileUploadInput {
   chunkSize?: number;
 }
 export type FileUploadResult = FileUploadResponse["payload"];
+export interface FileUploadStreamInput {
+  fileName: string;
+  mimeType: string;
+  size: number;
+  /** Reads bytes [start, end) of the source; called once per chunk, in order. */
+  read: (start: number, end: number) => Promise<Uint8Array>;
+  modifiedAt?: string;
+  requestId?: string;
+  chunkSize?: number;
+  onProgress?: (sentBytes: number, totalBytes: number) => void;
+  signal?: AbortSignal;
+}
 type FileDownloadTokenPayload = FileDownloadTokenResponse["payload"];
 type DirectoryZipPayload = DirectoryZipResponse["payload"];
 type ListProviderFeaturesPayload = ListProviderFeaturesResponseMessage["payload"];
@@ -5368,6 +5380,7 @@ export class DaemonClient {
         requestId: resolvedRequestId,
       },
       responseType: "file.upload.response",
+      timeout: DEFAULT_SESSION_RPC_TIMEOUT_MS + Math.ceil(bytes.byteLength / 64),
       options: { skipQueue: true },
     });
 
@@ -5404,6 +5417,92 @@ export class DaemonClient {
     );
 
     return responsePromise;
+  }
+
+  /**
+   * Uploads a file of any size without holding it in memory: chunks are read on demand and
+   * sent only while the socket's send buffer has room. Aborting `signal` ends the transfer
+   * short, which makes the host drop the partial file, and rejects with an AbortError.
+   */
+  async uploadFileStream(input: FileUploadStreamInput): Promise<FileUploadResult> {
+    const requestId = this.createRequestId(input.requestId);
+    const modifiedAt = input.modifiedAt ?? new Date().toISOString();
+    const { size, signal } = input;
+    const chunkSize = input.chunkSize ?? 1024 * 1024;
+    signal?.throwIfAborted();
+    // An object, so the loops below see the response settle while they wait.
+    const done = { settled: false };
+    const response = this.sendCorrelatedRequest({
+      requestId,
+      message: {
+        type: "file.upload.request",
+        fileName: input.fileName,
+        mimeType: input.mimeType,
+        size,
+        modifiedAt,
+        requestId,
+      },
+      responseType: "file.upload.response",
+      // The host answers once the last byte lands; allow for slow links at ~64 KB/s.
+      timeout: DEFAULT_SESSION_RPC_TIMEOUT_MS + Math.ceil(size / 64),
+      options: { skipQueue: true },
+    }).finally(() => {
+      done.settled = true;
+    });
+    // An early answer (an error, or the host rejecting the size) stops the transfer.
+    void response.catch(() => undefined);
+    const end = () =>
+      this.sendBinaryFrame(
+        encodeFileTransferFrame({ opcode: FileTransferOpcode.FileEnd, requestId }),
+      );
+    this.sendBinaryFrame(
+      encodeFileTransferFrame({
+        opcode: FileTransferOpcode.FileBegin,
+        requestId,
+        metadata: {
+          mime: input.mimeType,
+          size,
+          encoding: "binary",
+          modifiedAt,
+          fileName: input.fileName,
+        },
+      }),
+    );
+    const highWater = chunkSize * 8;
+    let sent = 0;
+    input.onProgress?.(0, size);
+    try {
+      while (sent < size && !done.settled) {
+        while (!done.settled && (this.transport?.bufferedAmount?.() ?? 0) > highWater) {
+          signal?.throwIfAborted();
+          await new Promise((resolve) => setTimeout(resolve, 15));
+        }
+        signal?.throwIfAborted();
+        if (done.settled) break;
+        const next = Math.min(sent + chunkSize, size);
+        const payload = await input.read(sent, next);
+        signal?.throwIfAborted();
+        if (done.settled) break;
+        this.sendBinaryFrame(
+          encodeFileTransferFrame({ opcode: FileTransferOpcode.FileChunk, requestId, payload }),
+        );
+        sent += payload.byteLength;
+        input.onProgress?.(sent, size);
+        if (payload.byteLength === 0) break;
+      }
+    } catch (error) {
+      // Ending short makes the host discard what it received.
+      if (!done.settled) {
+        try {
+          end();
+        } catch {
+          // The transport is gone; the host expires the partial upload itself.
+        }
+      }
+      throw error;
+    }
+    if (!done.settled) end();
+    return response;
   }
 
   /**

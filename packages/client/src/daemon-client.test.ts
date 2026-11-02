@@ -2228,6 +2228,117 @@ test("uploadFile sends metadata request and file bytes as binary chunks", async 
   });
 });
 
+async function connectedUploadClient() {
+  const mock = createMockTransport();
+  const client = new DaemonClient({
+    url: "ws://test",
+    clientId: "clsk_unit_test",
+    logger: createMockLogger(),
+    reconnect: { enabled: false },
+    transportFactory: () => mock.transport,
+  });
+  clients.push(client);
+  const connectPromise = client.connect();
+  mock.triggerOpen();
+  await connectPromise;
+  return { client, mock };
+}
+
+function uploadFrames(mock: ReturnType<typeof createMockTransport>) {
+  return mock.sent
+    .filter((f) => typeof f !== "string")
+    .map(assertUint8Array)
+    .map(decodeFileTransferFrame);
+}
+
+test("uploadFileStream reads chunks on demand and reports progress", async () => {
+  const { client, mock } = await connectedUploadClient();
+  const source = new TextEncoder().encode("hello world");
+  const reads: Array<[number, number]> = [];
+  const progress: number[] = [];
+  const responsePromise = client.uploadFileStream({
+    fileName: "notes.txt",
+    mimeType: "text/plain",
+    size: source.byteLength,
+    read: async (start, end) => {
+      reads.push([start, end]);
+      return source.subarray(start, end);
+    },
+    requestId: "req-stream",
+    chunkSize: 5,
+    onProgress: (sent) => progress.push(sent),
+  });
+  await vi.waitFor(() =>
+    expect(uploadFrames(mock).at(-1)?.opcode).toBe(FileTransferOpcode.FileEnd),
+  );
+  expect(reads).toEqual([
+    [0, 5],
+    [5, 10],
+    [10, 11],
+  ]);
+  expect(progress).toEqual([0, 5, 10, 11]);
+  expect(
+    uploadFrames(mock)
+      .filter((f) => f.opcode === FileTransferOpcode.FileChunk)
+      .map((f) => new TextDecoder().decode(f.payload))
+      .join(""),
+  ).toBe("hello world");
+  mock.triggerMessage(
+    wrapSessionMessage({
+      type: "file.upload.response",
+      payload: { requestId: "req-stream", file: null, error: "nope" },
+    }),
+  );
+  await expect(responsePromise).resolves.toMatchObject({ requestId: "req-stream" });
+});
+
+test("uploadFileStream ends the transfer short and rejects when aborted", async () => {
+  const { client, mock } = await connectedUploadClient();
+  const abort = new AbortController();
+  const responsePromise = client.uploadFileStream({
+    fileName: "big.zip",
+    mimeType: "application/zip",
+    size: 100,
+    read: async (start, end) => {
+      if (start >= 10) abort.abort();
+      return new Uint8Array(end - start);
+    },
+    requestId: "req-cancel",
+    chunkSize: 10,
+    signal: abort.signal,
+  });
+  await expect(responsePromise).rejects.toThrow();
+  const frames = uploadFrames(mock);
+  expect(frames.filter((f) => f.opcode === FileTransferOpcode.FileChunk)).toHaveLength(1);
+  expect(frames.at(-1)?.opcode).toBe(FileTransferOpcode.FileEnd);
+});
+
+test("uploadFileStream stops sending when the host answers early", async () => {
+  const { client, mock } = await connectedUploadClient();
+  const responsePromise = client.uploadFileStream({
+    fileName: "huge.zip",
+    mimeType: "application/zip",
+    size: 100,
+    read: async (start, end) => {
+      if (start === 10) {
+        mock.triggerMessage(
+          wrapSessionMessage({
+            type: "file.upload.response",
+            payload: { requestId: "req-early", file: null, error: "too large" },
+          }),
+        );
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+      return new Uint8Array(end - start);
+    },
+    requestId: "req-early",
+    chunkSize: 10,
+  });
+  await expect(responsePromise).resolves.toMatchObject({ error: "too large" });
+  const chunks = uploadFrames(mock).filter((f) => f.opcode === FileTransferOpcode.FileChunk);
+  expect(chunks).toHaveLength(1);
+});
+
 test("normalizes workspace_setup_progress into a workspace-scoped daemon event", async () => {
   const logger = createMockLogger();
   const mock = createMockTransport();

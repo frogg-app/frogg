@@ -50,6 +50,79 @@ export async function loadDir(path: string): Promise<void> {
   }
 }
 
+// ---- Typed paths -------------------------------------------------------------------------------
+
+/**
+ * A folder typed into the Files tab. While set it replaces the session's checkout as the tree's
+ * root; clearing it goes back to the checkout.
+ */
+export const useBrowseRoot = create<{ path: string | null }>(() => ({ path: null }));
+onHostSwitch(() => useBrowseRoot.setState({ path: null }));
+
+const isAbsolute = (p: string) =>
+  p.startsWith("/") || p.startsWith("~") || /^[A-Za-z]:([\\/]|$)/.test(p) || p.startsWith("\\\\");
+
+/**
+ * Turns what was typed into a path the host can list: absolute, home-relative (`~`, `~/x`) and
+ * Windows (`C:/Users`, `C:\Users`, `\\server\share`) paths are kept; anything else is relative
+ * to the current root. Trailing separators are dropped, except on a bare root.
+ */
+export function resolveTypedPath(input: string, root: string | null): string | null {
+  let p = input.trim().replace(/^["']|["']$/g, "");
+  if (!p) return null;
+  if (!isAbsolute(p)) {
+    if (!root) return null;
+    p = `${root.replace(/[\\/]+$/, "")}/${p.replace(/^\.\//, "")}`;
+  }
+  const trimmed = p.replace(/[\\/]+$/, "");
+  if (!trimmed) return "/";
+  if (/^[A-Za-z]:$/.test(trimmed)) return `${trimmed}/`;
+  return trimmed;
+}
+
+const splitParent = (abs: string): [string, string] | null => {
+  const i = Math.max(abs.lastIndexOf("/"), abs.lastIndexOf("\\"));
+  if (i < 0 || i === abs.length - 1) return null;
+  const parent = i === 0 ? "/" : abs.slice(0, i);
+  return [/^[A-Za-z]:$/.test(parent) ? `${parent}/` : parent, abs.slice(i + 1)];
+};
+
+/**
+ * Points the Files tab at a typed path. A folder becomes the root; a file roots the tree at its
+ * folder and is returned so the caller can open it. Returns an error message when it can't.
+ */
+export async function jumpToPath(
+  input: string,
+): Promise<{ ok: true; file: string | null } | { ok: false; error: string }> {
+  const client = getClient();
+  if (!client) return { ok: false, error: "not connected" };
+  const abs = resolveTypedPath(input, useFiles.getState().root);
+  if (!abs) return { ok: false, error: "Type a folder path, like ~/projects or C:/Users" };
+  try {
+    const dir = await client.listDirectory(abs, ".");
+    const root = dir.absolutePath || abs;
+    useBrowseRoot.setState({ path: root });
+    await setRoot(root);
+    return { ok: true, file: null };
+  } catch (e) {
+    const parts = splitParent(abs);
+    if (parts) {
+      const parent = await client.listDirectory(parts[0], ".").catch(() => null);
+      if (parent?.entries.some((x) => x.name === parts[1] && x.kind === "file")) {
+        const root = parent.absolutePath || parts[0];
+        useBrowseRoot.setState({ path: root });
+        await setRoot(root);
+        return { ok: true, file: parts[1] };
+      }
+    }
+    const msg = e instanceof Error ? e.message : String(e);
+    if (/ENOENT|no such file/i.test(msg)) return { ok: false, error: `Nothing at ${abs}` };
+    if (/ENOTDIR/i.test(msg)) return { ok: false, error: `${abs} is not a folder` };
+    if (/EACCES|EPERM/i.test(msg)) return { ok: false, error: `No permission to open ${abs}` };
+    return { ok: false, error: msg };
+  }
+}
+
 export function toggleDir(path: string): void {
   const open = !useFiles.getState().expanded[path];
   useFiles.setState((s) => ({ expanded: { ...s.expanded, [path]: open } }));

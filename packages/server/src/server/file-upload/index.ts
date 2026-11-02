@@ -3,6 +3,7 @@ import { basename, join } from "node:path";
 
 import { FileTransferOpcode, type FileTransferFrame } from "@frogg/protocol/binary-frames/index";
 import { getErrorMessage } from "@frogg/protocol/error-utils";
+import { FILE_UPLOAD_MAX_BYTES } from "@frogg/protocol/messages";
 import type { FileUploadRequest, FileUploadResponse } from "../messages.js";
 
 interface FileUploadStoreOptions {
@@ -37,7 +38,18 @@ export class FileUploadStore {
       options.staleUploadTimeoutMs ?? FileUploadStore.defaultStaleUploadTimeoutMs;
   }
 
-  beginUpload(request: FileUploadRequest): void {
+  /** Starts receiving an upload; returns a rejection to send straight back when it is refused. */
+  beginUpload(request: FileUploadRequest): FileUploadResponse | null {
+    if (request.size > FILE_UPLOAD_MAX_BYTES) {
+      return {
+        type: "file.upload.response",
+        payload: {
+          requestId: request.requestId,
+          file: null,
+          error: `File is too large to upload: the limit is ${formatGiB(FILE_UPLOAD_MAX_BYTES)}.`,
+        },
+      };
+    }
     const existingUpload = this.pending.get(request.requestId);
     if (existingUpload) {
       this.clearPendingUpload(existingUpload);
@@ -62,6 +74,7 @@ export class FileUploadStore {
       queue: Promise.resolve(),
     };
     this.pending.set(request.requestId, upload);
+    return null;
   }
 
   async receiveFrame(frame: FileTransferFrame): Promise<FileUploadResponse | null> {
@@ -201,6 +214,10 @@ function buildUploadResponse(upload: PendingUpload, error: string | null): FileU
       error,
     },
   };
+}
+
+function formatGiB(bytes: number): string {
+  return `${Math.round((bytes / 1024 ** 3) * 10) / 10} GB`;
 }
 
 function sanitizeUploadId(value: string): string {

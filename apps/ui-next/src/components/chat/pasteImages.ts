@@ -9,5 +9,6 @@ import type { Attachment } from "./actions";
 export function usePasteImages(
   _input: RefObject<TextInput | null>,
   _onAdd: (a: Attachment[]) => void,
+  _onRemove: (id: string) => void,
   _enabled: boolean,
 ): void {}

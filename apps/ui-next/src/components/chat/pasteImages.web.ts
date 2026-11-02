@@ -1,7 +1,7 @@
 import { useEffect, type RefObject } from "react";
 import type { TextInput } from "react-native";
 import { toastError } from "../toast/store";
-import { prepareAttachment, type Attachment } from "./actions";
+import { attachPicked, type Attachment } from "./actions";
 import { picturesToAttach } from "./pasteRules";
 import { readFile } from "./pickFiles.web";
 
@@ -11,6 +11,7 @@ let pasted = 0;
 export function usePasteImages(
   input: RefObject<TextInput | null>,
   onAdd: (a: Attachment[]) => void,
+  onRemove: (id: string) => void,
   enabled: boolean,
 ): void {
   useEffect(() => {
@@ -35,11 +36,12 @@ export function usePasteImages(
         const ext = f.type.split("/")[1] ?? "png";
         return new File([f], `Pasted image ${pasted}.${ext}`, { type: f.type });
       });
-      Promise.all(named.map(readFile))
-        .then((picked) => Promise.all(picked.map(prepareAttachment)))
-        .then(onAdd, (err: unknown) => toastError("Could not attach the pasted image", err));
+      Promise.all(named.map(readFile)).then(
+        (picked) => attachPicked(picked, onAdd, onRemove),
+        (err: unknown) => toastError("Could not attach the pasted image", err),
+      );
     };
     el.addEventListener("paste", onPaste);
     return () => el.removeEventListener("paste", onPaste);
-  }, [input, onAdd, enabled]);
+  }, [input, onAdd, onRemove, enabled]);
 }

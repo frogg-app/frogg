@@ -1,8 +1,8 @@
-import type { Picked } from "./actions";
+import { INLINE_IMAGE_MAX_BYTES, tooLarge, type Picked } from "./upload";
 
 export const canPickFiles = true;
 
-export function readFile(file: File): Promise<Picked> {
+function readBase64(file: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
     r.addEventListener("error", () => reject(r.error ?? new Error("Could not read file")), {
@@ -12,12 +12,7 @@ export function readFile(file: File): Promise<Picked> {
       "load",
       () => {
         const url = String(r.result);
-        resolve({
-          name: file.name,
-          mimeType: file.type || "application/octet-stream",
-          base64: url.slice(url.indexOf(",") + 1),
-          size: file.size,
-        });
+        resolve(url.slice(url.indexOf(",") + 1));
       },
       { once: true },
     );
@@ -25,7 +20,25 @@ export function readFile(file: File): Promise<Picked> {
   });
 }
 
-/** Opens the browser file chooser and reads the picks as base64. */
+/**
+ * Wraps a browser file. Small images are read up front so they can go to the model; everything
+ * else is read a chunk at a time while it uploads, so size is bounded by the host, not memory.
+ */
+export async function readFile(file: File): Promise<Picked> {
+  const refused = tooLarge(file.name, file.size);
+  if (refused) throw new Error(refused);
+  const mimeType = file.type || "application/octet-stream";
+  const inline = mimeType.startsWith("image/") && file.size <= INLINE_IMAGE_MAX_BYTES;
+  return {
+    name: file.name,
+    mimeType,
+    size: file.size,
+    ...(inline ? { base64: await readBase64(file) } : {}),
+    read: async (start, end) => new Uint8Array(await file.slice(start, end).arrayBuffer()),
+  };
+}
+
+/** Opens the browser file chooser and wraps the picks. */
 export function pickFiles(opts: { images?: boolean }): Promise<Picked[]> {
   return new Promise((resolve, reject) => {
     const input = document.createElement("input");
