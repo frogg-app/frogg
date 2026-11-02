@@ -160,6 +160,7 @@ import { setupUsageLimitAutoResume } from "./agent/usage-limit-auto-resume.js";
 import { maybeAutoCleanCut, type AutoCleanCutDeps } from "./agent/auto-clean-cut.js";
 import { sendPromptToAgent } from "./agent/agent-prompt.js";
 import { PluginService } from "./plugins/plugin-service.js";
+import { agentConnectorSummary } from "./plugins/agent-connectors.js";
 import { createPluginSpeechBridge } from "./plugins/speech-bridge.js";
 import { createPluginAgentBridge } from "./plugins/agent-bridge.js";
 import { createPluginTodosBridge, createPluginWorkspacesBridge } from "./plugins/host-bridges.js";
@@ -1956,6 +1957,7 @@ export async function createFroggDaemon(
     browserToolsEnabled: browserToolsPolicy.isEnabled(),
     browserToolsBroker,
     projectTodos: projectTodoService,
+    connectors: pluginService,
     froggHome: config.froggHome,
     worktreesRoot: config.worktreesRoot,
     callerAgentId: runtime.callerAgentId,
@@ -1971,6 +1973,10 @@ export async function createFroggDaemon(
     agentProviderRuntime.setFroggToolCatalog(enabled ? createAgentToolCatalog({}) : null);
   };
   agentManager.setFroggToolCatalogFactory(createAgentToolCatalog);
+  // Hidden capability summary so agents know which connectors this host runs.
+  agentManager.setConnectorContextResolver(() =>
+    agentConnectorSummary(pluginService.listAgentConnectors()),
+  );
   agentManager.setFroggToolsEnabled(config.mcpInjectIntoAgents !== false);
   setAgentProviderToolsEnabled(config.mcpEnabled !== false && config.mcpInjectIntoAgents !== false);
 

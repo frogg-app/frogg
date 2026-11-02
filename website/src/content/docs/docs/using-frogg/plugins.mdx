@@ -151,6 +151,25 @@ change and carry a **DEV** badge. **Unlink** removes the link without touching t
 Stable builds can't link local plugins. Brands can also forbid it with `plugins.developerMode`,
 in which case the option is hidden on hosts and in the desktop app alike.
 
+## Claude Code plugins
+
+Frogg Next's **Settings → Plugins** also lists the Claude Code plugins installed on the host, for
+each Claude account's plugins folder (accounts that link the same folder are listed once). Each
+row shows the marketplace and installed version. Frogg compares it with the version the local
+copy of that marketplace declares, from its `marketplace.json` or the plugin's own
+`plugin.json`:
+
+- **update on restart**: a newer version is available and the marketplace auto-updates (the
+  official Anthropic marketplaces do by default). Claude Code installs it when a Claude agent
+  starts, so restart running Claude agents to pick it up.
+- **update due**: a newer version is available but the marketplace doesn't auto-update. Run
+  `/plugin` in Claude Code to update it.
+- **up to date**, or no badge when the marketplace declares no version. Frogg can't detect
+  updates for those plugins.
+
+Frogg only reads these files. It never refreshes a marketplace, so it knows about new versions
+once Claude Code has refreshed its copy.
+
 ## What plugins add
 
 - **Commands** appear in the Command Center under **Plugins**, with the plugin's name (and the
@@ -163,6 +182,10 @@ in which case the option is hidden on hosts and in the desktop app alike.
   in the desktop and web apps.
 - **Composer actions** appear under a puzzle button in the composer toolbar and run against the
   composer's agent and directory.
+- **Agent tools** let the agents on the host use the plugin, for example to read a Discord
+  channel's history. Agents find them with the Frogg MCP tool `list_connectors` and call them
+  with `call_connector_tool`; the plugin runs them with its own credentials. They need plugin API
+  v2 and the `rpc` permission. See [Frogg MCP tools](/docs/agents-and-providers/mcp/#tools).
 - **Settings** appear on the plugin's settings page.
 - **Notifications** from a plugin show as toasts.
 - **Frogg features** are optional parts of Frogg, such as
@@ -171,6 +194,9 @@ in which case the option is hidden on hosts and in the desktop app alike.
   repository can switch a feature on.
 
 <Screenshot src={pluginsPanelImg} alt="A plugin panel open as a workspace tab" />
+
+To publish a Frogg plugin, its `frogg-plugin.json` needs a `name`, a semver `version` and a
+`description`. Hosts compare `version` with the repository index to offer updates.
 
 The same operations are available from the command line; see
 [`frogg plugins`](/docs/desktop-mobile-cli/cli/#frogg-plugins). Brands control plugin

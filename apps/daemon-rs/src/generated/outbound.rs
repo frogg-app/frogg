@@ -480,6 +480,8 @@ pub enum SessionMessage {
     ProviderUpdateInstallResponse(ProviderUpdateInstallResponse),
     #[serde(rename = "provider.update.set_preferences.response")]
     ProviderUpdateSetPreferencesResponse(ProviderUpdateSetPreferencesResponse),
+    #[serde(rename = "provider.claude_plugins.list.response")]
+    ProviderClaudePluginsListResponse(ProviderClaudePluginsListResponse),
     #[serde(rename = "provider.account.list.response")]
     ProviderAccountListResponse(ProviderAccountListResponse),
     #[serde(rename = "provider.account.create.response")]
@@ -11749,6 +11751,63 @@ pub struct ProviderUpdateSetPreferencesResponsePayloadPreferences {
     pub check_interval_minutes: f64,
     #[serde(rename = "ignoredProviders")]
     pub ignored_providers: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderClaudePluginsListResponse {
+    pub payload: ProviderClaudePluginsListResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderClaudePluginsListResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub sources: Vec<ProviderClaudePluginsListResponsePayloadSourcesItem>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderClaudePluginsListResponsePayloadSourcesItem {
+    #[serde(rename = "configDir")]
+    pub config_dir: String,
+    #[serde(rename = "accountIds")]
+    pub account_ids: Vec<String>,
+    #[serde(rename = "accountNames")]
+    pub account_names: Vec<String>,
+    pub plugins: Vec<ProviderClaudePluginsListResponsePayloadSourcesItemPluginsItem>,
+    pub marketplaces: Vec<ProviderClaudePluginsListResponsePayloadSourcesItemMarketplacesItem>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderClaudePluginsListResponsePayloadSourcesItemPluginsItem {
+    pub id: String,
+    pub name: String,
+    pub marketplace: String,
+    pub scope: String,
+    #[serde(rename = "projectPath", skip_serializing_if = "Option::is_none")]
+    pub project_path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(rename = "installedVersion", skip_serializing_if = "Option::is_none")]
+    pub installed_version: Option<String>,
+    #[serde(rename = "latestVersion", skip_serializing_if = "Option::is_none")]
+    pub latest_version: Option<String>,
+    #[serde(rename = "updateDue")]
+    pub update_due: bool,
+    #[serde(rename = "autoUpdate")]
+    pub auto_update: bool,
+    #[serde(rename = "lastUpdated", skip_serializing_if = "Option::is_none")]
+    pub last_updated: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderClaudePluginsListResponsePayloadSourcesItemMarketplacesItem {
+    pub name: String,
+    #[serde(rename = "autoUpdate")]
+    pub auto_update: bool,
+    #[serde(rename = "lastUpdated", skip_serializing_if = "Option::is_none")]
+    pub last_updated: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -347,6 +347,8 @@ pub enum SessionMessage {
     ProviderUpdateInstallRequest(ProviderUpdateInstallRequest),
     #[serde(rename = "provider.update.set_preferences.request")]
     ProviderUpdateSetPreferencesRequest(ProviderUpdateSetPreferencesRequest),
+    #[serde(rename = "provider.claude_plugins.list.request")]
+    ProviderClaudePluginsListRequest(ProviderClaudePluginsListRequest),
     #[serde(rename = "provider.account.list.request")]
     ProviderAccountListRequest(ProviderAccountListRequest),
     #[serde(rename = "provider.account.create.request")]
@@ -2661,6 +2663,12 @@ pub struct ProviderUpdateSetPreferencesRequest {
     pub check_interval_minutes: Option<i64>,
     #[serde(rename = "ignoredProviders", skip_serializing_if = "Option::is_none")]
     pub ignored_providers: Option<Vec<String>>,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderClaudePluginsListRequest {
     #[serde(rename = "requestId")]
     pub request_id: String,
 }

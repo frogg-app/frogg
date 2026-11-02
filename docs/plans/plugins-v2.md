@@ -203,5 +203,11 @@ Where the build bent the design above.
   per write, plus a daemon log line.
 - **Additions from the Discord build**: `cursor` on timeline events, `labels` on `agents.create`,
   `requestedAt` on live permission requests.
+- **Agent tools** (`contributes.agentTools`, host feature `agent.tools`): agents discover running
+  plugins through the Frogg MCP tool `list_connectors` and call their tools with
+  `call_connector_tool` (plugin RPC `tool.<id>`, `PluginRpcContext.agentId` set). Only declared
+  tools are reachable. Non-chat agents also get a short connector summary in the hidden daemon
+  system context. `frogg.discord` uses it for read-only `list_channels` and
+  `read_channel_history`.
 - **Not done**: encoded-audio input for `ctx.speech.transcribe` (Discord voice notes are
   OGG/Opus); plugins must decode to PCM16 themselves for now.

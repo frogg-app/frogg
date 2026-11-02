@@ -232,7 +232,7 @@ Authoring and repository tooling runs locally:
 | Command | What it does |
 | ------- | ------------ |
 | `frogg plugins new <id>` | Scaffold a plugin (`--name`, `--dir`) |
-| `frogg plugins pack [dir]` | Validate `frogg-plugin.json` and write `<id>-<version>.tgz` plus `.sha256` (`--out <dir>`) |
+| `frogg plugins pack [dir]` | Validate `frogg-plugin.json` (a published plugin needs `name`, a semver `version` and a `description`) and write `<id>-<version>.tgz` plus `.sha256` (`--out <dir>`) |
 | `frogg plugins keygen` | ed25519 repository keypair, base64; `--out <file>` writes the private key with mode 0600 |
 | `frogg plugins index build` | Build `index.json` from `--plugins`, `--tarballs`, `--base-url`, `--name` (`--categories`, `--commit`, `--out`). Also writes `index.v2.json` beside it: `index.json` keeps plugin API v1 versions only, for hosts that predate v2, and `index.v2.json` lists every version. Sign and verify both |
 | `frogg plugins index sign <file>` | Write `index.json.sig` and `index.json.pub` using the key in `--key-env` (default `PLUGIN_REPO_SIGNING_KEY`) or `--key-file` |

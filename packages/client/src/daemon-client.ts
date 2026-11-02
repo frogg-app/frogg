@@ -145,6 +145,7 @@ import type {
   ProviderUpdateInstallResponseMessage,
   ProviderUpdateSetPreferencesResponseMessage,
   ProviderAccountListResponseMessage,
+  ProviderClaudePluginsListResponseMessage,
   ProviderAccountCreateResponseMessage,
   ProviderAccountDeleteResponseMessage,
   ProviderAccountSetActiveResponseMessage,
@@ -637,6 +638,7 @@ type ProviderUpdateCheckPayload = ProviderUpdateCheckResponseMessage["payload"];
 type ProviderUpdateInstallPayload = ProviderUpdateInstallResponseMessage["payload"];
 type ProviderUpdateSetPreferencesPayload = ProviderUpdateSetPreferencesResponseMessage["payload"];
 type ProviderAccountListPayload = ProviderAccountListResponseMessage["payload"];
+type ProviderClaudePluginsListPayload = ProviderClaudePluginsListResponseMessage["payload"];
 type ProviderAccountCreatePayload = ProviderAccountCreateResponseMessage["payload"];
 type ProviderAccountDeletePayload = ProviderAccountDeleteResponseMessage["payload"];
 type ProviderAccountSetActivePayload = ProviderAccountSetActiveResponseMessage["payload"];
@@ -6322,6 +6324,16 @@ export class DaemonClient {
         type: "provider.account.list.request",
         ...(options?.provider ? { provider: options.provider } : {}),
       },
+    });
+  }
+
+  /** Installed Claude Code plugins and which have updates due (`claudePluginUpdates`). */
+  async listClaudePlugins(options?: {
+    requestId?: string;
+  }): Promise<ProviderClaudePluginsListPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest({
+      requestId: options?.requestId,
+      message: { type: "provider.claude_plugins.list.request" },
     });
   }
 
