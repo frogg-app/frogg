@@ -208,7 +208,7 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: color.line2,
     paddingVertical: 4,
-    ...web({ boxShadow: "0 16px 40px #000a" }),
+    ...web({ boxShadow: `0 16px 40px ${alpha(color.shadow, 0.67)}` }),
   },
   scroll: { flexGrow: 0 },
   rule: { height: 1, backgroundColor: color.line, marginVertical: 4, marginHorizontal: 6 },
