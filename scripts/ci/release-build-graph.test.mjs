@@ -55,24 +55,42 @@ test("all daemon workspace output is shared and bundle jobs never rebuild the we
 // The Expo web export is minutes per runner; the release pays it once in `ui`.
 test("desktop runners reuse the shared web export instead of rebuilding it", () => {
   const desktop = jobs.get("desktop");
-  assert.match(desktop, /name: ui-dist\n\s+path: apps\/ui\/dist/);
+  assert.match(
+    desktop,
+    /name: \$\{\{ needs\.meta\.outputs\.brand_channel == 'beta' && 'ui-dist-beta' \|\| 'ui-dist' \}\}\n\s+path: apps\/ui\/dist/,
+  );
+  // The daemon bundles always serve the stable-identity export.
+  assert.match(jobs.get("daemon-build"), /name: ui-dist\n/);
   assert.match(desktop, /build:desktop -- --target \$\{\{ matrix.target \}\} --skip-export/);
   assert.equal(ancestors("desktop").has("ui"), true);
 });
 
-// Stable tags ship the classic app, prereleases Frogg Next; the daemon ships on both.
+// Stable tags ship the classic app, -beta.N frogg beta, -next.N Frogg Next; the daemon ships on all.
 test("each release builds and requires only its own client", () => {
-  assert.doesNotMatch(workflow, /FROGG_BRAND_CHANNEL/);
-  for (const name of ["desktop", "android"])
-    assert.match(jobs.get(name), /if: .*needs\.meta\.outputs\.client == 'classic'/, name);
+  // The brand channel only reaches the classic client jobs; the daemon keeps the stable identity.
+  for (const name of ["daemon-build", "daemon-bundle", "docker", "meta", "updater-manifest"])
+    assert.doesNotMatch(jobs.get(name), /FROGG_BRAND_CHANNEL:/, name);
+  for (const name of ["desktop", "android"]) {
+    assert.match(
+      jobs.get(name),
+      /client == 'classic' \|\| needs\.meta\.outputs\.client == 'classic-beta'/,
+      name,
+    );
+    assert.match(
+      jobs.get(name),
+      /FROGG_BRAND_CHANNEL: \$\{\{ needs\.meta\.outputs\.brand_channel \}\}/,
+      name,
+    );
+  }
+  assert.match(jobs.get("ui"), /FROGG_BRAND_CHANNEL: \$\{\{ matrix\.brand_channel \}\}/);
   for (const name of ["next-desktop", "next-android"])
     assert.match(jobs.get(name), /if: .*needs\.meta\.outputs\.client == 'frogg-next'/, name);
-  for (const name of ["ui", "daemon-build", "daemon-bundle"])
+  for (const name of ["daemon-build", "daemon-bundle"])
     assert.doesNotMatch(jobs.get(name), /outputs\.client/, name);
   const publish = jobs.get("publish");
   assert.match(
     publish,
-    /client == 'classic' &&\s+needs\.desktop\.result == 'success' && needs\.android\.result == 'success'/,
+    /client == 'classic-beta'\) &&\s+needs\.desktop\.result == 'success' && needs\.android\.result == 'success'/,
   );
   assert.match(
     publish,
@@ -80,6 +98,7 @@ test("each release builds and requires only its own client", () => {
   );
   assert.match(publish, /needs\.daemon-bundle\.result == 'success'/);
   assert.match(jobs.get("updater-manifest"), /--client "\$CLIENT"/);
+  assert.match(jobs.get("meta"), /for workflow in ci\.yml frogg-next\.yml/);
 });
 
 const selectedWorkflow = readFileSync(

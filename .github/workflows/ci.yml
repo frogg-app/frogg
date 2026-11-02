@@ -6,7 +6,11 @@ on:
     # `beta` job below); stable only reruns tests for commits main never tested (backports).
     branches: [main, stable]
   pull_request:
+    # frogg-next pull requests run the same jobs from frogg-next.yml.
+    branches-ignore: [frogg-next]
   workflow_dispatch:
+  # frogg-next.yml runs these jobs for the Frogg Next line, then cuts its -next.N.
+  workflow_call:
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -45,8 +49,10 @@ jobs:
           tests="$(node scripts/release/streams.mjs needs-tests HEAD)"
           if [ "$tests" = false ]; then
             source="$(node scripts/release/streams.mjs tested-source HEAD)"
-            runs="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$source&per_page=20" \
-              --jq '[.workflow_runs[] | select(.event == "push" or .event == "workflow_dispatch")] | map(.status + ":" + (.conclusion // "")) | join(" ")')"
+            runs="$(for workflow in ci.yml frogg-next.yml; do
+              gh api "repos/$GITHUB_REPOSITORY/actions/workflows/$workflow/runs?head_sha=$source&per_page=20" \
+                --jq '[.workflow_runs[] | select(.event == "push" or .event == "workflow_dispatch")] | map(.status + ":" + (.conclusion // "")) | join(" ")' 2>/dev/null || true
+            done | tr '\n' ' ')"
             case " $runs " in
               *" completed:success "*) echo "CI already passed on $(git log -1 --format=%s "$source")." ;;
               *) echo "No passing CI run on $(git log -1 --format=%s "$source"); running tests."; tests=true ;;
