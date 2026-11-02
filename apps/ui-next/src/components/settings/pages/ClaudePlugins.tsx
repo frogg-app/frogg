@@ -1,6 +1,7 @@
 import type { DaemonClient } from "@frogg/client/internal/daemon-client";
 import { Blocks } from "lucide-react-native";
 import { color } from "../../../theme/tokens";
+import { agoText } from "../../../util";
 import { T } from "../../Text";
 import { Note, Pill, Section } from "../controls";
 import { useHostRpc as useRpc } from "./host-state";
@@ -58,6 +59,9 @@ function SourceSection({ src, named }: { src: Source; named: boolean }) {
           />
         ))}
       </Section>
+      {usedMarketplaces(src).map((m) => (
+        <Note key={m.name}>{refreshedLine(m)}</Note>
+      ))}
       {due.length > 0 && <Note>{dueNote(due)}</Note>}
       {unknown > 0 && (
         <Note>
@@ -86,6 +90,20 @@ function StatePill({ p }: { p: Plugin }) {
   if (p.updateDue)
     return <Pill text={p.autoUpdate ? "update on restart" : "update due"} tint={color.amber} />;
   return p.latestVersion ? <Pill text="up to date" /> : null;
+}
+
+type Marketplace = Source["marketplaces"][number];
+
+/** Marketplaces this folder's installed plugins come from; the rest don't affect anything shown. */
+function usedMarketplaces(src: Source): Marketplace[] {
+  const used = new Set(src.plugins.map((p) => p.marketplace));
+  return src.marketplaces.filter((m) => used.has(m.name));
+}
+
+/** Versions are only as fresh as Claude Code's last refresh of the marketplace copy. */
+function refreshedLine(m: Marketplace): string {
+  const when = m.lastUpdated ? `last refreshed ${agoText(m.lastUpdated)}` : "never refreshed";
+  return `${m.name}: marketplace ${when}${m.autoUpdate ? " · auto-updates" : ""}`;
 }
 
 /** Semver gets a v; git-sha installs (plugins with no declared version) show as they are. */
