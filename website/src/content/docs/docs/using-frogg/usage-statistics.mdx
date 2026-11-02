@@ -16,7 +16,10 @@ the prompt leaves them off.
 
 - **Send usage statistics** covers this device: app interactions only.
 - **Send from &lt;host&gt;** covers the connected daemon (`daemon.usageStats` in its
-  [config.json](/docs/reference/configuration/)). The owner of the host sets it.
+  [config.json](/docs/reference/configuration/)). Only an owner of the host can change it.
+- If you own the connected host, turning **Send usage statistics** on also turns the host's
+  statistics on, and the page says so. Use the host's own switch to turn it back off. Turning
+  the app's statistics off never changes a host's setting.
 - Statistics are an explicit, visible choice rather than silent tracking, and never contain user
   data: no prompts, code,
   file paths, project or host names, accounts or IP-derived data. Every value is a short id from
