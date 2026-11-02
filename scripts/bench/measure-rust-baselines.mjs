@@ -24,7 +24,7 @@ import path from "node:path";
 import { performance } from "node:perf_hooks";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
-import WebSocket from "ws";
+import { WebSocket } from "ws";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const { values } = parseArgs({
@@ -42,7 +42,10 @@ function freePort() {
     const server = net.createServer();
     server.listen(0, "127.0.0.1", () => {
       const { port } = server.address();
-      server.close(() => (port === 9999 ? reject(new Error("port 9999")) : resolve(port)));
+      server.close(() => {
+        if (port === 9999) reject(new Error("port 9999"));
+        else resolve(port);
+      });
     });
   });
 }
@@ -51,7 +54,10 @@ function waitForPort(port, child, timeoutMs) {
   const deadline = performance.now() + timeoutMs;
   return new Promise((resolve, reject) => {
     const attempt = () => {
-      if (child.exitCode !== null) return reject(new Error(`daemon exited ${child.exitCode}`));
+      if (child.exitCode !== null) {
+        reject(new Error(`daemon exited ${child.exitCode}`));
+        return;
+      }
       const socket = net.connect(port, "127.0.0.1");
       socket.once("connect", () => {
         socket.destroy();
@@ -127,6 +133,47 @@ function stats(samples) {
   };
 }
 
+/** Retries until the freshly started daemon answers a ping, and returns that socket. */
+async function firstPong(port, localToken, started) {
+  for (;;) {
+    let socket;
+    try {
+      socket = await openSocket(port, localToken);
+      await rawPing(socket);
+      return socket;
+    } catch {
+      socket?.terminate();
+    }
+    if (performance.now() - started > 60_000) throw new Error("no pong");
+    await new Promise((r) => setTimeout(r, 20));
+  }
+}
+
+/** 50 warm-up calls, then `--pings` timed sequential calls into `samples`. */
+async function timeSequential(samples, call) {
+  for (let i = 0; i < 50; i++) await call();
+  for (let i = 0; i < Number(values.pings); i++) {
+    const t = performance.now();
+    await call();
+    samples.push(performance.now() - t);
+  }
+}
+
+async function measureSessionRpc(port, localToken) {
+  const client = new DaemonClient({
+    url: `ws://127.0.0.1:${port}/ws`,
+    clientId: `rust-baseline-rpc-${port}`,
+    clientType: "cli",
+    password: localToken,
+    // `ws`, as the CLI uses: the global WebSocket cannot send the auth header.
+    webSocketFactory: (url, options) =>
+      new WebSocket(url, options?.protocols, { headers: options?.headers }),
+  });
+  await client.connect();
+  await timeSequential(rpcPings, () => client.ping({ timeoutMs: 5_000 }));
+  await client.close?.();
+}
+
 const { DaemonClient } = await import(
   pathToFileURL(path.join(root, "packages/client/dist/daemon-client.js")).href
 );
@@ -192,46 +239,12 @@ for (let run = 0; run < Number(values.runs); run++) {
     listen.push((await waitForPort(port, child, 60_000)) - started);
     // Loopback clients authenticate with the daemon's local token, like the CLI does.
     const localToken = readFileSync(path.join(env.FROGG_HOME, "local-token"), "utf8").trim();
-    let socket;
-    for (;;) {
-      try {
-        socket = await openSocket(port, localToken);
-        await rawPing(socket);
-        break;
-      } catch {
-        socket?.terminate();
-        if (performance.now() - started > 60_000) throw new Error("no pong");
-        await new Promise((r) => setTimeout(r, 20));
-      }
-    }
+    const socket = await firstPong(port, localToken, started);
     firstPing.push(performance.now() - started);
     if (run === 0) {
-      for (let i = 0; i < 50; i++) await rawPing(socket); // warm-up
-      for (let i = 0; i < Number(values.pings); i++) {
-        const t = performance.now();
-        await rawPing(socket);
-        pings.push(performance.now() - t);
-      }
+      await timeSequential(pings, () => rawPing(socket));
       // A session RPC (request/response through the session layer) where the daemon has one.
-      if (!values.binary) {
-        const client = new DaemonClient({
-          url: `ws://127.0.0.1:${port}/ws`,
-          clientId: `rust-baseline-${run}`,
-          clientType: "cli",
-          password: localToken,
-          // `ws`, as the CLI uses: the global WebSocket cannot send the auth header.
-          webSocketFactory: (url, options) =>
-            new WebSocket(url, options?.protocols, { headers: options?.headers }),
-        });
-        await client.connect();
-        for (let i = 0; i < 50; i++) await client.ping({ timeoutMs: 5_000 });
-        for (let i = 0; i < Number(values.pings); i++) {
-          const t = performance.now();
-          await client.ping({ timeoutMs: 5_000 });
-          rpcPings.push(performance.now() - t);
-        }
-        await client.close?.();
-      }
+      if (!values.binary) await measureSessionRpc(port, localToken);
     }
     await new Promise((r) => setTimeout(r, Number(values.idle)));
     rss.push(treeRssMb(child.pid));

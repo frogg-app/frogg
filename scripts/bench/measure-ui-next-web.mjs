@@ -84,8 +84,7 @@ for (let i = 0; i < Number(values.runs); i++) {
 }
 await browser.close();
 server.close();
-const median = (key) =>
-  [...runs.map((r) => r[key])].sort((a, b) => a - b)[Math.floor(runs.length / 2)];
+const median = (key) => runs.map((r) => r[key]).sort((a, b) => a - b)[Math.floor(runs.length / 2)];
 process.stdout.write(
   `${JSON.stringify(
     {
