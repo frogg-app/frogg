@@ -164,6 +164,11 @@ export const BrandManifestSchema = z.strictObject({
     .strictObject({
       pairingUrl: url.optional(),
       allowedOrigins: z.array(url).optional(),
+      /**
+       * Base URL of the opt-in usage statistics and bug report collector. Clients POST to
+       * `<collectorUrl>/v1/events` and `<collectorUrl>/v1/bug-reports`; unset, nothing is sent.
+       */
+      collectorUrl: url.optional(),
     })
     .optional(),
   distribution: z
@@ -596,6 +601,7 @@ function resolveLinksAndServices(manifest: BrandManifest, repository: string | n
     services: {
       pairingUrl: manifest.services?.pairingUrl ?? null,
       allowedOrigins: manifest.services?.allowedOrigins ?? [],
+      collectorUrl: manifest.services?.collectorUrl?.replace(/\/+$/, "") ?? null,
     },
   };
 }

@@ -295,6 +295,10 @@
             "type": "string",
             "format": "uri"
           }
+        },
+        "collectorUrl": {
+          "type": "string",
+          "format": "uri"
         }
       },
       "additionalProperties": false

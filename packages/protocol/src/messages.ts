@@ -453,6 +453,8 @@ export const MutableDaemonConfigSchema = z
     autoArchiveAfterMerge: z.boolean().default(false),
     // COMPAT(autoResumeOnUsageLimit): added in v1.5.38; absent means an older daemon without the feature.
     autoResumeOnUsageLimit: z.boolean().optional(),
+    // COMPAT(usageStats): added in v1.6.14; absent means an older daemon that never sends statistics.
+    usageStats: z.boolean().optional(),
     // COMPAT(companionModel): added in v1.5.43; absent means an older daemon without the picker.
     // null is "the backend's default model".
     companionModel: z.string().nullable().optional(),
@@ -484,6 +486,7 @@ export const MutableDaemonConfigPatchSchema = z
     metadataGeneration: MutableMetadataGenerationConfigSchema.partial().optional(),
     autoArchiveAfterMerge: z.boolean().optional(),
     autoResumeOnUsageLimit: z.boolean().optional(),
+    usageStats: z.boolean().optional(),
     companionModel: z.string().trim().min(1).max(200).nullable().optional(),
     cleanCut: MutableCleanCutConfigPatchSchema.optional(),
     enableTerminalAgentHooks: z.boolean().optional(),

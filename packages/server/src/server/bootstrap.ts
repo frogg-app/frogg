@@ -157,6 +157,7 @@ import {
 } from "./workspace-archive-service.js";
 import { setupAutoArchiveOnMerge } from "./auto-archive-on-merge/index.js";
 import { setupUsageLimitAutoResume } from "./agent/usage-limit-auto-resume.js";
+import { createUsageStatsReporter } from "./usage-stats/reporter.js";
 import { maybeAutoCleanCut, type AutoCleanCutDeps } from "./agent/auto-clean-cut.js";
 import { sendPromptToAgent } from "./agent/agent-prompt.js";
 import { PluginService } from "./plugins/plugin-service.js";
@@ -506,6 +507,8 @@ export interface FroggDaemonConfig {
   /** Days an idle, clean, unreferenced worktree is kept; 0 disables the sweep. Default 7. */
   worktreeRetentionDays?: number;
   autoResumeOnUsageLimit?: boolean;
+  /** Opt-in usage statistics (config.json `daemon.usageStats`). */
+  usageStats?: boolean;
   /** Clean cut settings: automatic triggers, idle thresholds and summariser models. */
   cleanCut?: MutableCleanCutConfig;
   /** `features.companion.model`; null means the backend default. */
@@ -809,6 +812,7 @@ function createInitialMutableDaemonConfig(config: FroggDaemonConfig): MutableDae
     },
     autoArchiveAfterMerge: config.autoArchiveAfterMerge ?? false,
     autoResumeOnUsageLimit: config.autoResumeOnUsageLimit ?? true,
+    usageStats: config.usageStats ?? false,
     cleanCut: resolveInitialCleanCut(config),
     companionModel: config.companionModel ?? null,
     hostSettings: {
@@ -1687,6 +1691,21 @@ export async function createFroggDaemon(
   });
   daemonConfigStore.onFieldChange("autoResumeOnUsageLimit", (value) => {
     if (value === false) usageLimitAutoResume.cancelAll();
+  });
+
+  const usageStats = createUsageStatsReporter({
+    froggHome: config.froggHome,
+    version: daemonVersion,
+    product: `${brand.id}-daemon`,
+    collectorUrl: brand.services.collectorUrl,
+    isEnabled: () => daemonConfigStore.get().usageStats === true,
+    enabledProviders: () =>
+      Object.values(daemonConfigStore.get().providers).filter((p) => p.enabled !== false).length,
+    logger,
+  });
+  usageStats.start();
+  daemonConfigStore.onFieldChange("usageStats", (value) => {
+    usageStats.setEnabled(value === true);
   });
 
   // Assigned once the speech service exists, further down.
@@ -2616,6 +2635,7 @@ export async function createFroggDaemon(
     wsServer?.prepareForShutdown();
     agentManager.prepareForShutdown();
     usageLimitAutoResume.dispose();
+    usageStats.stop();
     const midTurnAgentIds = collectMidTurnAgentIds(agentManager.listAgents());
     await closeAllAgents(logger, agentManager);
     await agentManager.flushForShutdown().catch(() => undefined);

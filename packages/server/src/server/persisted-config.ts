@@ -349,6 +349,8 @@ export const PersistedConfigSchema = z
         autoArchiveAfterMerge: z.boolean().optional(),
         worktreeRetentionDays: z.number().int().min(0).max(3650).optional(),
         autoResumeOnUsageLimit: z.boolean().optional(),
+        /** Opt-in usage statistics from this daemon to the brand's collector. Off unless set. */
+        usageStats: z.boolean().optional(),
         // COMPAT(cleanCutSettings): the v1.6.2 switch, superseded by `cleanCut.auto`
         // in v1.6.5. `false` still turns off both automatic triggers while
         // `cleanCut.auto` leaves them unset. Remove after 2027-09-27.

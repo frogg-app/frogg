@@ -11078,6 +11078,8 @@ if(__o_4130["thinkingOptionId"]!==undefined){if(typeof __o_4130["thinkingOptionI
 }if(__o_4099["autoArchiveAfterMerge"]===undefined){__o_4099["autoArchiveAfterMerge"]=__rf[149]._zod.def.defaultValue;}else{if(typeof __o_4099["autoArchiveAfterMerge"]!=="boolean"){_e.push({code:"invalid_type",expected:"boolean",input:__o_4099["autoArchiveAfterMerge"],path:["message"].concat("payload").concat("config").concat("autoArchiveAfterMerge")});}
 }if(__o_4099["autoResumeOnUsageLimit"]!==undefined){if(typeof __o_4099["autoResumeOnUsageLimit"]!=="boolean"){_e.push({code:"invalid_type",expected:"boolean",input:__o_4099["autoResumeOnUsageLimit"],path:["message"].concat("payload").concat("config").concat("autoResumeOnUsageLimit")});}
 }
+if(__o_4099["usageStats"]!==undefined){if(typeof __o_4099["usageStats"]!=="boolean"){_e.push({code:"invalid_type",expected:"boolean",input:__o_4099["usageStats"],path:["message"].concat("payload").concat("config").concat("usageStats")});}
+}
 if(__o_4099["companionModel"]!==undefined){if(__o_4099["companionModel"]!==null){if(typeof __o_4099["companionModel"]!=="string"){_e.push({code:"invalid_type",expected:"string",input:__o_4099["companionModel"],path:["message"].concat("payload").concat("config").concat("companionModel")});}
 }
 }
@@ -11203,6 +11205,8 @@ if(__o_4182["thinkingOptionId"]!==undefined){if(typeof __o_4182["thinkingOptionI
 }__o_4151["metadataGeneration"]=__o_4180;}
 }if(__o_4151["autoArchiveAfterMerge"]===undefined){__o_4151["autoArchiveAfterMerge"]=__rf[159]._zod.def.defaultValue;}else{if(typeof __o_4151["autoArchiveAfterMerge"]!=="boolean"){_e.push({code:"invalid_type",expected:"boolean",input:__o_4151["autoArchiveAfterMerge"],path:["message"].concat("payload").concat("config").concat("autoArchiveAfterMerge")});}
 }if(__o_4151["autoResumeOnUsageLimit"]!==undefined){if(typeof __o_4151["autoResumeOnUsageLimit"]!=="boolean"){_e.push({code:"invalid_type",expected:"boolean",input:__o_4151["autoResumeOnUsageLimit"],path:["message"].concat("payload").concat("config").concat("autoResumeOnUsageLimit")});}
+}
+if(__o_4151["usageStats"]!==undefined){if(typeof __o_4151["usageStats"]!=="boolean"){_e.push({code:"invalid_type",expected:"boolean",input:__o_4151["usageStats"],path:["message"].concat("payload").concat("config").concat("usageStats")});}
 }
 if(__o_4151["companionModel"]!==undefined){if(__o_4151["companionModel"]!==null){if(typeof __o_4151["companionModel"]!=="string"){_e.push({code:"invalid_type",expected:"string",input:__o_4151["companionModel"],path:["message"].concat("payload").concat("config").concat("companionModel")});}
 }

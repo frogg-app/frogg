@@ -29,6 +29,7 @@ interface SupportedMutableConfigPatch {
   metadataGeneration?: MutableDaemonConfig["metadataGeneration"];
   autoArchiveAfterMerge?: boolean;
   autoResumeOnUsageLimit?: boolean;
+  usageStats?: boolean;
   companionModel?: string | null;
   cleanCut?: MutableCleanCutConfigPatch;
   hostSettings?: { hiddenSections?: HostSettingsSection[] };
@@ -192,6 +193,7 @@ const RELOADABLE_PATHS = [
   "daemon.git.maxProcessConcurrency",
   "daemon.autoArchiveAfterMerge",
   "daemon.autoResumeOnUsageLimit",
+  "daemon.usageStats",
   "daemon.autoCleanCutOnColdCache",
   "daemon.cleanCut",
   "features.companion.model",
@@ -224,6 +226,7 @@ const PERSISTED_TO_MUTABLE_PATH = new Map<string, string>([
   ["daemon.git.maxProcessConcurrency", "git.maxProcessConcurrency"],
   ["daemon.autoArchiveAfterMerge", "autoArchiveAfterMerge"],
   ["daemon.autoResumeOnUsageLimit", "autoResumeOnUsageLimit"],
+  ["daemon.usageStats", "usageStats"],
   ["daemon.autoCleanCutOnColdCache", "cleanCut"],
   ["daemon.cleanCut", "cleanCut"],
   ["features.companion.model", "companionModel"],
@@ -311,6 +314,7 @@ function pickSupportedPatchFields(patch: MutableDaemonConfigPatch): SupportedMut
     ...(patch.autoResumeOnUsageLimit !== undefined
       ? { autoResumeOnUsageLimit: patch.autoResumeOnUsageLimit }
       : {}),
+    ...(patch.usageStats !== undefined ? { usageStats: patch.usageStats } : {}),
     ...(patch.companionModel !== undefined ? { companionModel: patch.companionModel } : {}),
     ...(patch.cleanCut !== undefined ? { cleanCut: patch.cleanCut } : {}),
     ...(patch.autoUpdate !== undefined ? { autoUpdate: patch.autoUpdate } : {}),
@@ -813,6 +817,9 @@ function mergeMutableDaemonPatch(
   }
   if (patch.autoResumeOnUsageLimit !== undefined) {
     next.autoResumeOnUsageLimit = patch.autoResumeOnUsageLimit;
+  }
+  if (patch.usageStats !== undefined) {
+    next.usageStats = patch.usageStats;
   }
   if (patch.cleanCut !== undefined) {
     next.cleanCut = mergeCleanCutPatch(next.cleanCut, patch.cleanCut);
