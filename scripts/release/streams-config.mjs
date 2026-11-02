@@ -3,12 +3,13 @@
 // (packages/protocol/src/frogg-config-schema.ts, FroggStreamsConfigSchema); keep the
 // defaults here and there in step (streams-config.test.mjs checks the examples in the docs).
 import { readFileSync } from "node:fs";
-import { UPSTREAM_CHANNELS, channelOfVersion } from "./release-channel.mjs";
+import { UPSTREAM_CHANNELS, releaseLineOfVersion } from "./release-channel.mjs";
 import path from "node:path";
 
 export const DEFAULT_STREAMS = Object.freeze({
   development: "main",
   stable: "stable",
+  next: "frogg-next",
 });
 
 const branchPattern = /^[A-Za-z0-9._/-]+$/;
@@ -28,6 +29,8 @@ function branchName(value, fallback, label) {
  *
  *   development  branch whose commits ship as betas (default "main")
  *   stable       branch whose commits ship as stable releases (default "stable")
+ *   next         branch whose commits ship as Frogg Next prereleases, X.Y.Z-next.N (default
+ *                "frogg-next"); it follows the development branch's version line
  *   upstream     for a fork: the remote it pulls from, that remote's two branches, which of
  *                them the fork's development branch follows ("stable" by default: pull tested
  *                upstream releases; "development" to test upstream betas as they land), and
@@ -40,6 +43,12 @@ export function resolveStreamsConfig(raw) {
   const stable = branchName(input.stable, DEFAULT_STREAMS.stable, "stable");
   if (development === stable) {
     throw new Error("frogg.json streams.development and streams.stable must be different branches");
+  }
+  const next = branchName(input.next, DEFAULT_STREAMS.next, "next");
+  if (next === development || next === stable) {
+    throw new Error(
+      "frogg.json streams.next must differ from streams.development and streams.stable",
+    );
   }
   let upstream = null;
   if (input.upstream && typeof input.upstream === "object") {
@@ -71,7 +80,7 @@ export function resolveStreamsConfig(raw) {
       follow,
     };
   }
-  return { development, stable, upstream };
+  return { development, stable, next, upstream };
 }
 
 export function readStreamsConfig(rootDir) {
@@ -93,14 +102,26 @@ export function upstreamFollowRef(config) {
 }
 
 /**
- * Betas (a version with a channel part: `-beta.3`, `-rc.1.acme.2`) ship from the development
- * branch; stable releases, fork rebuilds included (`-acme.2`), from the stable branch.
+ * Frogg Next prereleases (`-next.N`) ship from the next branch, other betas (`-beta.3`,
+ * `-rc.1.acme.2`) from the development branch, stable releases, fork rebuilds included
+ * (`-acme.2`), from the stable branch.
  */
 export function branchForVersion(config, version) {
-  return channelOfVersion(version) === "beta" ? config.development : config.stable;
+  const line = releaseLineOfVersion(version);
+  if (line === "next") return config.next;
+  return line === "beta" ? config.development : config.stable;
 }
 
-/** The release channel a branch ships: the stable branch ships stable releases, anything else betas. */
+/** The release line a branch ships: stable, next (Frogg Next) or, for anything else, beta. */
+export function lineForBranch(config, branch) {
+  if (branch === config.stable) return "stable";
+  return branch === config.next ? "next" : "beta";
+}
+
+/**
+ * The classic app's brand channel for builds of a branch: the stable branch builds the stable
+ * app, anything else frogg beta. Pull requests and test builds of the next branch never publish.
+ */
 export function channelForBranch(config, branch) {
   return branch === config.stable ? "stable" : "beta";
 }

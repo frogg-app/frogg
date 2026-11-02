@@ -87,6 +87,8 @@
     "release:promote": "node scripts/release/streams.mjs promote",
     "release:backport": "node scripts/release/streams.mjs backport",
     "release:sync-upstream": "node scripts/release/streams.mjs sync-upstream",
+    "release:next": "node scripts/release/streams.mjs next",
+    "release:sync-main": "node scripts/release/streams.mjs sync-main",
     "release:contribute": "node scripts/release/streams.mjs contribute",
     "streams": "node scripts/release/streams.mjs",
     "build:daemon-bundle": "node --import tsx scripts/dev/branded-run.mts -- npm run build:daemon-bundle:prepared --",

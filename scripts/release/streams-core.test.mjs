@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   branchForVersion,
   channelForBranch,
+  lineForBranch,
   resolveStreamsConfig,
   upstreamFollowRef,
 } from "./streams-config.mjs";
@@ -14,6 +15,7 @@ import {
   isReleaseCutSubject,
   isVersionOwnedFile,
   nextBetaVersion,
+  nextFroggNextVersion,
   promotionVersion,
 } from "./streams-core.mjs";
 
@@ -142,7 +144,17 @@ test("version-owned files and release cuts are recognised", () => {
 
 test("streams config defaults, fork upstream, and validation", () => {
   const defaults = resolveStreamsConfig(undefined);
-  assert.deepEqual(defaults, { development: "main", stable: "stable", upstream: null });
+  assert.deepEqual(defaults, {
+    development: "main",
+    stable: "stable",
+    next: "frogg-next",
+    upstream: null,
+  });
+  assert.equal(lineForBranch(defaults, "frogg-next"), "next");
+  assert.equal(lineForBranch(defaults, "main"), "beta");
+  assert.equal(lineForBranch(defaults, "stable"), "stable");
+  assert.equal(branchForVersion(defaults, "v1.6.0-next.2"), "frogg-next");
+  assert.throws(() => resolveStreamsConfig({ next: "main" }), /streams\.next must differ/);
   assert.equal(channelForBranch(defaults, "stable"), "stable");
   assert.equal(channelForBranch(defaults, "main"), "beta");
   assert.equal(channelForBranch(defaults, "feat/x"), "beta");
@@ -231,4 +243,24 @@ test("a fork keeps upstream's numbers and counts its own builds after them", () 
   );
   assert.equal(nextForkPatchVersion({ stableVersion: "1.9.0", suffix: "acme" }), "1.9.0-acme.1");
   assert.throws(() => resolveStreamsConfig({ upstream: { suffix: "beta" } }), /not a channel name/);
+});
+
+test("Frogg Next prereleases follow the development line's core", () => {
+  assert.equal(
+    nextFroggNextVersion({ nextVersion: "1.6.14-beta.3", developmentVersion: "1.6.14-beta.4" }),
+    "1.6.14-next.1",
+  );
+  assert.equal(
+    nextFroggNextVersion({ nextVersion: "1.6.14-next.1", developmentVersion: "1.6.14-beta.6" }),
+    "1.6.14-next.2",
+  );
+  assert.equal(
+    nextFroggNextVersion({ nextVersion: "1.6.14-next.4", developmentVersion: "1.6.15-beta.1" }),
+    "1.6.15-next.1",
+  );
+  assert.throws(
+    () =>
+      nextFroggNextVersion({ nextVersion: "1.7.0-next.1", developmentVersion: "1.6.15-beta.1" }),
+    /ahead of the development line/,
+  );
 });

@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { channelOfVersion, parseChannelVersion } from "./release-channel.mjs";
 import { computeNextReleaseVersion } from "./release-version-utils.mjs";
-import { readStreamsConfig } from "./streams-config.mjs";
+import { branchForVersion, readStreamsConfig } from "./streams-config.mjs";
 import { assertStablePatch } from "./streams-core.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -89,13 +89,16 @@ function assertStreamBranch(version, mode) {
     encoding: "utf8",
   }).trim();
   const beta = channelOfVersion(version) === "beta";
-  const required = beta ? streams.development : streams.stable;
+  const required = branchForVersion(streams, version);
   if (branch !== required) {
-    throw new Error(
-      `${version} is a ${beta ? "beta" : "stable"} release, cut from ${required}; you are on ${branch || "(detached)"}.` +
-        (beta
+    const hint =
+      required === streams.next
+        ? " Use `npm run release:next`."
+        : beta
           ? " Use `npm run release:beta`."
-          : " Use `npm run release:patch` or `npm run release:promote` there."),
+          : " Use `npm run release:patch` or `npm run release:promote` there.";
+    throw new Error(
+      `${version} is a ${beta ? "prerelease" : "stable release"}, cut from ${required}; you are on ${branch || "(detached)"}.${hint}`,
     );
   }
   if (!beta && (mode === "minor" || mode === "major")) {

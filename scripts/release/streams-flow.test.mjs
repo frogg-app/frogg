@@ -156,6 +156,39 @@ test("betas on main, backports and promotion on stable", { timeout: 120_000 }, (
   }
 });
 
+test("Frogg Next cuts -next.N on frogg-next and syncs main", { timeout: 120_000 }, () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), "streams-next-"));
+  try {
+    const { work } = scaffold(root, "product");
+    commit(work, "feature.txt", "feature\n", "feat: shared work");
+    streams(work, "beta", "--skip-check");
+    assert.equal(version(work), "1.5.1-beta.1");
+
+    git(work, "switch", "-q", "-c", "frogg-next");
+    assert.match(streamsFails(work, "beta", "--skip-check"), /runs on main/);
+    commit(work, "next.txt", "next ui\n", "feat(ui-next): next only");
+    streams(work, "next", "--skip-check");
+    assert.equal(version(work), "1.5.1-next.1");
+    assert.match(streams(work, "assert-tag", "v1.5.1-next.1"), /on origin\/frogg-next/);
+    git(work, "switch", "-q", "main");
+    assert.match(streamsFails(work, "next", "--skip-check"), /runs on frogg-next/);
+
+    git(work, "switch", "-q", "main");
+    commit(work, "shared.txt", "fix\n", "fix: shared fix");
+    streams(work, "beta", "--skip-check");
+    assert.equal(version(work), "1.5.1-beta.2");
+    git(work, "switch", "-q", "frogg-next");
+    streams(work, "sync-main");
+    assert.equal(version(work), "1.5.1-next.1");
+    assert.equal(readFileSync(path.join(work, "shared.txt"), "utf8"), "fix\n");
+    assert.equal(streams(work, "next", "--print"), "1.5.1-next.2");
+    assert.equal(streams(work, "line-for-ref", "refs/heads/frogg-next"), "next");
+    assert.equal(streams(work, "line-for-ref", "main"), "beta");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("a fork syncs upstream releases and contributes changes back", { timeout: 120_000 }, () => {
   const root = mkdtempSync(path.join(os.tmpdir(), "streams-fork-"));
   try {

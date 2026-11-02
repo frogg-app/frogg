@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 import {
   branchForVersion,
   channelForBranch,
+  lineForBranch,
   readStreamsConfig,
   resolveStreamsConfig,
   upstreamFollowRef,
@@ -23,6 +24,7 @@ import {
   isReleaseCutSubject,
   isVersionOwnedFile,
   nextBetaVersion,
+  nextFroggNextVersion,
   promotionVersion,
 } from "./streams-core.mjs";
 
@@ -259,9 +261,12 @@ const commands = {
                               merge upstream into a fork's development branch
   contribute <commit...> [--branch <name>] [--open-pr]
                               put fork commits on a branch off upstream and offer them back
+  next [--print]              cut the next Frogg Next prerelease (X.Y.Z-next.N) on the next branch
+  sync-main [--continue]      merge the development branch into the next branch, keeping its version
   init [--push]               create the stable branch from the newest stable tag
   assert-tag <tag>            CI: fail unless the tag is on its stream's branch
-  channel-for-ref <branch>    CI: which release channel a branch ships (stable or beta)
+  channel-for-ref <branch>    CI: which classic brand channel a branch builds (stable or beta)
+  line-for-ref <branch>       CI: which release line a branch ships (stable, beta or next)
   tested-source <ref>         CI: the commit whose CI run vouches for <ref>
   tested-chain <ref>          CI: every commit whose CI run vouches for <ref>
   needs-tests <ref>           CI: "true" unless <ref> only adds release cuts to tested main code
@@ -600,6 +605,77 @@ Add --skip-check to beta/promote to skip release:check (CI has already run it).
     }
   },
 
+  next(args) {
+    const config = loadStreamsConfig();
+    const print = flag(args, "--print");
+    const skipCheck = flag(args, "--skip-check");
+    if (config.upstream?.suffix) fail("A fork's Frogg Next line is not supported yet.");
+    if (!print) {
+      assertOnBranch(config.next, "release:next");
+      assertClean();
+    }
+    fetchOrigin(config.development);
+    const devRef = refExists(`origin/${config.development}`)
+      ? `origin/${config.development}`
+      : config.development;
+    const version = nextFroggNextVersion({
+      nextVersion: readVersion("HEAD"),
+      developmentVersion: readVersion(devRef),
+    });
+    if (print) return void process.stdout.write(`${version}\n`);
+    cut(version, { skipCheck });
+  },
+
+  // The next branch follows the development branch: shared work lands there and arrives here by
+  // merge. Version files always conflict (the two lines cut different versions), so this takes
+  // the development branch's files, then restamps the next branch's own version.
+  "sync-main"(args) {
+    const config = loadStreamsConfig();
+    const resume = flag(args, "--continue");
+    assertOnBranch(config.next, "release:sync-main");
+    const ref = `origin/${config.development}`;
+    if (!resume) {
+      assertClean();
+      fetchOrigin(config.development);
+      if (!refExists(ref)) fail(`${ref} not found.`);
+      if (gitTry(["merge-base", "--is-ancestor", ref, "HEAD"]) !== null)
+        return void process.stdout.write(`Already up to date with ${describeRef(ref)}.\n`);
+      writeFileSync(syncStateFile(), `${readVersion("HEAD")}\n${describeRef(ref)}\n`);
+      const merged = spawnSync(
+        "git",
+        ["merge", "--no-ff", "--no-commit", "-m", `Merge ${describeRef(ref)}`, ref],
+        { cwd: rootDir, stdio: "inherit" },
+      );
+      if (merged.status !== 0) {
+        const conflicted = gitOut(["diff", "--name-only", "--diff-filter=U"])
+          .split("\n")
+          .filter(Boolean);
+        for (const file of conflicted.filter(isVersionOwnedFile)) {
+          git(["checkout", "--theirs", "--", file]);
+          git(["add", file]);
+        }
+        const others = conflicted.filter((file) => !isVersionOwnedFile(file));
+        if (others.length)
+          fail(
+            "Resolve these, `git add` them, then run `npm run release:sync-main -- --continue`:\n" +
+              others.map((file) => `  ${file}`).join("\n"),
+          );
+      }
+    } else if (!gitTry(["rev-parse", "-q", "--verify", "MERGE_HEAD"])) {
+      fail(`No merge of ${config.development} in progress.`);
+    }
+    if (gitOut(["diff", "--name-only", "--diff-filter=U"])) fail("Some files still conflict.");
+    const [version, merged] = readFileSync(syncStateFile(), "utf8").trim().split("\n");
+    restamp(version);
+    git(["add", "-u"]);
+    git(["add", "--", "package-lock.json"]);
+    git(["commit", "--no-verify", "--no-edit", "-m", `Merge ${merged} into ${config.next}`]);
+    rmSync(syncStateFile(), { force: true });
+    process.stdout.write(
+      `\nMerged ${merged}. Push ${config.next}; its green CI cuts the next Frogg Next prerelease.\n`,
+    );
+  },
+
   init(args) {
     const config = loadStreamsConfig();
     const push = flag(args, "--push");
@@ -625,7 +701,7 @@ Add --skip-check to beta/promote to skip release:check (CI has already run it).
     }
     if (gitTry(["merge-base", "--is-ancestor", `${tag}^{commit}`, `origin/${branch}`]) === null) {
       fail(
-        `::error::${tag} is not on origin/${branch}. Betas are cut from ${config.development}, stable releases from ${config.stable}.`,
+        `::error::${tag} is not on origin/${branch}. Betas are cut from ${config.development}, Frogg Next prereleases (-next.N) from ${config.next}, stable releases from ${config.stable}.`,
       );
     }
     process.stdout.write(`${tag} is on origin/${branch}.\n`);
@@ -650,10 +726,22 @@ Add --skip-check to beta/promote to skip release:check (CI has already run it).
     if (source === gitOut(["rev-parse", `${ref}^{commit}`])) {
       return void process.stdout.write("true\n");
     }
-    gitTry(["fetch", "--quiet", "origin", config.development]);
-    const onMain =
-      gitTry(["merge-base", "--is-ancestor", source, `origin/${config.development}`]) !== null;
-    process.stdout.write(`${onMain ? "false" : "true"}\n`);
+    // Tested where it landed: main's CI, or the next branch's for Frogg Next work.
+    const tested = [config.development, config.next].some((branch) => {
+      gitTry(["fetch", "--quiet", "origin", branch]);
+      return (
+        refExists(`origin/${branch}`) &&
+        gitTry(["merge-base", "--is-ancestor", source, `origin/${branch}`]) !== null
+      );
+    });
+    process.stdout.write(`${tested ? "false" : "true"}\n`);
+  },
+
+  "line-for-ref"(args) {
+    const config = loadStreamsConfig();
+    process.stdout.write(
+      `${lineForBranch(config, (args[0] ?? "").replace(/^refs\/heads\//, ""))}\n`,
+    );
   },
 
   "channel-for-ref"(args) {
