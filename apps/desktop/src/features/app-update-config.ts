@@ -1,7 +1,11 @@
 // Release ordering comes from the shared module, not npm `semver`: a downstream
 // rebuild tag (`1.3.5-acme.2`) is formally a prerelease and plain semver would rank
 // it below `1.3.5`, so an update between two rebuilds reads as "up to date".
-import { compareVersionStrings, parseVersion } from "@frogg/protocol/release-version";
+import {
+  compareVersionStrings,
+  isStableVersion,
+  parseVersion,
+} from "@frogg/protocol/release-version";
 import {
   fetchReleaseDescriptor,
   parseReleaseDescriptor,
@@ -53,30 +57,90 @@ export function isUpdateRateLimitError(error: unknown): boolean {
   return error instanceof Error && /^429\b|\(429\)/.test(error.message);
 }
 
+/** Which classic build this is: the stable app, or frogg beta (`-beta.N` prereleases). */
+export type AppReleaseChannel = "stable" | "beta";
+
 export interface ElectronUpdateFeed {
   url: string;
-  /** The classic app only follows stable releases. */
-  channel: "electron-latest";
+  channel: "electron-latest" | "electron-beta";
+}
+
+/** electron-updater's Windows feed file per channel; the release must carry it to qualify. */
+export const ELECTRON_BETA_FEED = "electron-beta.yml";
+
+async function fetchPublishedReleases(url: string): Promise<unknown> {
+  const response = await fetch(url, {
+    headers: { Accept: "application/vnd.github+json" },
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!response.ok) throw new Error(`Release discovery failed (${response.status}).`);
+  return response.json();
+}
+
+/**
+ * The newest published prerelease carrying frogg beta's feed. Every prerelease line shares one
+ * release list (frogg beta on `-beta.N`, Frogg Next on `-next.N`), so a release only counts when
+ * it has this client's own `electron-beta.yml`.
+ */
+export function selectBetaRelease(releases: unknown): { tag: string; version: string } | null {
+  if (!Array.isArray(releases)) throw new Error("Unexpected release discovery response.");
+  const candidates = releases
+    .flatMap((release: unknown) => {
+      if (!release || typeof release !== "object") return [];
+      const value = release as Record<string, unknown>;
+      if (value.draft !== false || typeof value.tag_name !== "string") return [];
+      const version = parseVersion(value.tag_name)?.raw;
+      if (!version || isStableVersion(version)) return [];
+      const assets = Array.isArray(value.assets) ? value.assets : [];
+      const hasFeed = assets.some(
+        (asset: unknown) =>
+          !!asset &&
+          typeof asset === "object" &&
+          (asset as Record<string, unknown>).name === ELECTRON_BETA_FEED,
+      );
+      return hasFeed ? [{ tag: value.tag_name, version }] : [];
+    })
+    .sort((a, b) => -compareVersionStrings(a.version, b.version));
+  return candidates[0] ?? null;
 }
 
 /** Published JSON selects a version-pinned feed; payload names and hashes come from its manifests. */
 export async function resolveElectronUpdateFeed(input: {
   override?: string;
   releaseBase: string | null;
+  /** The build's own channel (brand.channel). Default stable. */
+  releaseChannel?: AppReleaseChannel;
   currentVersion?: string;
+  fetchReleases?: (url: string) => Promise<unknown>;
   fetchDescriptor?: (url: string) => Promise<unknown | null>;
 }): Promise<ElectronUpdateFeed | null> {
+  const beta = input.releaseChannel === "beta";
   const url = resolveElectronUpdateUrl(input.override, input.releaseBase);
   if (!url) return null;
   if (new URL(url).protocol !== "https:") throw new Error("Electron update URL must use HTTPS.");
-  const latest: ElectronUpdateFeed = { url, channel: "electron-latest" };
+  const latest: ElectronUpdateFeed = { url, channel: beta ? "electron-beta" : "electron-latest" };
   // An explicit generic feed owns its routing; GitHub's latest alias only ever names a stable release.
   if (input.override?.trim()) return latest;
   const base = new URL(input.releaseBase!);
-  if (base.hostname !== "github.com" || !/^\/[^/]+\/[^/]+\/releases\/?$/.test(base.pathname))
-    return latest;
-  const raw = await (input.fetchDescriptor ?? fetchReleaseDescriptor)(`${latest.url}/release.json`);
-  if (raw === null) return latest;
+  const repository = /^\/([^/]+)\/([^/]+)\/releases\/?$/.exec(base.pathname);
+  if (base.hostname !== "github.com" || !repository) return latest;
+  let selected = latest;
+  if (beta) {
+    const release = selectBetaRelease(
+      await (input.fetchReleases ?? fetchPublishedReleases)(
+        `https://api.github.com/repos/${repository[1]}/${repository[2]}/releases?per_page=100`,
+      ),
+    );
+    if (!release) throw new Error("No published beta release is available.");
+    selected = {
+      url: `${input.releaseBase!.replace(/\/$/, "")}/download/${encodeURIComponent(release.tag)}`,
+      channel: "electron-beta",
+    };
+  }
+  const raw = await (input.fetchDescriptor ?? fetchReleaseDescriptor)(
+    `${selected.url}/release.json`,
+  );
+  if (raw === null) return selected;
   const descriptor = parseReleaseDescriptor(raw);
   const update = selectElectronUpdatePath(descriptor);
   if (
@@ -88,11 +152,15 @@ export async function resolveElectronUpdateFeed(input: {
       `This release requires a manual upgrade from clients older than ${update.minimumClientVersion}.`,
     );
   }
-  if (descriptor.channel !== "stable") {
+  if (!beta && descriptor.channel !== "stable") {
     throw new Error("Stable update feed points to a prerelease.");
   }
-  return {
-    url: `${input.releaseBase!.replace(/\/$/, "")}/download/v${descriptor.version}`,
-    channel: "electron-latest",
-  };
+  if (beta && descriptor.channel !== "beta") {
+    throw new Error("Beta update feed points to a stable release.");
+  }
+  const pinned = `${input.releaseBase!.replace(/\/$/, "")}/download/v${descriptor.version}`;
+  if (beta && pinned !== selected.url) {
+    throw new Error("Release descriptor version does not match the selected release.");
+  }
+  return { url: pinned, channel: update.channel };
 }
