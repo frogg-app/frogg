@@ -4,20 +4,38 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   BrandManifestSchema,
+  RELEASE_CHANNELS,
   resolveBrandManifest,
+  type ReleaseChannel,
 } from "../../../packages/branding/src/schema.js";
 
 export const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 export const outputRoot = path.join(root, ".generated/branding");
 export const uiOutput = path.join(root, "apps/ui/.generated/branding");
 
-export function resolveBrand(directory?: string) {
+/**
+ * The classic client channel to build: `--channel`, else FROGG_BRAND_CHANNEL (the release
+ * workflow sets it on the classic client jobs of a `-beta.N` tag), else stable. It moves only the
+ * client identity (frogg beta); the daemon identity is the same for both.
+ */
+export function resolveChannel(value?: string): ReleaseChannel {
+  const selected = value ?? (process.env.FROGG_BRAND_CHANNEL?.trim() || "stable");
+  if (!(RELEASE_CHANNELS as readonly string[]).includes(selected)) {
+    throw new Error(
+      `Unknown release channel "${selected}"; expected ${RELEASE_CHANNELS.join(" or ")}`,
+    );
+  }
+  return selected as ReleaseChannel;
+}
+
+export function resolveBrand(directory?: string, channelOption?: string) {
   const selected = path.resolve(root, directory ?? process.env.FROGG_BRAND_DIR ?? "brands/frogg");
   const manifest = BrandManifestSchema.parse(
     JSON.parse(readFileSync(path.join(selected, "brand.json"), "utf8")),
   );
   const official = realpathSync(selected) === realpathSync(path.join(root, "brands/frogg"));
-  const brand = resolveBrandManifest(manifest);
+  const channel = resolveChannel(channelOption);
+  const brand = resolveBrandManifest(manifest, { channel });
   if (
     !official &&
     (manifest.id === "frogg" ||
@@ -53,6 +71,7 @@ export function resolveBrand(directory?: string) {
       : Buffer.from(data.toString("latin1").replaceAll("\r\n", "\n"), "latin1");
   };
   hash.update("frogg-brand-generator-v1\0");
+  hash.update(`channel:${channel}\0`);
   hash.update(JSON.stringify({ ...manifest, assets: Object.keys(manifest.assets).sort() }));
   const assetFiles: Record<string, string> = {};
   for (const [key, value] of Object.entries(manifest.assets)) {
@@ -103,6 +122,7 @@ export function resolveBrand(directory?: string) {
     assetFiles,
     selected,
     official,
+    channel,
     version,
     fingerprint: hash.digest("hex"),
   };
