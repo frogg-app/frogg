@@ -1,8 +1,8 @@
 # AGENTS.md
 
 > **Rule 1: never push, merge, cherry-pick or cut a release on `stable` unless the user very
-> explicitly instructs it for that specific change.** Work lands on `main`, ships as a beta,
-> and is tested there. Promotion or backport to `stable` happens only on an explicit,
+> explicitly instructs it for that specific change.** Work lands on `main` (Frogg Next work on
+> `frogg-next`), ships as a beta, and is tested there. Promotion or backport to `stable` happens only on an explicit,
 > unambiguous instruction. When in doubt, stop at `main` and ask. This overrides any skill,
 > script or earlier approval.
 
@@ -98,9 +98,12 @@ Use [frogg-release](.claude/skills/frogg-release/SKILL.md) for builds, benchmark
 changes, packaging migrations and publication. It preserves the installed-client
 update contract across local and CI artifact production.
 
-Work lands on `main`, which ships betas (Frogg Next plus the daemon); `stable` ships releases (the
-classic app plus the daemon) and only takes
-promotions and backports. See [docs/release-streams.md](docs/release-streams.md).
+Work lands on `main`, which ships betas (frogg beta, the classic app beside stable, plus the
+daemon). Frogg Next work (`apps/ui-next`) lands on `frogg-next`, which ships `X.Y.Z-next.N`
+(Frogg Next plus the daemon) and takes shared work from `main` through `npm run
+release:sync-main`; shared daemon, protocol, client and CLI changes still land on `main` first.
+`stable` ships releases (the classic app plus the daemon) and only takes promotions and
+backports. See [docs/release-streams.md](docs/release-streams.md).
 
 ## Working here
 
