@@ -2090,6 +2090,29 @@ test("createAgent injects daemon append system prompt at runtime only", async ()
   expect(record?.config).not.toHaveProperty("daemonAppendSystemPrompt");
 });
 
+test("createAgent appends the connector summary to the hidden system context", async () => {
+  const workdir = mkdtempSync(join(tmpdir(), "agent-manager-test-"));
+  const storage = new AgentStorage(join(workdir, "agents"), logger);
+  const client = new TestAgentClient();
+  const manager = new AgentManager({
+    clients: { codex: client },
+    registry: storage,
+    logger,
+    appendSystemPrompt: "Daemon instructions.",
+    idFactory: () => "00000000-0000-4000-8000-000000000105",
+  });
+  manager.setConnectorContextResolver(() => "Frogg connectors running on this host: Discord.");
+
+  const snapshot = await manager.createAgent({ provider: "codex", cwd: workdir }, undefined, {
+    workspaceId: undefined,
+  });
+
+  expect(client.createdConfigs[0]?.daemonAppendSystemPrompt).toBe(
+    "Daemon instructions.\n\nFrogg connectors running on this host: Discord.",
+  );
+  expect(snapshot.config).not.toHaveProperty("daemonAppendSystemPrompt");
+});
+
 test("daemon append system prompt is injected into Pi configs", async () => {
   const workdir = mkdtempSync(join(tmpdir(), "agent-manager-test-"));
   const storagePath = join(workdir, "agents");

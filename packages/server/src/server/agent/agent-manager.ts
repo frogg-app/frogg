@@ -778,6 +778,7 @@ export class AgentManager {
   private resolveSkillLaunchPolicy?: () => SkillLaunchPolicy;
   private froggToolCatalogFactory: FroggToolCatalogFactory | null = null;
   private appendSystemPrompt: string;
+  private resolveConnectorContext: (() => string) | null = null;
   private readonly resolveProviderAccountSystemPrompt?: (
     provider: string,
     accountId: string | null | undefined,
@@ -908,6 +909,14 @@ export class AgentManager {
 
   setAppendSystemPrompt(prompt: string | null | undefined): void {
     this.appendSystemPrompt = prompt ?? "";
+  }
+
+  /**
+   * Source of the hidden connector summary appended to non-chat agents' system context (which
+   * plugins this host runs and their agent tools). Read at each launch.
+   */
+  setConnectorContextResolver(resolver: (() => string) | null): void {
+    this.resolveConnectorContext = resolver;
   }
 
   public getMetricsSnapshot(): AgentMetricsSnapshot {
@@ -5192,14 +5201,19 @@ export class AgentManager {
         mcpBaseUrl: this.mcpBaseUrl,
         mcpAuthToken: this.mcpAuthToken,
       }),
+      { connectors: true },
     );
     return { storedConfig, launchConfig };
   }
 
-  private applyDaemonAppendSystemPrompt(config: AgentSessionConfig): AgentSessionConfig {
+  private applyDaemonAppendSystemPrompt(
+    config: AgentSessionConfig,
+    options: { connectors?: boolean } = {},
+  ): AgentSessionConfig {
     const daemonAppendSystemPrompt = [
       this.appendSystemPrompt.trim(),
       this.accountSystemPromptFor(config),
+      options.connectors ? this.connectorContext() : "",
     ]
       .filter((part) => part.length > 0)
       .join("\n\n");
@@ -5212,6 +5226,16 @@ export class AgentManager {
           daemonAppendSystemPrompt,
         }
       : next;
+  }
+
+  private connectorContext(): string {
+    if (!this.resolveConnectorContext || (!this.mcpBaseUrl && !this.froggToolsEnabled)) return "";
+    try {
+      return this.resolveConnectorContext().trim();
+    } catch (error) {
+      this.logger.warn({ err: error }, "Failed to resolve connector context");
+      return "";
+    }
   }
 
   /** COMPAT(providerAccountPreferences): added in v1.5.6, remove after 2027-09-19. */

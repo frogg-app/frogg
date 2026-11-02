@@ -1,5 +1,6 @@
 import type { ProjectTodoService } from "../project-todos/service.js";
 import { PROJECT_TODO_TOOL_NAMES } from "./tools/todo-tools.js";
+import { CONNECTOR_TOOL_NAMES } from "./tools/connector-tools.js";
 import { execFileSync } from "node:child_process";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
@@ -807,6 +808,16 @@ describe("project to-do MCP tools", () => {
     });
     for (const name of PROJECT_TODO_TOOL_NAMES) {
       expect(lookupTool(withTodos, name)).toBeDefined();
+    }
+    for (const name of CONNECTOR_TOOL_NAMES) {
+      expect(lookupTool(without, name)).toBeUndefined();
+    }
+    const withConnectors = await createAgentMcpServer({
+      ...base,
+      connectors: { listAgentConnectors: () => [], callAgentTool: async () => null },
+    });
+    for (const name of CONNECTOR_TOOL_NAMES) {
+      expect(lookupTool(withConnectors, name)).toBeDefined();
     }
   });
 });

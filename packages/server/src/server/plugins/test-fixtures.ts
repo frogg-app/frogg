@@ -21,6 +21,7 @@ export interface FixturePluginSpec {
   /** Body of dist/daemon.js. Defaults to a greet RPC returning the version. */
   code?: string;
   contributes?: Record<string, unknown>;
+  apiVersion?: number;
 }
 
 export function greetCode(tag: string): string {
@@ -44,7 +45,7 @@ export async function writeFixturePlugin(root: string, spec: FixturePluginSpec):
     id: spec.id,
     name: `Fixture ${spec.id}`,
     version: spec.version,
-    apiVersion: 1,
+    apiVersion: spec.apiVersion ?? 1,
     scope,
     entry: {
       ...(scope === "daemon" || scope === "hybrid" ? { daemon: "dist/daemon.js" } : {}),

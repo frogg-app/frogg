@@ -446,6 +446,11 @@ export interface PluginHostInfo {
 export interface PluginRpcContext {
   /** Connected client's device id when known. */
   clientId?: string;
+  /**
+   * v2: set when an agent called one of the plugin's `contributes.agentTools` (method
+   * `tool.<id>`) through the Frogg MCP server. Absent for app and CLI calls.
+   */
+  agentId?: string;
 }
 
 export type PluginRpcHandler = (

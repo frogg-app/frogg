@@ -126,6 +126,28 @@ export const PluginComposerActionContributionSchema = z.object({
   icon: z.string().max(64).optional(),
 });
 
+/** Largest JSON Schema an agent tool may declare for its input, in serialised bytes. */
+export const PLUGIN_AGENT_TOOL_SCHEMA_MAX_BYTES = 8192;
+
+/**
+ * Agent tool (API v2): a tool the agents on this host can call through the Frogg MCP server's
+ * `call_connector_tool`. Invoking it calls plugin RPC method `tool.<id>` with the agent's
+ * arguments, and the RPC context carries the calling `agentId`. Needs the "rpc" capability.
+ * `inputSchema` is a JSON Schema object shown to the agent; the plugin validates its own input.
+ */
+export const PluginAgentToolContributionSchema = z.object({
+  id: ContributionIdSchema,
+  title: TitleSchema,
+  description: z.string().min(1).max(1000),
+  inputSchema: z
+    .record(z.string(), z.unknown())
+    .refine((v) => JSON.stringify(v).length <= PLUGIN_AGENT_TOOL_SCHEMA_MAX_BYTES, {
+      message: `inputSchema must serialise to at most ${PLUGIN_AGENT_TOOL_SCHEMA_MAX_BYTES} bytes`,
+    })
+    .optional(),
+});
+export type PluginAgentToolContribution = z.infer<typeof PluginAgentToolContributionSchema>;
+
 export const PLUGIN_PANEL_KINDS = ["list", "markdown", "form"] as const;
 export const PluginPanelKindSchema = z.enum(PLUGIN_PANEL_KINDS);
 
@@ -180,6 +202,8 @@ export const PluginContributesSchema = z.object({
   panels: z.array(PluginPanelContributionSchema).max(20).optional(),
   views: z.array(PluginViewContributionSchema).max(20).optional(),
   composerActions: z.array(PluginComposerActionContributionSchema).max(10).optional(),
+  /** v2 */
+  agentTools: z.array(PluginAgentToolContributionSchema).max(20).optional(),
   settings: z.array(PluginSettingFieldSchema).max(100).optional(),
   features: z.array(PluginBuiltinFeatureSchema).max(PLUGIN_BUILTIN_FEATURES.length).optional(),
 });
@@ -270,6 +294,12 @@ function surfaceIssues(
       message: 'composerActions contributions require the "composer" capability',
     });
   }
+  if (c.agentTools?.length && !capabilities.includes("rpc")) {
+    issues.push({
+      path: ["capabilities"],
+      message: 'agentTools contributions require the "rpc" capability',
+    });
+  }
   if (c.settings?.length && !capabilities.includes("settings.store")) {
     issues.push({
       path: ["capabilities"],
@@ -305,6 +335,7 @@ function contributionIssues(
     panels: (c.panels ?? []).map((x) => x.id),
     views: (c.views ?? []).map((x) => x.id),
     composerActions: (c.composerActions ?? []).map((x) => x.id),
+    agentTools: (c.agentTools ?? []).map((x) => x.id),
     settings: (c.settings ?? []).map((x) => x.key),
     features: [...(c.features ?? [])],
   };
@@ -334,6 +365,9 @@ function manifestIssues(m: {
       path: ["apiVersion"],
       message: `capabilities ${v2Only.join(", ")} need apiVersion 2`,
     });
+  }
+  if (m.apiVersion < 2 && m.contributes?.agentTools?.length) {
+    issues.push({ path: ["apiVersion"], message: "agentTools contributions need apiVersion 2" });
   }
   return [
     ...issues,
@@ -410,5 +444,6 @@ export const pluginContributionMethods = {
   sessionAction: (id: string) => id,
   composerAction: (id: string) => id,
   panelRender: (id: string) => `panel.${id}.render`,
+  agentTool: (id: string) => `tool.${id}`,
   panelSubmit: (id: string) => `panel.${id}.submit`,
 } as const;

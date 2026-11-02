@@ -75,6 +75,7 @@ import { registerBrowserTools } from "../../browser-tools/tools.js";
 import type { BrowserToolsBroker } from "../../browser-tools/broker.js";
 import type { ProjectTodoService } from "../../project-todos/service.js";
 import { registerTodoTools } from "./todo-tools.js";
+import { registerConnectorTools, type AgentConnectorHost } from "./connector-tools.js";
 import type {
   FroggToolCatalog,
   FroggToolConfig,
@@ -118,6 +119,8 @@ export interface FroggToolHostDependencies {
   browserToolsBroker?: BrowserToolsBroker | null;
   /** Project to-do service; the todo_* tools are registered only when present. */
   projectTodos?: ProjectTodoService | null;
+  /** Host plugins; list_connectors and call_connector_tool are registered only when present. */
+  connectors?: AgentConnectorHost | null;
   froggHome?: string;
   worktreesRoot?: string;
   /**
@@ -2485,6 +2488,10 @@ export function createFroggToolCatalog(options: FroggToolHostDependencies): Frog
       workspaceRegistry: options.workspaceRegistry,
       callerAgentId,
     });
+  }
+
+  if (options.connectors) {
+    registerConnectorTools({ registerTool, connectors: options.connectors, callerAgentId });
   }
 
   return toCatalog();

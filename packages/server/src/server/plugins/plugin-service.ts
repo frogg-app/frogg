@@ -8,6 +8,7 @@ import {
   SUPPORTED_PLUGIN_API_VERSIONS,
   addedCapabilities,
   isSupportedPluginApiVersion,
+  pluginContributionMethods,
   type PluginBuiltinFeature,
   type PluginManifest,
   type PluginSettingValue,
@@ -33,6 +34,12 @@ import type {
 } from "@frogg/protocol/plugins/rpc-schemas";
 import type { PluginNotifyLevel } from "@frogg/protocol/plugins/api-v1";
 import { PluginServiceError } from "./errors.js";
+import {
+  callableAgentTools,
+  projectAgentConnectors,
+  type AgentConnector,
+  type AgentConnectorSource,
+} from "./agent-connectors.js";
 import {
   assertRepoUrl,
   fetchRepoPublicKey,
@@ -1147,6 +1154,43 @@ export class PluginService {
     const p = this.require(pluginId);
     if (!p.runtime) throw new PluginServiceError("not_active", `Plugin ${pluginId} is ${p.status}`);
     return p.runtime.call(method, params, clientId ? { clientId } : {});
+  }
+
+  // ------------------------------------------------------------ agent tools
+
+  /** Connectors the agents on this host can see (enabled plugins only). */
+  listAgentConnectors(): AgentConnector[] {
+    if (!this.enabled) return [];
+    return projectAgentConnectors([...this.plugins.values()].map((p) => this.connectorSource(p)));
+  }
+
+  /** Calls a plugin's agent tool on behalf of `agentId`; only declared tools are reachable. */
+  async callAgentTool(
+    pluginId: string,
+    tool: string,
+    args: unknown,
+    agentId: string,
+  ): Promise<unknown> {
+    this.requireEnabled();
+    const p = this.require(pluginId);
+    const source = this.connectorSource(p);
+    if (!source.enabled)
+      throw new PluginServiceError("not_active", `Plugin ${pluginId} is disabled`);
+    if (p.status !== "active" || !p.runtime)
+      throw new PluginServiceError("not_active", `Plugin ${pluginId} is ${p.status}`);
+    if (!callableAgentTools(source).some((t) => t.id === tool))
+      throw new PluginServiceError("not_found", `Plugin ${pluginId} has no agent tool ${tool}`);
+    return p.runtime.call(pluginContributionMethods.agentTool(tool), args ?? {}, { agentId });
+  }
+
+  private connectorSource(p: LoadedPlugin): AgentConnectorSource {
+    return {
+      manifest: p.manifest,
+      status: p.status,
+      error: p.error,
+      granted: this.granted(p),
+      enabled: p.dev || (p.record?.enabled ?? false),
+    };
   }
 
   // --------------------------------------------------------- built-in features

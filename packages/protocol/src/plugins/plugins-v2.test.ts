@@ -45,6 +45,22 @@ describe("plugin API v2 manifests", () => {
     ).toBe(true);
   });
 
+  it("accepts agent tools only with rpc and apiVersion 2", () => {
+    const agentTools = [
+      { id: "history", title: "History", description: "Read messages", inputSchema: {} },
+    ];
+    const parse = (apiVersion: number, capabilities: string[]) =>
+      PluginManifestSchema.safeParse({
+        ...base,
+        apiVersion,
+        capabilities,
+        contributes: { agentTools },
+      }).success;
+    expect(parse(2, ["rpc"])).toBe(true);
+    expect(parse(2, ["network"])).toBe(false);
+    expect(parse(1, ["rpc"])).toBe(false);
+  });
+
   it("reports an unsupported apiVersion before validating capabilities", () => {
     expect(
       unsupportedManifestApiVersion({
