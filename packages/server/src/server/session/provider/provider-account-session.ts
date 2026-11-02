@@ -6,6 +6,7 @@ import {
   type ProviderAccountMutationResult,
   type ProviderAccountStore,
 } from "../../provider-accounts/provider-account-store.js";
+import { listClaudePluginSources } from "../../provider-accounts/claude-plugin-status.js";
 
 type ProviderAccountResponseType =
   | "provider.account.list.response"
@@ -53,6 +54,32 @@ export class ProviderAccountSession {
     msg: Extract<SessionInboundMessage, { type: "provider.account.list.request" }>,
   ): Promise<void> {
     this.run("provider.account.list.response", msg.requestId, () => this.store.buildResult([]));
+  }
+
+  /**
+   * Installed Claude Code plugins per plugins folder (accounts that link one share it), with
+   * the versions their local marketplace copies declare. Read-only.
+   */
+  async handleProviderClaudePluginsListRequest(
+    msg: Extract<SessionInboundMessage, { type: "provider.claude_plugins.list.request" }>,
+  ): Promise<void> {
+    try {
+      const sources = await listClaudePluginSources(this.store, process.env);
+      this.host.emit({
+        type: "provider.claude_plugins.list.response",
+        payload: { requestId: msg.requestId, sources, error: null },
+      });
+    } catch (error) {
+      this.logger.error({ err: error }, "Listing Claude plugins failed");
+      this.host.emit({
+        type: "provider.claude_plugins.list.response",
+        payload: {
+          requestId: msg.requestId,
+          sources: [],
+          error: error instanceof Error ? error.message : String(error),
+        },
+      });
+    }
   }
 
   async handleProviderAccountCreateRequest(

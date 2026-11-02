@@ -2126,6 +2126,8 @@ export class VoiceAssistantWebSocketServer {
         // COMPAT(providerAccountPreferences): added in v1.5.6, remove after 2027-09-19.
         ...(this.providerAccountsEnabled ? { providerAccountPreferences: true } : {}),
         providerUpdates: true,
+        // COMPAT(claudePluginUpdates): added in v1.6.14, remove after 2027-11-02.
+        claudePluginUpdates: true,
         // COMPAT(agentProviderAccountTransfer): added in v1.5.7, remove after 2027-09-19.
         // Rides the same manifest gate as the accounts themselves. Whether the
         // agent's own provider can carry its history across is a per-provider
