@@ -156,8 +156,16 @@ function matchesChannel(release: GitHubRelease, channel: UpdateChannel): boolean
     // a prerelease of one, so it belongs to the stable channel too.
     return release.prerelease !== true && isStableVersion(release.tag_name);
   }
-  // Beta follows the newest release of either kind.
-  return true;
+  // Beta follows the newest stable or frogg beta (`-beta.N`) release. Frogg Next prereleases
+  // (`-next.N`) come from the frogg-next branch and only install by exact version, so a daemon
+  // never hops between the two branches' builds.
+  return !isFroggNextVersion(release.tag_name);
+}
+
+/** A Frogg Next prerelease (`v1.6.14-next.2`, `v1.6.14-next.2.acme.1`). */
+export function isFroggNextVersion(tag: string): boolean {
+  const parsed = parseVersion(tag);
+  return parsed?.upstreamPrerelease?.split(".")[0]?.toLowerCase() === "next";
 }
 
 /**

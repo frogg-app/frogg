@@ -156,7 +156,8 @@ CHANNEL_SUFFIX='-(alpha|beta|rc|pre|preview|next|canary|dev|nightly|snapshot)(\.
 
 # The beta channel installs the newest release of either kind: the newest prerelease
 # (vX.Y.Z-beta.N), or a stable release once it is newer, so a beta install never strands below
-# stable. GitHub has no "latest prerelease" alias. Prerelease daemon bundles carry the normal
+# stable. Frogg Next prereleases (vX.Y.Z-next.N, from the frogg-next branch) are skipped; pin one
+# with FROGG_VERSION. GitHub has no "latest prerelease" alias. Prerelease daemon bundles carry the normal
 # identity, so they install into the same home, service and port as a stable one.
 resolve_newest_beta_version() {
   local api body tag
@@ -168,6 +169,7 @@ resolve_newest_beta_version() {
   # prerelease below its release, as semver does.
   tag="$(printf '%s\n' "${body}" | tr ',{' '\n\n' |
     sed -nE 's/^ *"tag_name" *: *"v([0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?)" *$/\1/p' |
+    grep -Ev -- '-next(\.|$)' |
     sed 's/-/~/' | sort -V | tail -n1 | sed 's/~/-/')"
   FROGG_VERSION="${tag}"
   [ -n "${FROGG_VERSION}" ] || die "no beta release found at ${api}"
