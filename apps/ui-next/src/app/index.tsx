@@ -280,7 +280,7 @@ function Shell() {
       <NewSession />
       <ToastHost />
       <SignInDialog />
-      <Onboarding phone={false} chipBottom={40} chipLeft={224} />
+      <Onboarding phone={false} />
     </SafeAreaView>
   );
 }

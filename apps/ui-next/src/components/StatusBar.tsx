@@ -10,6 +10,7 @@ import { stateOf } from "./PrsPanel";
 import { useActiveCwd } from "./ScmPanel";
 import { useBuckets } from "./SessionList";
 import { T } from "./Text";
+import { ResumeChip } from "./onboarding/Onboarding";
 import { kbd } from "../kbd";
 
 type Checks = { done: number; total: number; failed: number } | null;
@@ -102,6 +103,7 @@ export function StatusBar() {
           </T>
         </View>
       )}
+      <ResumeChip docked />
       <Pressable style={s.seg} onPress={openPalette}>
         <T v="mono" style={s.t}>
           {kbd("⌘K")}

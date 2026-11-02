@@ -152,8 +152,14 @@ function ChipDemo() {
         <Act label="Plain resume" run={chipBack} />
       </Controls>
       <T style={s.muted}>Resume reopens the modal (shown in the Modal variant).</T>
+      <T style={s.muted}>
+        Phone: floats bottom-right. Desktop and tablet: docked in the status bar.
+      </T>
       <View style={s.chipFrame}>
         <ResumeChip bottom={16} />
+      </View>
+      <View style={s.barFrame} testID="lab-status-dock">
+        <ResumeChip docked />
       </View>
     </Stack>
   );
@@ -225,6 +231,15 @@ const s = StyleSheet.create({
     height: 740,
     borderWidth: 1,
     borderColor: color.line,
+  },
+  barFrame: {
+    height: 26,
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "stretch",
+    backgroundColor: color.bg,
+    borderTopWidth: 1,
+    borderTopColor: color.line,
   },
   chipFrame: { height: 80 },
   muted: { color: color.muted, marginBottom: 8 },

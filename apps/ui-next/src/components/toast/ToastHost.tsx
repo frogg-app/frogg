@@ -76,7 +76,11 @@ export function ToastHost({ variant }: { variant?: ToastVariant }) {
   const phone = useFormFactor() === "phone";
   const insets = useSafeAreaInsets();
   useSessionToasts();
-  const pad = useMemo(() => ({ bottom: phone ? insets.bottom + 72 : 36 }), [phone, insets.bottom]);
+  const floor = useToasts((st) => st.floor);
+  const pad = useMemo(
+    () => ({ bottom: Math.max(phone ? insets.bottom + 72 : 36, floor) }),
+    [phone, insets.bottom, floor],
+  );
   if (toasts.length === 0) return null;
   return (
     <View
