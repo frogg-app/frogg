@@ -158,6 +158,7 @@ import {
 import { setupAutoArchiveOnMerge } from "./auto-archive-on-merge/index.js";
 import { setupUsageLimitAutoResume } from "./agent/usage-limit-auto-resume.js";
 import { createUsageStatsReporter } from "./usage-stats/reporter.js";
+import { createTailscaleMonitor } from "./tailscale/node-status.js";
 import { maybeAutoCleanCut, type AutoCleanCutDeps } from "./agent/auto-clean-cut.js";
 import { sendPromptToAgent } from "./agent/agent-prompt.js";
 import { PluginService } from "./plugins/plugin-service.js";
@@ -1704,6 +1705,10 @@ export async function createFroggDaemon(
     logger,
   });
   usageStats.start();
+
+  // A changed node (a re-login, a new key expiry) reaches connected apps through server_info.
+  const tailscaleMonitor = createTailscaleMonitor();
+  tailscaleMonitor.start(() => wsServer?.broadcastServerInfoChanged());
   daemonConfigStore.onFieldChange("usageStats", (value) => {
     usageStats.setEnabled(value === true);
   });
@@ -2499,6 +2504,7 @@ export async function createFroggDaemon(
                 skills: skillCatalog,
                 getStorageAlerts: () => resolveStorageAlerts(daemonConfigStore.get()),
                 getSecurityPosture,
+                getTailscaleStatus: () => tailscaleMonitor.get(),
                 setSecurityFindingAcknowledged,
                 getRelayConfig: () =>
                   relayRuntime?.getConfig() ?? {
@@ -2636,6 +2642,7 @@ export async function createFroggDaemon(
     agentManager.prepareForShutdown();
     usageLimitAutoResume.dispose();
     usageStats.stop();
+    tailscaleMonitor.stop();
     const midTurnAgentIds = collectMidTurnAgentIds(agentManager.listAgents());
     await closeAllAgents(logger, agentManager);
     await agentManager.flushForShutdown().catch(() => undefined);

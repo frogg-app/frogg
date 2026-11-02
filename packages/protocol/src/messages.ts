@@ -15,6 +15,7 @@ import {
   ProjectImportReadResponseSchema,
 } from "./project-import/messages.js";
 import { z } from "zod";
+import { TailscaleNodeStatusSchema } from "./tailscale.js";
 import {
   AuthDeviceListRequestSchema,
   AuthDeviceRenameRequestSchema,
@@ -4619,6 +4620,9 @@ export const ServerInfoStatusPayloadSchema = z
     // COMPAT(securityPosture): added in v1.6.0. Present for owner connections
     // only; the findings a notification dot should reflect.
     security: SecurityPostureSchema.optional(),
+    // COMPAT(tailscaleStatus): added in v1.6.14. The daemon machine's Tailscale node, when
+    // Tailscale is installed there; the app warns before its key expires.
+    tailscale: TailscaleNodeStatusSchema.optional(),
     // COMPAT(deviceAccess): added in v1.6.0. The paired device this connection
     // authenticated as; absent for credential-less (loopback / trusted LAN) connections.
     device: z
