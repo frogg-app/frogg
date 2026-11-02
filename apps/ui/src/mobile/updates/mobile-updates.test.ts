@@ -145,6 +145,41 @@ describe("selectRelease", () => {
   });
 });
 
+describe("selectRelease on frogg beta", () => {
+  const own = (version: string) => asset(`${prefix}-${version}-android-arm64-v8a.apk`);
+  const next = {
+    ...release("1.6.14-next.2", [asset("Frogg-Next-1.6.14-next.2-android-arm64-v8a.apk")]),
+    prerelease: true,
+  };
+  const releases = [
+    next,
+    release("1.6.15", [own("1.6.15")]),
+    release("1.6.14-beta.5", [own("1.6.14-beta.5")]),
+    release("1.6.14-beta.6"),
+    release("1.6.14-beta.4", [own("1.6.14-beta.4")]),
+  ];
+
+  it("follows the newest prerelease carrying its own APK, skipping Frogg Next and stable", () => {
+    expect(selectRelease(releases, "beta")?.tag_name).toBe("v1.6.14-beta.5");
+  });
+
+  it("finds nothing when only other clients' prereleases are published", () => {
+    expect(selectRelease([next, release("1.6.15", [own("1.6.15")])], "beta")).toBeNull();
+  });
+
+  it("resolves the update through the channel input", () => {
+    const update = resolveMobileAppUpdate({
+      releases,
+      currentVersion: "1.6.14-beta.1",
+      installer: device,
+      checkedAt: 1,
+      channel: "beta",
+    });
+    expect(update.latestVersion).toBe("1.6.14-beta.5");
+    expect(update.hasUpdate).toBe(true);
+  });
+});
+
 describe("resolveMobileAppUpdate", () => {
   const apk = asset(`${prefix}-1.5.18-android-arm64-v8a-unsigned.apk`, 90_000_000);
 
