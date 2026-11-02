@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { setCompare, useScm, type DiffFile } from "../daemon/scm";
 import { useFormFactor } from "../theme/layout";
-import { color, font, glide, web } from "../theme/tokens";
+import { alpha, color, font, glide, web } from "../theme/tokens";
 import { Tokens } from "./Code";
 import { useGlide } from "./Glide";
 import { T } from "./Text";
@@ -180,14 +180,14 @@ function SegItem<V extends string>({
 }
 
 const bg = {
-  add: "rgba(63,207,142,0.09)",
-  remove: "rgba(255,107,107,0.10)",
+  add: alpha(color.mint, 0.09),
+  remove: alpha(color.coral, 0.1),
   context: "transparent",
   header: "transparent",
 };
 const fg = {
-  add: "#a6ecc8",
-  remove: "#ffb3b3",
+  add: color.addText,
+  remove: color.delText,
   context: color.text,
   header: color.faint,
 };
@@ -197,7 +197,7 @@ const lineBg = StyleSheet.create({
   remove: { backgroundColor: bg.remove },
   context: { backgroundColor: bg.context },
   header: { backgroundColor: bg.header },
-  empty: { backgroundColor: "rgba(255,255,255,0.015)" },
+  empty: { backgroundColor: alpha(color.ink, 0.015) },
 });
 const lineFg = StyleSheet.create({
   add: { color: fg.add },
@@ -394,7 +394,7 @@ const s = StyleSheet.create({
     borderColor: color.line,
   },
   segI: { paddingHorizontal: 10, paddingVertical: 5 },
-  segPill: { position: "absolute", backgroundColor: "rgba(255,255,255,0.07)" },
+  segPill: { position: "absolute", backgroundColor: alpha(color.ink, 0.07) },
   segHidden: { opacity: 0 },
   hunk: {
     paddingHorizontal: 16,

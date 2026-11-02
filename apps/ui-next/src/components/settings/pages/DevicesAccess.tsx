@@ -8,7 +8,7 @@ import { useCallback, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { getClient } from "../../../daemon/store";
 import { isUnregistered, pairingErrorText, registeredVia } from "../../hosts/access";
-import { color, font } from "../../../theme/tokens";
+import { alpha, color, font } from "../../../theme/tokens";
 import { agoText } from "../../../util";
 import { Select } from "../../Select";
 import { Button } from "../../Button";
@@ -351,7 +351,7 @@ const s = StyleSheet.create({
     gap: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: "rgba(245,184,74,0.06)",
+    backgroundColor: alpha(color.amber, 0.06),
   },
   reqText: { flex: 1, minWidth: 180 },
   line: { borderBottomWidth: 1, borderBottomColor: color.line },

@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { pinTab, useFiles } from "../../daemon/files";
 import { getClient } from "../../daemon/store";
-import { color, font, motion, web } from "../../theme/tokens";
+import { alpha, color, font, motion, web } from "../../theme/tokens";
 import { useUi } from "../../ui-store";
 import { Brackets, BracketScope } from "../Brackets";
 import { SkeletonRows } from "../Skeleton";
@@ -217,7 +217,7 @@ const st = StyleSheet.create({
     ...web({ transition: "background-color 120ms ease-out" }),
   },
   hover: { backgroundColor: color.wash },
-  on: { backgroundColor: "rgba(127,217,230,0.05)" },
+  on: { backgroundColor: alpha(color.cyan2, 0.05) },
   name: { fontSize: 13, color: color.text },
   nameOn: { color: color.cyan2 },
   dir: { fontSize: 10.5, color: color.faint },

@@ -1,7 +1,7 @@
 import { Check, Copy } from "lucide-react-native";
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { Linking, Platform, Pressable, StyleSheet, View } from "react-native";
-import { color, font } from "../theme/tokens";
+import { alpha, color, font } from "../theme/tokens";
 import { HostImage } from "./markdown/HostImage";
 import { MdTable } from "./markdown/MdTable";
 import {
@@ -271,7 +271,7 @@ const st = StyleSheet.create({
     fontFamily: font.mono,
     fontSize: 12.5,
     color: color.cyan2,
-    backgroundColor: "rgba(127,217,230,0.08)",
+    backgroundColor: alpha(color.cyan2, 0.08),
   },
   bold: { fontWeight: "600" },
   italic: { fontStyle: "italic", color: color.muted },

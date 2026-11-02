@@ -13,7 +13,7 @@ import {
 import { newTerminal } from "../daemon/terminals";
 import { answerPermission, useDaemon } from "../daemon/store";
 import { bucketOf } from "../daemon/types";
-import { color, font, web } from "../theme/tokens";
+import { alpha, color, font, web } from "../theme/tokens";
 import { useUi } from "../ui-store";
 import { openOnboarding } from "./onboarding/store";
 import { Cut } from "./Cut";
@@ -347,7 +347,7 @@ const s = StyleSheet.create({
   },
   scrim: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(4,8,10,0.6)",
+    backgroundColor: alpha(color.bg, 0.6),
     ...web({ backdropFilter: "blur(6px)" }),
   },
   boxPlace: { width: "100%", alignItems: "center" },
@@ -380,8 +380,8 @@ const s = StyleSheet.create({
     borderColor: "transparent",
   },
   rowOn: {
-    backgroundColor: "rgba(37,181,200,0.1)",
-    borderColor: "rgba(127,217,230,0.35)",
+    backgroundColor: alpha(color.cyan, 0.1),
+    borderColor: alpha(color.cyan2, 0.35),
   },
   kbd: {
     fontSize: 10,

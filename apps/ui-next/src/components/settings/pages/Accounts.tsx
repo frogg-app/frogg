@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { StyleSheet, View } from "react-native";
 import { useHosts, type Host } from "../../../daemon/hosts";
 import { getHostClient, useDaemon, useHostConn } from "../../../daemon/store";
-import { color } from "../../../theme/tokens";
+import { alpha, color } from "../../../theme/tokens";
 import { Button } from "../../Button";
 import { FLAG_PROVIDERS, flagsText, parseFlags, tokenize } from "../../sessions/launch";
 import { openSignIn } from "../../signin/store";
@@ -563,7 +563,7 @@ const s = StyleSheet.create({
   windows: { gap: 6, width: 260, maxWidth: "100%" },
   win: { flexDirection: "row", alignItems: "center", gap: 10 },
   winL: { width: 70, fontSize: 11, color: color.faint },
-  bar: { flex: 1, height: 3, backgroundColor: "rgba(255,255,255,0.08)" },
+  bar: { flex: 1, height: 3, backgroundColor: alpha(color.ink, 0.08) },
   fill: { height: 3, backgroundColor: color.cyan },
   fillWarn: { backgroundColor: color.amber },
   winP: { width: 34, textAlign: "right", fontSize: 11, color: color.faint },

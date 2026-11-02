@@ -310,7 +310,7 @@ const s = StyleSheet.create({
   findActs: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 },
   sws: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   sw: { width: 18, height: 18, borderWidth: 2, borderColor: "transparent" },
-  swOn: { borderColor: color.text, ...web({ boxShadow: "0 0 0 1px #080b0d inset" }) },
+  swOn: { borderColor: color.text, ...web({ boxShadow: `0 0 0 1px ${color.bg} inset` }) },
   picker: {
     flexDirection: "row",
     alignItems: "center",

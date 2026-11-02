@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from "react-native";
 import type { DaemonClient } from "@frogg/client/internal/daemon-client";
 import { useDaemon } from "../../daemon/store";
-import { color, font, web } from "../../theme/tokens";
+import { alpha, color, font, web } from "../../theme/tokens";
 import { useUi } from "../../ui-store";
 import { ago } from "../../util";
 import { Button } from "../Button";
@@ -724,7 +724,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 6,
   },
-  labelRowOn: { backgroundColor: "rgba(37,181,200,0.1)" },
+  labelRowOn: { backgroundColor: alpha(color.cyan, 0.1) },
   chip: { paddingHorizontal: 6, paddingVertical: 1, alignSelf: "flex-start" },
   chipT: { fontSize: 10.5 },
   tabsRow: { flexDirection: "row", alignItems: "center", gap: 14, flexWrap: "wrap" },
@@ -760,5 +760,5 @@ const s = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
-  dirRowOn: { backgroundColor: "rgba(37,181,200,0.1)" },
+  dirRowOn: { backgroundColor: alpha(color.cyan, 0.1) },
 });

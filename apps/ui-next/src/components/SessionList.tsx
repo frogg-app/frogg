@@ -15,7 +15,7 @@ import { useHosts } from "../daemon/hosts";
 import { parseQuestions } from "./chat/QuestionCard";
 import { answerPermission, connect, useDaemon, useOtherHostSessions } from "../daemon/store";
 import { bucketOf, type Bucket, type Session } from "../daemon/types";
-import { anim, color, font, web } from "../theme/tokens";
+import { alpha, anim, color, font, web } from "../theme/tokens";
 import { useUi } from "../ui-store";
 import { ago } from "../util";
 import { Button } from "./Button";
@@ -588,7 +588,7 @@ const s = StyleSheet.create({
   emptyMarkLoop: anim(
     {
       "0%, 55%": { transform: "rotate(45deg) scale(1)", backgroundColor: color.line2 },
-      "70%": { transform: "rotate(105deg) scale(0.86)", backgroundColor: "#3a4d52" },
+      "70%": { transform: "rotate(105deg) scale(0.86)", backgroundColor: color.faint },
       "82%, 100%": { transform: "rotate(135deg) scale(1)", backgroundColor: color.line2 },
     },
     "3.6s",
@@ -600,7 +600,7 @@ const s = StyleSheet.create({
     width: 34,
     height: 34,
     borderWidth: 1,
-    borderColor: "rgba(127,217,230,0.5)",
+    borderColor: alpha(color.cyan2, 0.5),
     opacity: 0,
     transform: [{ rotate: "45deg" }],
   },
@@ -664,7 +664,7 @@ const s = StyleSheet.create({
     borderBottomColor: color.line,
   },
   rowHover: { backgroundColor: color.wash },
-  rowOn: { backgroundColor: "rgba(127,217,230,0.05)" },
+  rowOn: { backgroundColor: alpha(color.cyan2, 0.05) },
   rowTop: { flexDirection: "row", alignItems: "flex-start", gap: 4 },
   glyph: { width: 14, paddingTop: 5 },
   title: { flex: 1, fontSize: 13.5, fontWeight: "500" },
@@ -684,7 +684,7 @@ const s = StyleSheet.create({
   permRow: { flexDirection: "row", gap: 8, marginTop: 8, marginLeft: 18 },
   permCmd: {
     flex: 1,
-    backgroundColor: "rgba(245,184,74,0.07)",
+    backgroundColor: alpha(color.amber, 0.07),
     paddingHorizontal: 8,
     justifyContent: "center",
   },
@@ -698,14 +698,14 @@ const s = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     backgroundColor: color.cyan2,
-    ...web({ backgroundImage: "linear-gradient(135deg, #7fd9e6, #25b5c8)" }),
+    ...web({ backgroundImage: `linear-gradient(135deg, ${color.cyan2}, ${color.cyan})` }),
   },
   approveT: { fontWeight: "600", color: color.onAccent, fontSize: 12.5 },
   approveK: {
     fontSize: 9.5,
     color: color.onAccent,
     borderWidth: 1,
-    borderColor: "rgba(4,22,26,0.35)",
+    borderColor: alpha(color.onAccent, 0.35),
     paddingHorizontal: 3,
   },
 });

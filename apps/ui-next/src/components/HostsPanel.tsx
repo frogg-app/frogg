@@ -4,7 +4,7 @@ import { Platform, Pressable, ScrollView, StyleSheet, View } from "react-native"
 import { useHostLink, useHosts, type Host } from "../daemon/hosts";
 import { useDaemon, useFleet, useHostConn, useHostError } from "../daemon/store";
 import { useFormFactor } from "../theme/layout";
-import { color, motion } from "../theme/tokens";
+import { alpha, color, motion } from "../theme/tokens";
 import { AddHost, EditHost } from "./hosts/AddHost";
 import { offlineReason } from "./hosts/access";
 import { HostDetail, hostKind } from "./hosts/HostDetail";
@@ -225,7 +225,7 @@ const st = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: color.line,
   },
-  rowOn: { backgroundColor: "rgba(37,181,200,0.06)" },
+  rowOn: { backgroundColor: alpha(color.cyan, 0.06) },
   rowHover: { backgroundColor: color.wash },
   binSlot: { width: 38 },
   bin: { position: "absolute", top: 12, right: 20 },

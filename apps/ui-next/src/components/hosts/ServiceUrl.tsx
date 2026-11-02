@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useCallback, useMemo, useState } from "react";
 import { Linking, Pressable, StyleSheet, View } from "react-native";
-import { color } from "../../theme/tokens";
+import { alpha, color } from "../../theme/tokens";
 import { Button } from "../Button";
 import { Toggle } from "../settings/controls";
 import { copyText } from "../shell/copy";
@@ -119,7 +119,7 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: color.line,
   },
-  choiceOn: { borderColor: color.cyan, backgroundColor: "rgba(37,181,200,0.08)" },
+  choiceOn: { borderColor: color.cyan, backgroundColor: alpha(color.cyan, 0.08) },
   diamond: {
     width: 8,
     height: 8,

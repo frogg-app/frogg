@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { getClient, openTimeline, useDaemon } from "../daemon/store";
 import { bucketOf, type Bucket, type Session } from "../daemon/types";
-import { color } from "../theme/tokens";
+import { alpha, color } from "../theme/tokens";
 import { useUi } from "../ui-store";
 import { ago, providerLabel } from "../util";
 import { Button } from "./Button";
@@ -204,7 +204,7 @@ const st = StyleSheet.create({
   flex: { flex: 1 },
   empty: { padding: 16 },
   rowHover: { backgroundColor: color.wash },
-  rowOn: { backgroundColor: "rgba(127,217,230,0.05)" },
+  rowOn: { backgroundColor: alpha(color.cyan2, 0.05) },
   line: { flexDirection: "row", alignItems: "center", gap: 8 },
   title: { flex: 1, fontWeight: "600" },
   when: { fontSize: 10.5, color: color.faint },
@@ -263,6 +263,6 @@ const st = StyleSheet.create({
     backgroundColor: color.panel,
     padding: 16,
     borderWidth: 1,
-    borderColor: "rgba(255,107,107,0.4)",
+    borderColor: alpha(color.coral, 0.4),
   },
 });

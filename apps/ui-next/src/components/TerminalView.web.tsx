@@ -6,7 +6,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { X } from "lucide-react-native";
 import { getClient } from "../daemon/store";
 import { usePrefs } from "../prefs";
-import { color, ease, web } from "../theme/tokens";
+import { alpha, color, ease, terminalColors, web } from "../theme/tokens";
 import { UploadBar, UploadProgress } from "./chat/Attach";
 import { useDropFiles } from "./chat/dropFiles";
 import { cancelUpload, isCancelled, uploadPicked, type Picked } from "./chat/upload";
@@ -19,23 +19,23 @@ const theme = {
   foreground: color.text,
   cursor: color.cyan2,
   cursorAccent: color.bg,
-  selectionBackground: "#25b5c855",
-  black: "#0c1114",
+  selectionBackground: alpha(color.cyan, 0.33),
+  black: terminalColors.black,
   red: color.coral,
   green: color.mint,
   yellow: color.amber,
-  blue: "#4aa3df",
+  blue: terminalColors.blue,
   magenta: color.violet,
   cyan: color.cyan,
-  white: "#d6dee0",
+  white: terminalColors.white,
   brightBlack: color.faint,
-  brightRed: "#ff8f8f",
-  brightGreen: "#7fe3b2",
-  brightYellow: "#ffd27a",
-  brightBlue: "#7fc0ef",
-  brightMagenta: "#b1a6fa",
+  brightRed: terminalColors.brightRed,
+  brightGreen: terminalColors.brightGreen,
+  brightYellow: terminalColors.brightYellow,
+  brightBlue: terminalColors.brightBlue,
+  brightMagenta: terminalColors.brightMagenta,
   brightCyan: color.cyan2,
-  brightWhite: "#ffffff",
+  brightWhite: terminalColors.brightWhite,
 };
 
 const PAGE_KEYS: Record<string, string> = { PageUp: "\u001b[5~", PageDown: "\u001b[6~" };

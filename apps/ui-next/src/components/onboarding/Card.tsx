@@ -10,7 +10,7 @@ import {
   View,
   type LayoutChangeEvent,
 } from "react-native";
-import { color, motion, web } from "../../theme/tokens";
+import { alpha, color, motion, web } from "../../theme/tokens";
 import { Button } from "../Button";
 import { Cut } from "../Cut";
 import { useGlide } from "../Glide";
@@ -269,7 +269,7 @@ const s = StyleSheet.create({
     left: 0,
     width: 2,
     backgroundColor: color.cyan2,
-    ...web({ backgroundImage: "linear-gradient(#7fd9e6, #25b5c8)" }),
+    ...web({ backgroundImage: `linear-gradient(${color.cyan2}, ${color.cyan})` }),
   },
   itemPress: { ...web({ outlineStyle: "none" }) },
   item: {
@@ -283,8 +283,10 @@ const s = StyleSheet.create({
   },
   itemHover: { backgroundColor: color.wash3 },
   itemOn: {
-    backgroundColor: "rgba(37,181,200,0.16)",
-    ...web({ backgroundImage: "linear-gradient(135deg, #7fd9e62e, #25b5c81a)" }),
+    backgroundColor: alpha(color.cyan, 0.16),
+    ...web({
+      backgroundImage: `linear-gradient(135deg, ${alpha(color.cyan2, 0.18)}, ${alpha(color.cyan, 0.1)})`,
+    }),
   },
   itemT: { flex: 1, fontSize: 13, color: color.muted },
   itemTOn: { color: color.cyan2 },

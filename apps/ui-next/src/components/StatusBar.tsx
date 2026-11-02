@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { useScm, watchCheckout } from "../daemon/scm";
 import { getClient, useDaemon } from "../daemon/store";
-import { color } from "../theme/tokens";
+import { alpha, color } from "../theme/tokens";
 import { useUi } from "../ui-store";
 import { providerLabel } from "../util";
 import { Logo } from "./Logo";
@@ -10,6 +10,7 @@ import { stateOf } from "./PrsPanel";
 import { useActiveCwd } from "./ScmPanel";
 import { useBuckets } from "./SessionList";
 import { T } from "./Text";
+import { ResumeChip } from "./onboarding/Onboarding";
 import { kbd } from "../kbd";
 
 type Checks = { done: number; total: number; failed: number } | null;
@@ -102,6 +103,7 @@ export function StatusBar() {
           </T>
         </View>
       )}
+      <ResumeChip docked />
       <Pressable style={s.seg} onPress={openPalette}>
         <T v="mono" style={s.t}>
           {kbd("⌘K")}
@@ -133,7 +135,7 @@ const s = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 10,
   },
-  brand: { backgroundColor: "rgba(37,181,200,0.12)" },
+  brand: { backgroundColor: alpha(color.cyan, 0.12) },
   t: { fontSize: 11.5, color: color.muted },
   brandT: { fontSize: 12, fontWeight: "600", color: color.cyan2 },
   dot: { width: 6, height: 6, borderRadius: 3 },
@@ -143,6 +145,6 @@ const s = StyleSheet.create({
   add: { color: color.mint },
   del: { color: color.coral },
   spacer: { flex: 1 },
-  needs: { backgroundColor: "rgba(245,184,74,0.14)" },
+  needs: { backgroundColor: alpha(color.amber, 0.14) },
   needsT: { color: color.amber },
 });

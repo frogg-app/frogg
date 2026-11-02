@@ -7,7 +7,7 @@ import {
   View,
   type LayoutChangeEvent,
 } from "react-native";
-import { color, font, glide, web } from "../../theme/tokens";
+import { alpha, color, font, glide, web } from "../../theme/tokens";
 import { useGlide } from "../Glide";
 import { T } from "../Text";
 
@@ -207,12 +207,12 @@ const s = StyleSheet.create({
     width: 32,
     height: 18,
     padding: 2,
-    backgroundColor: "rgba(255,255,255,0.12)",
+    backgroundColor: alpha(color.ink, 0.12),
     ...web({ transition: "background-color .25s" }),
   },
   trackOn: {
     backgroundColor: color.cyan,
-    ...web({ backgroundImage: "linear-gradient(135deg,#7fd9e6,#045b9d)" }),
+    ...web({ backgroundImage: `linear-gradient(135deg,${color.cyan2},${color.deep})` }),
   },
   disabled: { opacity: 0.4 },
   knob: {
@@ -221,10 +221,10 @@ const s = StyleSheet.create({
     backgroundColor: color.muted,
     ...web({ transition: "transform .3s cubic-bezier(0.22,1,0.36,1)" }),
   },
-  knobOn: { backgroundColor: "#fff", transform: [{ translateX: 14 }] },
+  knobOn: { backgroundColor: color.ink, transform: [{ translateX: 14 }] },
   seg: { flexDirection: "row", borderWidth: 1, borderColor: color.line2 },
   segI: { paddingHorizontal: 11, paddingVertical: 5 },
-  segPill: { position: "absolute", backgroundColor: "rgba(255,255,255,0.08)" },
+  segPill: { position: "absolute", backgroundColor: alpha(color.ink, 0.08) },
   segHidden: { opacity: 0 },
   segT: {
     fontSize: 12.5,

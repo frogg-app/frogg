@@ -36,6 +36,8 @@ interface ToastState {
   paused: boolean;
   /** Explicit override (the lab); null follows the `toastStyle` preference. */
   variant: ToastVariant | null;
+  /** Lowest the stack may sit (px from the bottom): a corner widget below it (the onboarding chip). */
+  floor: number;
 }
 
 export const DEFAULT_TOAST_VARIANT: ToastVariant = "bracket";
@@ -44,7 +46,13 @@ export const useToasts = create<ToastState>(() => ({
   toasts: [],
   paused: false,
   variant: null,
+  floor: 0,
 }));
+
+/** Keep the toast stack at least `px` from the bottom, above a widget sharing its corner; 0 releases it. */
+export function setToastFloor(px: number): void {
+  if (useToasts.getState().floor !== px) useToasts.setState({ floor: px });
+}
 
 export const LIFETIME_MS = toastMs.life;
 
