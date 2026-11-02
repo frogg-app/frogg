@@ -6,23 +6,23 @@ Next instead of the classic beta.
 
 ## Today (1.6.14-beta.2 and later)
 
-| Branch   | Tag            | Client                        | Daemon       |
-| -------- | -------------- | ----------------------------- | ------------ |
-| `main`   | `X.Y.Z-beta.N` | Frogg Next (`app.frogg.next`) | normal, 9999 |
-| `stable` | `X.Y.Z`        | classic frogg (`app.frogg`)   | normal, 9999 |
+| Branch   | Tag            | Client                            | Daemon       |
+| -------- | -------------- | --------------------------------- | ------------ |
+| `main`   | `X.Y.Z-beta.N` | Frogg Next (`app.frogg.next`)     | normal, 9999 |
+| `stable` | `X.Y.Z`        | classic frogg (`app.frogg.frogg`) | normal, 9999 |
 
 Made by e3d15fdc (branding: one identity plus `brand.next`), 80b67eab (release.yml picks the
 client from the version), c05833bb (Frogg Next signing and feeds), 897b3c96 and eb427f6e (classic
 desktop and Android follow stable only), 2164f316 (side-by-side beta daemon retired), 8f943bea
-(docs). The classic "frogg beta" (`app.frogg.beta`) has had no build since 1.6.14-beta.1.
+(docs). The classic "frogg beta" (`app.frogg.frogg.beta`) has had no build since 1.6.14-beta.1.
 
 ## Target
 
-| Branch       | Tag            | Client                                    | Daemon       | Cut by                            |
-| ------------ | -------------- | ----------------------------------------- | ------------ | --------------------------------- |
-| `frogg-next` | `X.Y.Z-next.N` | Frogg Next (`app.frogg.next`)             | normal, 9999 | `frogg-next.yml` after green push |
-| `main`       | `X.Y.Z-beta.N` | frogg beta: classic app, `app.frogg.beta` | normal, 9999 | `ci.yml` after green push         |
-| `stable`     | `X.Y.Z`        | frogg: classic app, `app.frogg`           | normal, 9999 | unchanged (Rule 1)                |
+| Branch       | Tag            | Client                                          | Daemon       | Cut by                            |
+| ------------ | -------------- | ----------------------------------------------- | ------------ | --------------------------------- |
+| `frogg-next` | `X.Y.Z-next.N` | Frogg Next (`app.frogg.next`)                   | normal, 9999 | `frogg-next.yml` after green push |
+| `main`       | `X.Y.Z-beta.N` | frogg beta: classic app, `app.frogg.frogg.beta` | normal, 9999 | `ci.yml` after green push         |
+| `stable`     | `X.Y.Z`        | frogg: classic app, `app.frogg.frogg`           | normal, 9999 | unchanged (Rule 1)                |
 
 - **One daemon.** Every release carries the normal daemon bundles (port 9999, `~/.frogg`, `frogg`
   CLI). The beta daemon (`frogg-beta`, 9989, `~/.frogg-beta`) stays retired.
