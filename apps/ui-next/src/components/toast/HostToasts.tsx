@@ -4,6 +4,8 @@ import { connect, getClient, useDaemon, useUnpaired } from "../../daemon/store";
 import { useUi } from "../../ui-store";
 import { authRefusal, identityMismatch } from "../hosts/access";
 import { openSheet, viewHost } from "../hosts/state";
+import { expiryLine, tailscaleOf } from "../hosts/Tailscale";
+import { keyExpiryState } from "@frogg/protocol/tailscale";
 import { dismissToast, toast, toastShowing, updateToast } from "./store";
 
 const APP_VERSION: string = require("../../../package.json").version;
@@ -65,6 +67,7 @@ export function HostToasts() {
   const error = useHostLink((st) => st.error);
   const offlineFor = useElapsed(conn === "online" ? null : droppedAt);
   const [version, setVersion] = useState<string | null>(null);
+  const [tsExpiry, setTsExpiry] = useState<string | null>(null);
   const [storage, setStorage] = useState<{ level: string; bytes: number } | null>(null);
   const unpaired = useUnpaired((st) => st.endpoint);
 
@@ -76,10 +79,12 @@ export function HostToasts() {
   useEffect(() => {
     setStorage(null);
     setVersion(null);
+    setTsExpiry(null);
     const client = getClient();
     if (!client || conn !== "online") return;
     const info = client.getLastServerInfoMessage() as { version?: string } | null;
     setVersion(info?.version ?? null);
+    setTsExpiry(tailscaleOf(info)?.keyExpiry ?? null);
     return client.subscribe((event) => {
       if (event.type !== "status") return;
       const p = event.payload as { status: string; alert?: { level: string; totalBytes: number } };
@@ -104,6 +109,22 @@ export function HostToasts() {
       action: { label: "Update host…", onPress: openUpdate },
     });
   }, [older, url, version, hostName]);
+
+  // The host's Tailscale node key is close to expiring: once per host and day, from 14 days out.
+  useEffect(() => {
+    const state = keyExpiryState(tsExpiry ? { keyExpiry: tsExpiry } : null);
+    if (state.level !== "soon" && state.level !== "urgent" && state.level !== "expired") return;
+    const key = `tailscale:${url}:${new Date().toISOString().slice(0, 10)}`;
+    if (announced.has(key)) return;
+    announced.add(key);
+    toast({
+      kind: state.level === "soon" ? "needs" : "error",
+      sticky: state.level !== "soon",
+      title: `${hostName} needs a Tailscale re-login`,
+      detail: `${expiryLine(state) ?? ""} Log it in again or disable key expiry for it.`,
+      action: { label: "View host…", onPress: openHostDetail },
+    });
+  }, [tsExpiry, url, hostName]);
 
   // Offline / reconnecting. A refusal or the wrong daemon is not fixed by retrying: those toasts
   // point at the fix the host's offline banner offers instead of Retry.
