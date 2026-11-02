@@ -31,6 +31,17 @@ export function flagsText(tokens: readonly string[] | undefined): string {
 }
 
 /**
+ * Undoes the OS's smart punctuation in a flags field: macOS (and Electron on it) turns a typed
+ * `--` into an em dash, and straight quotes into curly ones, which reads as a lost dash.
+ */
+export function plainFlags(text: string): string {
+  return text
+    .replace(/[\u2014\u2013]/g, "--")
+    .replace(/[\u201c\u201d]/g, '"')
+    .replace(/[\u2018\u2019]/g, "'");
+}
+
+/**
  * Typed flags as SDK extraArgs: `--chrome` is a switch, `--add-dir /x` and `--add-dir=/x` carry
  * a value. Anything that is not a long flag or its value is an error.
  */

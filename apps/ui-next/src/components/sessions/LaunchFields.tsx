@@ -22,6 +22,7 @@ import {
   FLAG_PROVIDERS,
   flagsText,
   parseFlags,
+  plainFlags,
   saveProjectAgentDefaults,
   useDraftFeatures,
   useProjectAgentDefaults,
@@ -85,10 +86,11 @@ export function useLaunch(f: {
   const flagsOn = flagsSupported && !!provider && FLAG_PROVIDERS.has(provider);
   const accountArgs = useMemo(() => accountLaunchArgs(entry, account), [entry, account]);
   const seedFlags = flagsText(mergeFlags(accountArgs, defaults?.args ?? []));
-  const [flags, setFlags] = useState("");
+  const [flags, setFlagsRaw] = useState("");
+  const setFlags = useCallback((v: string) => setFlagsRaw(plainFlags(v)), []);
   const [edits, setEdits] = useState<Record<string, unknown>>({});
   useEffect(() => {
-    setFlags(seedFlags);
+    setFlagsRaw(seedFlags);
     setEdits({});
   }, [seedFlags, provider, root]);
   const features = useDraftFeatures(client, provider, root, defaults?.featureValues);
@@ -211,10 +213,15 @@ export function LaunchFields({
               placeholderTextColor={color.faint}
               autoCapitalize="none"
               autoCorrect={false}
+              autoComplete="off"
+              spellCheck={false}
               style={[s.flags, phone && s.flagsInputPhone]}
               accessibilityLabel="Extra launch flags"
             />
-            <SaveDefaults {...p} />
+            {/* A fixed slot: the field must not slide while the link comes and goes under typing. */}
+            <View style={phone ? s.saveSlotPhone : s.saveSlot}>
+              <SaveDefaults {...p} />
+            </View>
           </View>
         </Field>
       )}
@@ -303,6 +310,8 @@ const s = StyleSheet.create({
     ...web({ outlineStyle: "none" }),
   },
   flagsInputPhone: { width: "100%", paddingVertical: 10 },
+  saveSlot: { width: 104, alignItems: "flex-start" },
+  saveSlotPhone: { minHeight: 18, alignItems: "flex-end" },
   saveOnly: { alignItems: "flex-end" },
   link: { fontSize: 12, color: color.muted },
   linkOn: { color: color.text },
