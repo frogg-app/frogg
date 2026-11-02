@@ -15,6 +15,7 @@ import {
   ProjectImportReadResponseSchema,
 } from "./project-import/messages.js";
 import { z } from "zod";
+import { TailscaleNodeStatusSchema } from "./tailscale.js";
 import {
   AuthDeviceListRequestSchema,
   AuthDeviceRenameRequestSchema,
@@ -453,6 +454,8 @@ export const MutableDaemonConfigSchema = z
     autoArchiveAfterMerge: z.boolean().default(false),
     // COMPAT(autoResumeOnUsageLimit): added in v1.5.38; absent means an older daemon without the feature.
     autoResumeOnUsageLimit: z.boolean().optional(),
+    // COMPAT(usageStats): added in v1.6.14; absent means an older daemon that never sends statistics.
+    usageStats: z.boolean().optional(),
     // COMPAT(companionModel): added in v1.5.43; absent means an older daemon without the picker.
     // null is "the backend's default model".
     companionModel: z.string().nullable().optional(),
@@ -484,6 +487,7 @@ export const MutableDaemonConfigPatchSchema = z
     metadataGeneration: MutableMetadataGenerationConfigSchema.partial().optional(),
     autoArchiveAfterMerge: z.boolean().optional(),
     autoResumeOnUsageLimit: z.boolean().optional(),
+    usageStats: z.boolean().optional(),
     companionModel: z.string().trim().min(1).max(200).nullable().optional(),
     cleanCut: MutableCleanCutConfigPatchSchema.optional(),
     enableTerminalAgentHooks: z.boolean().optional(),
@@ -4636,6 +4640,9 @@ export const ServerInfoStatusPayloadSchema = z
     // COMPAT(securityPosture): added in v1.6.0. Present for owner connections
     // only; the findings a notification dot should reflect.
     security: SecurityPostureSchema.optional(),
+    // COMPAT(tailscaleStatus): added in v1.6.14. The daemon machine's Tailscale node, when
+    // Tailscale is installed there; the app warns before its key expires.
+    tailscale: TailscaleNodeStatusSchema.optional(),
     // COMPAT(deviceAccess): added in v1.6.0. The paired device this connection
     // authenticated as; absent for credential-less (loopback / trusted LAN) connections.
     device: z

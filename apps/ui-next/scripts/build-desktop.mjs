@@ -39,6 +39,7 @@ Object.assign(process.env, {
   EXPO_PUBLIC_FROGG_RELEASE_REPO: identity.repository,
   EXPO_PUBLIC_FROGG_BRAND_ARTIFACT_PREFIX: brand.artifactPrefix,
   EXPO_PUBLIC_FROGG_DAEMON_ARTIFACT_PREFIX: brand.daemonArtifactPrefix,
+  EXPO_PUBLIC_FROGG_COLLECTOR_URL: brand.services.collectorUrl ?? "",
 });
 const icons = path.join(root, ".generated/branding/icons");
 const feeds = feedFileNames(identity);

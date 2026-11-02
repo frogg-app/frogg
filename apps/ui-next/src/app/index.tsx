@@ -2,6 +2,7 @@ import { KeyboardFrame } from "../components/shell/KeyboardFrame";
 import { ToastHost } from "../components/toast/ToastHost";
 import { SignInDialog } from "../components/signin/SignInDialog";
 import { HostToasts } from "../components/toast/HostToasts";
+import { UsageStatsPrompt } from "../components/toast/UsageStatsPrompt";
 import { TitleBar } from "../components/shell/TitleBar";
 import { SessionWindow } from "../components/shell/SessionWindow";
 import { popout } from "../popout";
@@ -239,6 +240,7 @@ function Shell() {
         <KeyboardFrame style={s.fill}>
           {crash !== undefined && <Crash />}
           <HostToasts />
+          <UsageStatsPrompt />
           <View style={s.fill}>{phoneHasDetail ? detailEl : side}</View>
           {!phoneHasDetail && !keyboard && <PhoneTabs badges={badges} />}
         </KeyboardFrame>
@@ -258,6 +260,7 @@ function Shell() {
       <KeyboardFrame style={s.fill}>
         {crash !== undefined && <Crash />}
         <HostToasts />
+        <UsageStatsPrompt />
         <View style={s.row}>
           <Rail badges={badges} />
           {FULL_TOOLS.has(tool) && <View style={[s.fill, s.full]}>{side}</View>}

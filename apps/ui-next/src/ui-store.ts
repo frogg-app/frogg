@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { onHostSwitch } from "./daemon/store";
+import { track, usageSlug } from "./usage-stats/store";
 
 export type Tool =
   | "sessions"
@@ -67,14 +68,20 @@ export const useUi = create<UiState>((set) => ({
   filePath: null,
   openFile: (filePath) => set({ filePath, listOpen: false }),
   settingsPage: null,
-  openSettings: (settingsPage) => set({ settingsPage, listOpen: false }),
+  openSettings: (settingsPage) => {
+    if (settingsPage) track("settings_opened", { page: usageSlug(settingsPage) });
+    set({ settingsPage, listOpen: false });
+  },
   newSessionOpen: false,
   newSessionPrompt: "",
   setNewSession: (newSessionOpen, prompt) =>
     set(prompt === undefined ? { newSessionOpen } : { newSessionOpen, newSessionPrompt: prompt }),
   paletteOpen: false,
   setPalette: (paletteOpen) => set({ paletteOpen }),
-  setTool: (tool) => set({ tool, listOpen: true }),
+  setTool: (tool) => {
+    track("panel_opened", { panel: tool });
+    set({ tool, listOpen: true });
+  },
   select: (selected) => set({ selected, listOpen: false, sessionsPane: "chat" }),
   setListOpen: (listOpen) => set({ listOpen }),
 }));

@@ -37736,6 +37736,9 @@
                         "autoResumeOnUsageLimit": {
                           "type": "boolean"
                         },
+                        "usageStats": {
+                          "type": "boolean"
+                        },
                         "companionModel": {
                           "type": [
                             "string",
@@ -38259,6 +38262,9 @@
                           "type": "boolean"
                         },
                         "autoResumeOnUsageLimit": {
+                          "type": "boolean"
+                        },
+                        "usageStats": {
                           "type": "boolean"
                         },
                         "companionModel": {

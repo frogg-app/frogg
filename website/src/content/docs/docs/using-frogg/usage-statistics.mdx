@@ -1,0 +1,82 @@
+---
+title: Usage statistics and bug reports
+description: What the opt-in usage statistics send, how to see every batch, and how Report a bug redacts a report before it leaves your device.
+sidebar:
+  order: 11
+---
+
+Both live in Frogg Next under **Settings → Privacy & feedback**. Both need a collector set in the
+build's `brand.json` ([`services.collectorUrl`](/docs/fork-and-rebrand/brand-manifest/#services)).
+A build without one never sends statistics, and Report a bug saves a file instead.
+
+## Usage statistics
+
+Off until you turn them on. Frogg asks once, after onboarding ("Help improve Frogg"); dismissing
+the prompt leaves them off.
+
+- **Send usage statistics** covers this device: app interactions only.
+- **Send from &lt;host&gt;** covers the connected daemon (`daemon.usageStats` in its
+  [config.json](/docs/reference/configuration/)). The owner of the host sets it.
+- Statistics are an explicit, visible choice rather than silent tracking, and never contain user
+  data: no prompts, code,
+  file paths, project or host names, accounts or IP-derived data. Every value is a short id from
+  a fixed list, a yes/no or a count. A batch that has anything else in it is dropped, not sent.
+- Turning statistics off deletes the random statistics id and the local log of what was sent.
+
+### What is sent
+
+The app and the daemon POST JSON batches to `<collectorUrl>/v1/events`. The schema lives in
+`packages/protocol/src/usage-stats/events.ts`.
+
+```json
+{
+  "schema": 1,
+  "installId": "0b6f3c1e-7f2a-4c55-9a31-2b8e7d1f0c42",
+  "source": "app",
+  "client": { "product": "frogg-next", "version": "1.6.14", "os": "linux", "platform": "desktop" },
+  "sentAt": "2026-11-02T10:00:12.000Z",
+  "events": [{ "name": "panel_opened", "at": "2026-11-02T10:00:00.000Z", "props": { "panel": "tasks" } }]
+}
+```
+
+| Event             | Sent by | Properties                                            |
+| ----------------- | ------- | ----------------------------------------------------- |
+| `app_opened`      | app     | none                                                  |
+| `app_active`      | app     | none; at most once a day                              |
+| `panel_opened`    | app     | `panel`: the rail tool, e.g. `tasks`, `scm`           |
+| `settings_opened` | app     | `page`: the settings page id, e.g. `providers`        |
+| `session_started` | app     | `provider`: the provider id, e.g. `claude`            |
+| `host_added`      | app     | `transport`: `direct`, `relay`, `ssh`, `local`, `other` |
+| `bug_report_sent` | app     | `withChat`: whether a chat was attached               |
+| `daemon_started`  | daemon  | `providers`: how many providers are enabled           |
+| `daemon_active`   | daemon  | `providers`; at most once a day                       |
+
+`installId` is a random UUID made when statistics are turned on, so installs and builds can be
+counted. Event times are rounded to the minute.
+
+### Seeing what was sent
+
+- In the app: **What is sent → Show sent** lists the last batches this device sent, verbatim.
+- On a host: each batch the daemon sent is appended to `usage-stats.log` in its Frogg home
+  (the last 50 are kept).
+
+## Report a bug
+
+1. Describe what happened. Optionally attach one chat from the connected host: its messages and
+   errors, with tool calls by name only (never their input or output).
+2. **Preview report** builds the report on your device and redacts it: API keys and tokens
+   (Anthropic, OpenAI, GitHub, GitLab, Slack, AWS, Google, Tailscale, npm, JWTs, private keys,
+   `password=`/`token=` style values, credentials in URLs), email addresses, IP addresses,
+   tailnet names and home-directory paths. It shows how many of each were removed.
+3. Read and edit the preview. The pattern pass is best effort; what you leave in the box is
+   exactly what is sent.
+4. **Send report** POSTs it to `<collectorUrl>/v1/bug-reports` as
+   `{ "schema": 1, "client": { product, version, platform }, "withChat": bool, "report": "<text>" }`.
+   Without a collector, **Save as file** downloads a Markdown file (the share sheet on phones) to
+   attach to an issue. **Copy** puts it on the clipboard.
+
+## For brands: running a collector
+
+Accept the two POST endpoints above, reply `2xx`, and allow cross-origin requests
+(`Access-Control-Allow-Origin`, `content-type` header) because the web and desktop apps post
+directly. Clients retry failed event batches later and do not retry bug reports.

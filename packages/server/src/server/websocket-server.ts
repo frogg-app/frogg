@@ -2059,6 +2059,11 @@ export class VoiceAssistantWebSocketServer {
     };
   }
 
+  private serverInfoTailscale(): Pick<ServerInfoStatusPayload, "tailscale"> {
+    const status = this.daemonRuntimeConfig?.getTailscaleStatus?.();
+    return status ? { tailscale: status } : {};
+  }
+
   private serverInfoSecurity(session: Session): Pick<ServerInfoStatusPayload, "security"> {
     const getPosture = this.daemonRuntimeConfig?.getSecurityPosture;
     if (!getPosture || session.getRole() !== "owner") return {};
@@ -2069,6 +2074,11 @@ export class VoiceAssistantWebSocketServer {
    * Re-send server_info so owners see a changed security posture (password
    * set or cleared, first claim, access settings updated) without reconnecting.
    */
+  /** Re-send server_info after a host fact it carries changed (e.g. the Tailscale node). */
+  public broadcastServerInfoChanged(): void {
+    this.broadcastCapabilitiesUpdate();
+  }
+
   public broadcastSecurityPostureChanged(): void {
     this.broadcastCapabilitiesUpdate();
   }
@@ -2092,6 +2102,8 @@ export class VoiceAssistantWebSocketServer {
       // COMPAT(securityPosture): added in v1.6.0. Owners only: findings name
       // how the daemon can be taken over, which is not every device's business.
       ...this.serverInfoSecurity(session),
+      // COMPAT(tailscaleStatus): added in v1.6.14; absent without Tailscale on this machine.
+      ...this.serverInfoTailscale(),
       // COMPAT(chats): added in v1.5.57, remove optional after 2027-09-26.
       chatProviders: [...CHAT_SUPPORTED_PROVIDERS],
       features: {

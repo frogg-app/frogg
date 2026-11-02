@@ -20,6 +20,7 @@ import { HostUpdate } from "./HostUpdate";
 import { ago, MismatchBanner, Offline } from "./Offline";
 import { Routes } from "./Routes";
 import { T } from "../Text";
+import { overTailscale, TailscaleCard } from "./Tailscale";
 import { openSheet, useHostView, viewHost } from "./state";
 
 type Metrics = NonNullable<
@@ -160,9 +161,10 @@ function ActiveHost({ host, onBack }: { host: Host; onBack?: () => void }) {
       </>
     );
 
-  const status = `${isRelayHost(host) ? "Connected via relay" : "Connected directly"}${
-    m ? ` · ${m.platform} · ${m.arch} · up ${uptime(m.uptimeSeconds)}` : ""
-  }`;
+  let via = "Connected directly";
+  if (isRelayHost(host)) via = "Connected via relay";
+  else if (overTailscale(host)) via = "Connected over Tailscale";
+  const status = `${via}${m ? ` · ${m.platform} · ${m.arch} · up ${uptime(m.uptimeSeconds)}` : ""}`;
   return (
     <>
       <Head
@@ -220,6 +222,7 @@ function ActiveHost({ host, onBack }: { host: Host; onBack?: () => void }) {
           </T>
           {owner && <HostUpdate version={version} />}
         </Card>
+        <TailscaleCard host={host} info={info} />
       </View>
     </>
   );

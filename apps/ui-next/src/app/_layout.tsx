@@ -6,6 +6,7 @@ import { ErrorBoundary } from "../components/shell/ErrorBoundary";
 import { hostsReady, useHosts } from "../daemon/hosts";
 import { connect } from "../daemon/store";
 import { popout } from "../popout";
+import { startUsageStats } from "../usage-stats/store";
 loadWebFonts();
 
 /** A popped-out session window dials the host its session lives on (once hosts are loaded). */
@@ -19,6 +20,8 @@ export default function RootLayout() {
   const lab = /^\/lab(\/|$)/.test(usePathname());
   useEffect(() => {
     if (!lab) void hostsReady.then(() => connect(popoutHost()));
+    // A popped-out session window is the same app; only the main window counts as an open.
+    if (!lab && !popout) startUsageStats();
   }, [lab]);
   return (
     <SafeAreaProvider>

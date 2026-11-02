@@ -2089,6 +2089,8 @@ pub struct SetDaemonConfigRequestConfig {
         skip_serializing_if = "Option::is_none"
     )]
     pub auto_resume_on_usage_limit: Option<bool>,
+    #[serde(rename = "usageStats", skip_serializing_if = "Option::is_none")]
+    pub usage_stats: Option<bool>,
     #[serde(rename = "companionModel", skip_serializing_if = "Option::is_none")]
     pub companion_model: Option<serde_json::Value>,
     #[serde(rename = "cleanCut", skip_serializing_if = "Option::is_none")]

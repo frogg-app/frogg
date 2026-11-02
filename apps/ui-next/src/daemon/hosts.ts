@@ -9,6 +9,7 @@ import {
 } from "@frogg/protocol/daemon-endpoints";
 import { create } from "zustand";
 import { popout } from "../popout";
+import { track } from "../usage-stats/store";
 
 export interface Host {
   id: string;
@@ -143,8 +144,14 @@ export function activeHost(fallbackEndpoint: string): Host {
   return host;
 }
 
+function hostTransport(h: Pick<Host, "endpoint" | "relay">) {
+  if (h.relay) return "relay" as const;
+  return /^(localhost|127\.|\[::1\])/.test(h.endpoint) ? ("local" as const) : ("direct" as const);
+}
+
 export function addHost(input: Omit<Host, "id">): Host {
   const host = { ...input, id: newHostId() };
+  track("host_added", { transport: hostTransport(input) });
   useHosts.setState((s) => ({ hosts: [...s.hosts, host] }));
   return host;
 }

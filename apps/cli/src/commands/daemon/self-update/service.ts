@@ -7,6 +7,7 @@ import { resolveLocalDaemonState, stopLocalDaemon } from "../local-daemon.js";
 import { bundleLauncherPath } from "./bundle.js";
 import { appendSelfUpdateLog, currentLinkPath } from "./layout.js";
 import { isInsideSystemdUnit } from "../service/state.js";
+import { upgradeWindowsRunKey } from "../service/windows-run-key.js";
 
 /**
  * How the daemon gets restarted after `current` is flipped. The installer
@@ -271,6 +272,12 @@ export function createUnmanagedServiceManager(options: UnmanagedServiceOptions):
   return {
     kind: "unmanaged",
     async restart() {
+      // Updated Windows hosts keep the Run key their install wrote; bring it up to the
+      // headless form so the next login does not open a console.
+      const runKey = upgradeWindowsRunKey(options.platform);
+      if (runKey === "upgraded") {
+        appendSelfUpdateLog(options.installDir, "upgraded the login Run key to start headless");
+      }
       await stopLocalDaemon({ home: options.home, force: true });
       const args = ["daemon", "start"];
       if (options.home) args.push("--home", options.home);

@@ -18,6 +18,7 @@ import { TerminalsPanel } from "../../components/TerminalsPanel";
 import { StreamList, useStreams } from "../../components/tools/Streams";
 import { UsagePanel } from "../../components/UsagePanel";
 import { useUi } from "../../ui-store";
+import { TailscaleCard } from "../../components/hosts/Tailscale";
 import { ID } from "../fixtures";
 import { Act, Column, Controls, Row, type Entry, type Variant } from "../kit";
 
@@ -192,6 +193,38 @@ function OfflinePane() {
 }
 const ActiveHostPane = hostPane({ viewId: null });
 const SavedHostPane = hostPane({ viewId: "h_win" });
+
+const DAY = 86_400_000;
+const tsHost = { id: "h_ts", name: "devbox", endpoint: "devbox.tail1234.ts.net:6767" };
+const tsHostByIp = { ...tsHost, endpoint: "100.101.102.103:6767" };
+const NO_NODE = {};
+const tsNode = (days: number | null) => ({
+  tailscale: {
+    online: true,
+    dnsName: "devbox.tail1234.ts.net",
+    keyExpiry: days === null ? null : new Date(Date.now() + days * DAY).toISOString(),
+  },
+});
+
+/** The host detail's Tailscale card across key-expiry states (rendered alone: no shared state). */
+function TailscaleCards() {
+  return (
+    <Row>
+      <Column width={380}>
+        <TailscaleCard host={tsHost} info={tsNode(120)} />
+      </Column>
+      <Column width={380}>
+        <TailscaleCard host={tsHost} info={tsNode(9.5)} />
+      </Column>
+      <Column width={380}>
+        <TailscaleCard host={tsHost} info={tsNode(-1)} />
+      </Column>
+      <Column width={380}>
+        <TailscaleCard host={tsHostByIp} info={NO_NODE} />
+      </Column>
+    </Row>
+  );
+}
 const PairingPane = hostPane({ viewId: null, pair: true });
 
 export const tools: Entry[] = [
@@ -204,7 +237,17 @@ export const tools: Entry[] = [
       "Hosts main pane for the active host: load, who is here now (rename, roles, this app as a registered device), connections and the daemon card with channel/version update.",
     usedBy: 1,
     polish: "Here now and update status poll; the rename prompt fades (Modal)",
-    variants: [{ id: "active", label: "Active host", C: ActiveHostPane, h: 860, bleed: true }],
+    variants: [
+      { id: "active", label: "Active host", C: ActiveHostPane, h: 860, bleed: true },
+      {
+        id: "tailscale",
+        label: "Tailscale card",
+        note: "Key far off; 9 days left (amber, re-login steps); expired (coral); an older daemon that does not report its node, reached at a 100.x address.",
+        C: TailscaleCards,
+        h: 420,
+        bleed: true,
+      },
+    ],
   },
   {
     id: "host-offline",

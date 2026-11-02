@@ -25,6 +25,7 @@ import {
 } from "../../host/owned-storage.js";
 import { evaluateStorageAlert } from "../../host/storage-alerts.js";
 import type { SkillCatalog } from "../../skills/catalog.js";
+import type { TailscaleNodeStatus } from "@frogg/protocol/tailscale";
 
 export interface DaemonRuntimeConfig {
   listen: string | null;
@@ -37,6 +38,8 @@ export interface DaemonRuntimeConfig {
   devDaemon?: DevDaemonService;
   /** The web client's own server; absent without bootstrap wiring. */
   webUi?: WebUiServer;
+  /** The daemon machine's Tailscale node (tailscale/node-status.ts); null without Tailscale. */
+  getTailscaleStatus?(): TailscaleNodeStatus | null;
   /** Live security findings (security-posture.ts); absent without bootstrap wiring. */
   getSecurityPosture?(): SecurityPosture;
   /** Host metrics and owned-storage sizes/cleanup; absent without bootstrap wiring. */
