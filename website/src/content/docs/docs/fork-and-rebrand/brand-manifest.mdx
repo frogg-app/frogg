@@ -173,6 +173,7 @@ that would use it.
 | ---------------- | --------------------------------- | ------- | -------------------------------------------------------- |
 | `pairingUrl`     | HTTP(S) URL                       | none    | Hosted pairing page, e.g. `https://pair.acme.example`    |
 | `allowedOrigins` | array of URLs                     | `[]`    | Default CORS origins in a new daemon config (hosted web app origins) |
+| `collectorUrl`   | HTTP(S) URL                       | none    | Collector for opt-in [usage statistics and bug reports](/docs/using-frogg/usage-statistics/). Unset, neither is ever sent |
 
 A brand cannot ship a relay endpoint; `relayEndpoint` and `relayUseTls` are rejected.
 Each daemon owner configures their own relay.

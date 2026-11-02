@@ -79,6 +79,7 @@ See [security and access](/docs/self-hosting/security/) for how these combine.
 | `daemon.browserTools.enabled`     | boolean | `false` | Expose browser automation tools over MCP |
 | `daemon.appendSystemPrompt`       | string  | `""`    | Text appended to every agent's system prompt |
 | `daemon.autoArchiveAfterMerge`    | boolean | `false` | Archive agents after their branch merges |
+| `daemon.usageStats`               | boolean | `false` | Send this daemon's [usage statistics](/docs/using-frogg/usage-statistics/) (version, OS, enabled provider count) to the brand's collector. Does nothing when the brand has no `services.collectorUrl` |
 | `daemon.autoResumeOnUsageLimit`   | boolean | `true`  | When a session hits its provider usage limit, send a resume prompt a minute after the limit resets. The composer shows a countdown that cancels it |
 | `daemon.autoCleanCutOnColdCache`  | boolean | `true`  | Legacy switch: `false` turns off both [automatic clean cut](/docs/using-frogg/clean-cut/#settings) triggers. Prefer `daemon.cleanCut` |
 | `daemon.cleanCut`                 | object  | —       | [Automatic clean cut settings](/docs/using-frogg/clean-cut/#settings): `auto.usageLimit`, `auto.daemonRestart`, `idleThresholdMinutes`, `summaryModel`, and per-provider `providers` overrides. Editable in Settings; applied live |
