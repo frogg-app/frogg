@@ -2,6 +2,7 @@ import { AppUpdates } from "./pages/AppUpdates";
 import { Developer } from "./pages/Developer";
 import { DesignOptions } from "./pages/DesignOptions";
 import { About } from "./pages/About";
+import { Privacy } from "./pages/Privacy";
 import { Plugins } from "./pages/Plugins";
 import { Metadata } from "./pages/Metadata";
 import { Ci } from "./pages/Ci";
@@ -285,6 +286,7 @@ export const PAGES: Page[] = [
     scope: "App",
     body: OnboardingSettings,
   },
+  { id: "privacy", label: "Privacy & feedback", icon: Shield, scope: "App", body: Privacy },
   { id: "about", label: "About & diagnostics", icon: Activity, scope: "App", body: About },
   { id: "developer", label: "Developer", icon: SquareTerminal, scope: "App", body: Developer },
   { id: "design", label: "Design options", icon: Palette, scope: "App", body: DesignOptions },
