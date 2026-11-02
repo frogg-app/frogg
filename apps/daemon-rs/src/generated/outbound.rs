@@ -11007,6 +11007,8 @@ pub struct GetProvidersSnapshotResponsePayloadEntriesItemAccountsItemPreferences
         skip_serializing_if = "Option::is_none"
     )]
     pub default_thinking_option_id: Option<String>,
+    #[serde(rename = "launchArgs", skip_serializing_if = "Option::is_none")]
+    pub launch_args: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -11101,6 +11103,8 @@ pub struct GetProvidersSnapshotResponsePayloadCompactSnapshotEntriesItemAccounts
         skip_serializing_if = "Option::is_none"
     )]
     pub default_thinking_option_id: Option<String>,
+    #[serde(rename = "launchArgs", skip_serializing_if = "Option::is_none")]
+    pub launch_args: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -11291,6 +11295,8 @@ pub struct ProvidersSnapshotUpdatePayloadEntriesItemAccountsItemPreferences {
         skip_serializing_if = "Option::is_none"
     )]
     pub default_thinking_option_id: Option<String>,
+    #[serde(rename = "launchArgs", skip_serializing_if = "Option::is_none")]
+    pub launch_args: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -11382,6 +11388,8 @@ pub struct ProvidersSnapshotUpdatePayloadCompactSnapshotEntriesItemAccountsItemP
         skip_serializing_if = "Option::is_none"
     )]
     pub default_thinking_option_id: Option<String>,
+    #[serde(rename = "launchArgs", skip_serializing_if = "Option::is_none")]
+    pub launch_args: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -11800,6 +11808,8 @@ pub struct ProviderAccountListResponsePayloadAccountsItemPreferences {
         skip_serializing_if = "Option::is_none"
     )]
     pub default_thinking_option_id: Option<String>,
+    #[serde(rename = "launchArgs", skip_serializing_if = "Option::is_none")]
+    pub launch_args: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -11897,6 +11907,8 @@ pub struct ProviderAccountCreateResponsePayloadAccountsItemPreferences {
         skip_serializing_if = "Option::is_none"
     )]
     pub default_thinking_option_id: Option<String>,
+    #[serde(rename = "launchArgs", skip_serializing_if = "Option::is_none")]
+    pub launch_args: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -11994,6 +12006,8 @@ pub struct ProviderAccountDeleteResponsePayloadAccountsItemPreferences {
         skip_serializing_if = "Option::is_none"
     )]
     pub default_thinking_option_id: Option<String>,
+    #[serde(rename = "launchArgs", skip_serializing_if = "Option::is_none")]
+    pub launch_args: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -12091,6 +12105,8 @@ pub struct ProviderAccountSetActiveResponsePayloadAccountsItemPreferences {
         skip_serializing_if = "Option::is_none"
     )]
     pub default_thinking_option_id: Option<String>,
+    #[serde(rename = "launchArgs", skip_serializing_if = "Option::is_none")]
+    pub launch_args: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -12189,6 +12205,8 @@ pub struct ProviderAccountRenameResponsePayloadAccountsItemPreferences {
         skip_serializing_if = "Option::is_none"
     )]
     pub default_thinking_option_id: Option<String>,
+    #[serde(rename = "launchArgs", skip_serializing_if = "Option::is_none")]
+    pub launch_args: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -12286,6 +12304,8 @@ pub struct ProviderAccountSignOutResponsePayloadAccountsItemPreferences {
         skip_serializing_if = "Option::is_none"
     )]
     pub default_thinking_option_id: Option<String>,
+    #[serde(rename = "launchArgs", skip_serializing_if = "Option::is_none")]
+    pub launch_args: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -12397,6 +12417,8 @@ pub struct ProviderAccountImportResponsePayloadAccountsItemPreferences {
         skip_serializing_if = "Option::is_none"
     )]
     pub default_thinking_option_id: Option<String>,
+    #[serde(rename = "launchArgs", skip_serializing_if = "Option::is_none")]
+    pub launch_args: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -12494,6 +12516,8 @@ pub struct ProviderAccountSetAllowedModelsResponsePayloadAccountsItemPreferences
         skip_serializing_if = "Option::is_none"
     )]
     pub default_thinking_option_id: Option<String>,
+    #[serde(rename = "launchArgs", skip_serializing_if = "Option::is_none")]
+    pub launch_args: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -12592,6 +12616,8 @@ pub struct ProviderAccountSetPreferencesResponsePayloadAccountsItemPreferences {
         skip_serializing_if = "Option::is_none"
     )]
     pub default_thinking_option_id: Option<String>,
+    #[serde(rename = "launchArgs", skip_serializing_if = "Option::is_none")]
+    pub launch_args: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

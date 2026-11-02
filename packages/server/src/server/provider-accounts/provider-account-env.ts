@@ -54,18 +54,23 @@ export function resolveProviderAccountEnv(
  * the client names the account explicitly.
  */
 export function resolveProviderAccountEnvById(
-  store: Pick<ProviderAccountStore, "getCapability" | "findAccount">,
+  store: Pick<ProviderAccountStore, "getCapability" | "findAccount" | "primaryConfigDir">,
   accountId: string,
 ): {
   env: ProviderAccountEnvOverlay;
   loginCommand: { command: string; args: string[] };
 } | null {
-  const account = store.findAccount(accountId);
-  if (!account) return null;
-  const capability = store.getCapability(account.provider);
-  if (!capability || !capability.enabled) return null;
+  // A provider's default account (`default:<provider>`) is its primary config directory; it is
+  // listed like any other account but never stored, so signing it in resolves it here.
+  const defaultOf = parseProviderAccountDefaultId(accountId);
+  const account = defaultOf ? null : store.findAccount(accountId);
+  const provider = defaultOf ?? account?.provider;
+  if (!provider) return null;
+  const configDir = account?.configDir ?? store.primaryConfigDir(provider);
+  const capability = store.getCapability(provider);
+  if (!capability || !capability.enabled || !configDir) return null;
   return {
-    env: { [capability.configDirEnv]: account.configDir },
+    env: { [capability.configDirEnv]: configDir },
     loginCommand: {
       command: capability.loginCommand.command,
       args: [...capability.loginCommand.args],

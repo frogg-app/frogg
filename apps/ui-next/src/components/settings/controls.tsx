@@ -46,10 +46,13 @@ export function Toggle({
   value,
   onChange,
   disabled,
+  label,
 }: {
   value: boolean;
   onChange: (v: boolean) => void;
   disabled?: boolean;
+  /** Screen-reader name, for a switch with no visible label of its own. */
+  label?: string;
 }) {
   const flip = useCallback(() => onChange(!value), [onChange, value]);
   const state = useMemo(() => ({ checked: value, disabled }), [value, disabled]);
@@ -57,6 +60,7 @@ export function Toggle({
     <Pressable
       accessibilityRole="switch"
       accessibilityState={state}
+      accessibilityLabel={label}
       disabled={disabled}
       onPress={flip}
       style={[s.track, value && s.trackOn, disabled && s.disabled]}

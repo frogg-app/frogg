@@ -4574,6 +4574,9 @@ export const ServerInfoStatusPayloadSchema = z
         // COMPAT(claudeExtraArgs): added in v1.6.14, remove gate after 2027-10-15.
         // Claude providerOptions.extraArgs (extra Claude Code CLI flags, e.g. --chrome).
         claudeExtraArgs: z.boolean().optional(),
+        // COMPAT(providerAccountLaunchArgs): added in v1.6.14, remove gate after 2027-11-01.
+        // Provider account preferences keep launchArgs (per-account default CLI flags).
+        providerAccountLaunchArgs: z.boolean().optional(),
         // COMPAT(deviceAccess): added in v1.6.0, remove gate after 2027-09-22.
         // auth.device.*, auth.pairing_code.create, auth.pairing_request.*,
         // auth.settings.*, auth.password.set and the /api/setup + /api/auth/login
