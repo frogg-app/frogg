@@ -3,6 +3,6 @@ import type { Picked } from "./upload";
 /** Native has no document or image picker module in this build; the attach menu says so. */
 export const canPickFiles = false;
 
-export async function pickFiles(_opts: { images?: boolean }): Promise<Picked[]> {
+export async function pickFiles(_opts: { images?: boolean } = {}): Promise<Picked[]> {
   return [];
 }

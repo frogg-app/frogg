@@ -1,11 +1,18 @@
 import "@xterm/xterm/css/xterm.css";
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
-import { useEffect, useRef } from "react";
-import { StyleSheet, View } from "react-native";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
+import { X } from "lucide-react-native";
 import { getClient } from "../daemon/store";
 import { usePrefs } from "../prefs";
-import { color } from "../theme/tokens";
+import { color, ease, web } from "../theme/tokens";
+import { UploadBar, UploadProgress } from "./chat/Attach";
+import { useDropFiles } from "./chat/dropFiles";
+import { cancelUpload, isCancelled, uploadPicked, type Picked } from "./chat/upload";
+import { droppedPaths } from "./terminalDrop";
+import { T } from "./Text";
+import { toastError } from "./toast/store";
 
 const theme = {
   background: color.bg,
@@ -33,8 +40,70 @@ const theme = {
 
 const PAGE_KEYS: Record<string, string> = { PageUp: "\u001b[5~", PageDown: "\u001b[6~" };
 
+let dropSeq = 0;
+
+interface Sending {
+  id: string;
+  name: string;
+  size: number;
+}
+
+type Client = NonNullable<ReturnType<typeof getClient>>;
+
+function toDropped(p: Picked): { p: Picked; id: string } {
+  dropSeq += 1;
+  return { p, id: `drop${dropSeq}` };
+}
+
+const sendingRow = ({ p, id }: { p: Picked; id: string }): Sending => ({
+  id,
+  name: p.name,
+  size: p.size,
+});
+
+/** Uploads each file to the host; the paths of those that made it, in drop order. */
+async function uploadAll(client: Client, batch: { p: Picked; id: string }[]): Promise<string[]> {
+  const paths = await Promise.all(
+    batch.map(async ({ p, id }) => {
+      try {
+        return (await uploadPicked(client, p, id)).path;
+      } catch (err) {
+        if (!isCancelled(err)) toastError(`Could not upload ${p.name}`, err);
+        return null;
+      }
+    }),
+  );
+  return paths.filter((x): x is string => !!x);
+}
+
+/**
+ * Files dropped on the terminal upload to its host, then their paths are typed at the prompt,
+ * the way a local terminal pastes a dropped file's path (Claude Code picks images up from it).
+ */
+function useTerminalDrop(target: RefObject<View | null>, terminalId: string) {
+  const [sending, setSending] = useState<Sending[]>([]);
+  const onDrop = useCallback(
+    async (picked: Picked[]) => {
+      const client = getClient();
+      if (!client || !picked.length) return;
+      const batch = picked.map(toDropped);
+      setSending((s) => [...s, ...batch.map(sendingRow)]);
+      const paths = await uploadAll(client, batch);
+      const ids = new Set(batch.map((b) => b.id));
+      setSending((s) => s.filter((x) => !ids.has(x.id)));
+      const text = droppedPaths(paths);
+      if (text) client.sendTerminalInput(terminalId, { type: "input", data: text });
+    },
+    [terminalId],
+  );
+  const over = useDropFiles(target, (p) => void onDrop(p), { enabled: true, inlineImages: false });
+  return { over, sending };
+}
+
 export function TerminalSurface({ terminalId }: { terminalId: string }) {
   const host = useRef<View>(null);
+  const frame = useRef<View>(null);
+  const drop = useTerminalDrop(frame, terminalId);
   useEffect(() => {
     const el = host.current as unknown as HTMLElement | null;
     const client = getClient();
@@ -120,9 +189,63 @@ export function TerminalSurface({ terminalId }: { terminalId: string }) {
       term.dispose();
     };
   }, [terminalId]);
-  return <View ref={host} style={st.fill} />;
+  return (
+    <View ref={frame} style={st.frame} collapsable={false}>
+      <View ref={host} style={st.fill} />
+      <View pointerEvents="none" style={[st.dropRing, drop.over && st.dropOn]} />
+      {drop.sending.length > 0 && (
+        <View style={st.uploads}>
+          {drop.sending.map((u) => (
+            <View key={u.id} style={st.upload}>
+              <T v="mono" style={st.uploadName} numberOfLines={1}>
+                {u.name}
+              </T>
+              <UploadProgress id={u.id} size={u.size} />
+              <CancelUpload id={u.id} name={u.name} />
+              <UploadBar id={u.id} />
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
+function CancelUpload({ id, name }: { id: string; name: string }) {
+  const cancel = useCallback(() => cancelUpload(id), [id]);
+  return (
+    <Pressable onPress={cancel} hitSlop={6} accessibilityLabel={`Cancel uploading ${name}`}>
+      <X size={11} color={color.faint} />
+    </Pressable>
+  );
 }
 
 const st = StyleSheet.create({
+  frame: { flex: 1, position: "relative" },
   fill: { flex: 1, backgroundColor: color.bg, padding: 10 },
+  dropRing: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderWidth: 1,
+    borderColor: "transparent",
+    ...web({ transition: `border-color 140ms ${ease}, background-color 140ms ${ease}` }),
+  },
+  dropOn: { borderColor: color.cyan2, backgroundColor: `${color.cyan2}12` },
+  uploads: { position: "absolute", right: 12, bottom: 12, gap: 6, alignItems: "flex-end" },
+  upload: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderColor: color.line,
+    backgroundColor: color.raise,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    maxWidth: 320,
+    overflow: "hidden",
+  },
+  uploadName: { color: color.text, flexShrink: 1 },
 });
