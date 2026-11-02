@@ -31,6 +31,22 @@ describe("resolveApkUpdate", () => {
     expect(update.asset?.name).toBe("Frogg-Next-1.6.14-beta.3-android-arm64-v8a.apk");
   });
 
+  it("skips a newer frogg beta prerelease that carries no Frogg Next APK", () => {
+    const update = resolveApkUpdate({
+      releases: [
+        release("v1.6.15-beta.1", [apk("1.6.15-beta.1", "android-arm64-v8a.apk", "frogg-beta")]),
+        release("v1.6.14-next.2"),
+        release("v1.6.14-next.1"),
+      ],
+      currentVersion: "1.6.14-beta.3",
+      prefix: "Frogg-Next",
+      installer,
+    });
+    expect(update.hasUpdate).toBe(true);
+    expect(update.latestVersion).toBe("1.6.14-next.2");
+    expect(update.asset?.name).toBe("Frogg-Next-1.6.14-next.2-android-arm64-v8a.apk");
+  });
+
   it("reports a signing mismatch instead of offering an APK Android would refuse", () => {
     const update = resolveApkUpdate({
       releases: [

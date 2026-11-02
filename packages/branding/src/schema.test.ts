@@ -334,7 +334,7 @@ test("provider policy locks providers and keeps OpenCode's hosted models off for
   assert.throws(() => resolveBrandManifest({ ...minimal, providers: { allowed: [] } }), /allowed/);
 });
 
-test("every build resolves to the brand's single identity", () => {
+test("the stable build resolves to the brand's identity", () => {
   const official = {
     ...minimal,
     id: "frogg",
@@ -345,17 +345,96 @@ test("every build resolves to the brand's single identity", () => {
   };
   const brand = resolveBrandManifest(official);
   assert.equal(brand.id, "frogg");
+  assert.equal(brand.channel, "stable");
+  assert.equal(brand.channelBadge, false);
   assert.equal(brand.daemonPort, 9999);
   assert.equal(brand.homeDir, ".frogg");
-  assert.equal("channel" in brand, false);
-  assert.equal("channels" in brand, false);
-  // COMPAT: a manifest that still carries the removed beta overrides parses and ignores them.
-  const legacy = resolveBrandManifest({
+  // Beta overrides never touch the stable build.
+  const withOverrides = resolveBrandManifest({
     ...official,
     channels: { beta: { name: "frogg beta", daemonPort: 9989, badge: true } },
   });
-  assert.equal(legacy.name, "frogg");
-  assert.equal(legacy.daemonPort, 9999);
+  assert.equal(withOverrides.name, "frogg");
+  assert.equal(withOverrides.daemonPort, 9999);
+});
+
+test("frogg beta moves only the client identity, with its pre-1.6.14-beta.2 names", () => {
+  const official = {
+    ...minimal,
+    id: "frogg",
+    name: "frogg",
+    applicationId: "app.frogg.frogg",
+    artifactPrefix: "frogg",
+    daemonPort: 9999,
+    distribution: { repository: "frogg-app/frogg", iosStoreId: "123" },
+  };
+  const stable = resolveBrandManifest(official);
+  const beta = resolveBrandManifest(official, { channel: "beta" });
+  assert.equal(beta.channel, "beta");
+  assert.equal(beta.channelBadge, true);
+  // The names frogg beta installs had, so electron-updater and Android update them in place.
+  assert.equal(beta.id, "frogg-beta");
+  assert.equal(beta.name, "frogg beta");
+  assert.equal(beta.applicationId, "app.frogg.frogg.beta");
+  assert.equal(beta.scheme, "frogg-beta");
+  assert.equal(beta.desktopBinaryName, "frogg-beta");
+  assert.equal(beta.artifactPrefix, "frogg-beta");
+  assert.equal(beta.storagePrefix, "app.frogg.frogg.beta:");
+  assert.equal(beta.distribution.iosStoreId, null);
+  // One daemon: every daemon-facing key is the stable one.
+  for (const key of [
+    "daemonPort",
+    "webPort",
+    "cliName",
+    "homeDir",
+    "envPrefix",
+    "serviceName",
+    "launchdLabel",
+    "daemonArtifactPrefix",
+  ] as const)
+    assert.equal(beta[key], stable[key], key);
+  // Behaviour and Frogg Next follow the product, not the channel.
+  assert.equal(beta.stockFrogg, true);
+  assert.deepEqual(beta.next, stable.next);
+  assert.deepEqual(beta.daemon, stable.daemon);
+});
+
+test("channels.beta overrides the client names and ignores old daemon keys", () => {
+  const beta = resolveBrandManifest(
+    {
+      ...minimal,
+      channels: {
+        beta: {
+          name: "Acme Preview",
+          applicationId: "com.acme.preview",
+          artifactPrefix: "Acme-Preview",
+          badge: false,
+          // COMPAT: written for the retired beta daemon.
+          daemonPort: 9989,
+          cliName: "acme-beta",
+          homeDir: ".acme-beta",
+        },
+      },
+    },
+    { channel: "beta" },
+  );
+  const stable = resolveBrandManifest(minimal);
+  assert.equal(beta.name, "Acme Preview");
+  assert.equal(beta.applicationId, "com.acme.preview");
+  assert.equal(beta.artifactPrefix, "Acme-Preview");
+  assert.equal(beta.scheme, "acme-beta");
+  assert.equal(beta.channelBadge, false);
+  assert.equal(beta.daemonPort, stable.daemonPort);
+  assert.equal(beta.cliName, stable.cliName);
+  assert.equal(beta.homeDir, stable.homeDir);
+  assert.throws(
+    () =>
+      resolveBrandManifest(
+        { ...minimal, channels: { beta: { applicationId: minimal.applicationId } } },
+        { channel: "beta" },
+      ),
+    /channels\.beta\.applicationId must differ/,
+  );
 });
 
 test("the Frogg Next identity is derived for forks and overridable", () => {

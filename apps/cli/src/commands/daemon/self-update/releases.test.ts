@@ -93,6 +93,26 @@ describe("selectRelease", () => {
     expect(picked?.version).toBe("0.2.0");
   });
 
+  test("beta channel skips Frogg Next prereleases unless the exact version is asked for", () => {
+    const lines = [
+      release("v0.2.0-beta.3", { prerelease: true }),
+      release("v0.2.0-next.1", { prerelease: true }),
+    ];
+    expect(
+      selectRelease({ releases: lines, currentVersion: "0.2.0-beta.2", channel: "beta", assetName })
+        ?.version,
+    ).toBe("0.2.0-beta.3");
+    expect(
+      selectRelease({
+        releases: lines,
+        currentVersion: "0.2.0-beta.2",
+        channel: "beta",
+        assetName,
+        version: "0.2.0-next.1",
+      })?.version,
+    ).toBe("0.2.0-next.1");
+  });
+
   test("returns null when nothing newer exists and honours an exact version", () => {
     expect(
       selectRelease({ releases, currentVersion: "0.1.13", channel: "stable", assetName }),

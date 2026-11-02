@@ -92,6 +92,37 @@ const daemonPort = z.number().int().min(1024).max(65535);
 
 const artifactPrefix = z.string().regex(/^[a-zA-Z][a-zA-Z0-9-]*$/);
 
+/** The release channels the classic app ships. frogg beta installs beside the stable app. */
+export const RELEASE_CHANNELS = ["stable", "beta"] as const;
+export type ReleaseChannel = (typeof RELEASE_CHANNELS)[number];
+
+/**
+ * Client identity overrides for the beta channel build (frogg beta, the classic app on `main`'s
+ * prereleases). Every field is optional: by default the beta client derives its own identity
+ * (`<id>-beta`, `<name> beta`, `<applicationId>.beta`, `<scheme>-beta`, ...) so it installs beside
+ * the stable app, and its icons carry a "BETA" ribbon. The daemon identity never moves: every
+ * build talks to the one daemon.
+ */
+const channelOverrides = z.strictObject({
+  name: text.optional(),
+  fullName: text.optional(),
+  applicationId: applicationId.optional(),
+  desktopBinaryName: slug.optional(),
+  scheme: slug.optional(),
+  artifactPrefix: artifactPrefix.optional(),
+  /** Overlay a "BETA" ribbon on the generated icons. Default true. */
+  badge: z.boolean().optional(),
+  // COMPAT: the side-by-side beta daemon was retired. Daemon identity keys a brand.json written
+  // for it may still carry parse but are ignored; the beta client uses the stable daemon.
+  daemonPort: daemonPort.optional(),
+  webPort: daemonPort.optional(),
+  cliName: slug.optional(),
+  homeDir: z.string().optional(),
+  envPrefix: z.string().optional(),
+  serviceName: z.string().optional(),
+  launchdLabel: z.string().optional(),
+});
+
 /**
  * Identity of the Frogg Next client (apps/ui-next), which prereleases ship in place of the
  * classic app. Every field is optional: a fork derives its own (`<name> Next`,
@@ -275,16 +306,22 @@ export const BrandManifestSchema = z.strictObject({
     })
     .optional(),
   next: nextClient.optional(),
-  // COMPAT: the separate beta channel identity was removed; every build now resolves to the one
-  // identity above and prereleases ship Frogg Next. Old brand.json files may still carry
-  // `channels.beta`, so it parses but is ignored.
-  channels: z.strictObject({ beta: z.record(z.string(), z.unknown()).optional() }).optional(),
+  channels: z.strictObject({ beta: channelOverrides.optional() }).optional(),
 });
 export type BrandManifest = z.infer<typeof BrandManifestSchema>;
 
-export function resolveBrandManifest(input: unknown) {
-  const manifest = BrandManifestSchema.parse(input);
-  const stock = manifest.id === "frogg";
+export interface ResolveBrandOptions {
+  /** Which classic client build to resolve. Default "stable". */
+  channel?: ReleaseChannel;
+}
+
+export function resolveBrandManifest(input: unknown, options: ResolveBrandOptions = {}) {
+  const base = BrandManifestSchema.parse(input);
+  const channel = options.channel ?? "stable";
+  // Behaviour follows the product, client identity follows the channel: frogg beta keeps
+  // upstream frogg's open defaults, theme and daemon, but installs under its own app names.
+  const stock = base.id === "frogg";
+  const manifest = channel === "beta" ? betaManifest(base) : base;
   const distribution = resolveDistribution(manifest);
   const repository = distribution.repository;
   const light = manifest.colors?.light ?? {
@@ -308,7 +345,7 @@ export function resolveBrandManifest(input: unknown) {
     }
   }
   return {
-    ...resolveIdentity(manifest),
+    ...(channel === "beta" ? betaIdentity(base, manifest) : resolveIdentity(manifest)),
     colors: {
       light: { ...light, accentBright: light.accentBright ?? light.accent },
       dark: { ...dark, accentBright: dark.accentBright ?? dark.accent },
@@ -326,9 +363,72 @@ export function resolveBrandManifest(input: unknown) {
     // daemon or the apps reads it.
     mobile: { enabled: manifest.mobile?.enabled ?? true },
     plugins: resolvePlugins(manifest),
-    /** Built from the upstream frogg brand. Selects frogg's own theme. */
+    channel,
+    /** Built from the upstream frogg brand, whichever channel. Selects frogg's own theme. */
     stockFrogg: stock,
-    next: resolveNext(manifest, stock),
+    /** Overlay the BETA ribbon on generated icons. */
+    channelBadge: channel === "beta" && (base.channels?.beta?.badge ?? true),
+    next: resolveNext(base, stock),
+  };
+}
+
+/** "frogg" → "frogg beta", "Acme Studio" → "Acme Studio Beta": follow the name's own casing. */
+function betaName(name: string): string {
+  return /[A-Z]/.test(name) ? `${name} Beta` : `${name} beta`;
+}
+
+/**
+ * The beta client's manifest: the stable manifest with the client identity (id, names,
+ * application id, URL scheme, binary and artifact names) moved aside so frogg beta installs beside
+ * the stable app. These are the names frogg beta had up to 1.6.14-beta.1, so those installs
+ * update in place. The daemon identity stays the stable one.
+ */
+function betaManifest(base: BrandManifest): BrandManifest {
+  const overrides = base.channels?.beta ?? {};
+  const stable = resolveIdentity(base);
+  const derived = {
+    ...base,
+    id: `${base.id}-beta`,
+    name: overrides.name ?? betaName(base.name),
+    fullName: overrides.fullName ?? (base.fullName ? betaName(base.fullName) : undefined),
+    applicationId: overrides.applicationId ?? `${base.applicationId}.beta`,
+    desktopBinaryName: overrides.desktopBinaryName ?? `${stable.desktopBinaryName}-beta`,
+    scheme: overrides.scheme ?? `${stable.scheme}-beta`,
+    artifactPrefix: overrides.artifactPrefix ?? `${stable.artifactPrefix}-beta`,
+    // One daemon: the beta client looks for the stable daemon's port, home, CLI and service.
+    daemonPort: base.daemonPort,
+    webPort: stable.webPort,
+    cliName: stable.cliName,
+    homeDir: stable.homeDir,
+    envPrefix: stable.envPrefix,
+    serviceName: stable.serviceName,
+    launchdLabel: stable.launchdLabel,
+    distribution: base.distribution
+      ? // A store listing belongs to one application id; the beta app has its own.
+        { ...base.distribution, iosStoreId: undefined }
+      : undefined,
+  };
+  const parsed = BrandManifestSchema.safeParse(derived);
+  if (!parsed.success) {
+    throw new Error(
+      `The beta channel identity derived from "${base.id}" is invalid; set it under channels.beta: ${parsed.error.issues
+        .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
+        .join("; ")}`,
+    );
+  }
+  const beta = resolveIdentity(parsed.data);
+  for (const key of ["applicationId", "scheme", "artifactPrefix", "desktopBinaryName"] as const) {
+    if (beta[key].toLowerCase() === stable[key].toLowerCase())
+      throw new Error(`channels.beta.${key} must differ from the stable identity`);
+  }
+  return parsed.data;
+}
+
+/** The beta client's identity; the daemon bundle prefix (derived from the id) stays stable. */
+function betaIdentity(base: BrandManifest, manifest: BrandManifest) {
+  return {
+    ...resolveIdentity(manifest),
+    daemonArtifactPrefix: resolveIdentity(base).daemonArtifactPrefix,
   };
 }
 

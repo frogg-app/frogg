@@ -1,6 +1,6 @@
 ---
 title: Release streams
-description: Develop on a beta stream without disturbing stable users, test Frogg Next and prerelease daemons, promote and backport, and run the same flow in a fork that follows upstream.
+description: Develop on a beta stream without disturbing stable users, ship Frogg Next from its own branch, test prerelease daemons, promote and backport, and run the same flow in a fork that follows upstream.
 sidebar:
   order: 9
 ---
@@ -16,14 +16,15 @@ import forkLight from "@/assets/docs/diagrams/fork-streams-light.svg";
 import versionsDark from "@/assets/docs/diagrams/version-order-dark.svg";
 import versionsLight from "@/assets/docs/diagrams/version-order-light.svg";
 
-Frogg ships from two branches, called **streams**. They are the last two of the three stages
+Frogg ships from three branches, called **streams**. They are the last two of the three stages
 in the [development workflow](/docs/contributing/development-workflow/#three-stages):
 Development runs locally and never publishes anything.
 
-| Stream | Branch   | Releases       | Carries                                                  |
-| ------ | -------- | -------------- | -------------------------------------------------------- |
-| Beta   | `main`   | `X.Y.Z-beta.N` | **Frogg Next** desktop and Android, and the daemon       |
-| Stable | `stable` | `X.Y.Z`        | **frogg**, the classic desktop and Android app, and the daemon |
+| Stream     | Branch       | Releases       | Carries                                                              |
+| ---------- | ------------ | -------------- | -------------------------------------------------------------------- |
+| Frogg Next | `frogg-next` | `X.Y.Z-next.N` | **Frogg Next** desktop and Android, and the daemon                   |
+| Beta       | `main`       | `X.Y.Z-beta.N` | **frogg beta**, the classic app installed beside frogg, and the daemon |
+| Stable     | `stable`     | `X.Y.Z`        | **frogg**, the classic desktop and Android app, and the daemon       |
 
 <Screenshot
   src={streamsDark}
@@ -36,20 +37,26 @@ Work lands on `main` and ships as betas. Stable users get a beta line only when 
 **promoted**. Stable gets fixes in between by **backporting** them from `main`. Nothing
 merges from `stable` back into `main`, so version files never conflict.
 
-A fork adds a third stream: **upstream**. It merges upstream's releases into its own `main`,
+Frogg Next (`apps/ui-next`) work lands on `frogg-next` instead. Shared work (daemon, protocol,
+client, CLI, branding, release tooling) still lands on `main` and reaches `frogg-next` with
+`npm run release:sync-main`, which merges `main` and keeps `frogg-next`'s own version. A green
+push to `frogg-next` cuts the next `X.Y.Z-next.N` on `main`'s version line (`npm run
+release:next` by hand). Nothing merges from `frogg-next` into `main`.
+
+A fork adds another stream: **upstream**. It merges upstream's releases into its own `main`,
 tests them as its own beta, then promotes them to its stable users. See
 [Forks](#forks) below.
 
 ## What a release carries
 
-Every build has the brand's one identity: one daemon (`frogg-daemon` on port 9999, state in
-`~/.frogg`, the `frogg` CLI). What changes between a stable release and a prerelease is the
-client it ships, and the version alone decides it:
+Every release carries the brand's one daemon (`frogg-daemon` on port 9999, state in
+`~/.frogg`, the `frogg` CLI). The client it carries follows the version's release line:
 
-| Release              | Client                                                       | Daemon and install scripts       |
-| -------------------- | ------------------------------------------------------------ | -------------------------------- |
-| Stable `vX.Y.Z`      | the classic app (`apps/desktop` + `apps/ui`), desktop and APK | `frogg-daemon-*` bundles, scripts |
-| Prerelease `-beta.N` | **Frogg Next** (`apps/ui-next`), desktop and APK             | the same bundles and scripts     |
+| Release         | Client                                                                  | Daemon and install scripts        |
+| --------------- | ----------------------------------------------------------------------- | --------------------------------- |
+| Stable `vX.Y.Z` | the classic app (`apps/desktop` + `apps/ui`), desktop and APK           | `frogg-daemon-*` bundles, scripts |
+| `-beta.N`       | the classic app as **frogg beta**, desktop and APK, `electron-beta` feeds | the same bundles and scripts      |
+| `-next.N`       | **Frogg Next** (`apps/ui-next`), desktop and APK, `frogg-next-latest` feeds | the same bundles and scripts      |
 
 <Screenshot
   src={contentsDark}
@@ -58,11 +65,14 @@ client it ships, and the version alone decides it:
   alt="A stable release carries the classic frogg app with electron-latest feeds; a prerelease carries Frogg Next with frogg-next-latest feeds. Both carry the same frogg-daemon on port 9999 with data in ~/.frogg."
 />
 
-Frogg Next installs under its own identity from the brand's
-[`next`](/docs/fork-and-rebrand/brand-manifest/#next) block (for frogg: **Frogg Next**,
-`app.frogg.next`, `frogg-next://`, `Frogg-Next-<version>-…` assets), so it installs beside the
-classic app and has its own update feeds (`frogg-next-latest*.yml`). The classic app only ever
-updates to stable releases; Frogg Next updates to prereleases.
+frogg beta is the brand's beta client identity (for frogg: **frogg beta**,
+`app.frogg.frogg.beta`, `frogg-beta://`, `frogg-beta-<version>-…` assets and a BETA icon
+ribbon). Frogg Next installs under the brand's
+[`next`](/docs/fork-and-rebrand/brand-manifest/#next) identity (**Frogg Next**,
+`app.frogg.next`, `frogg-next://`, `Frogg-Next-<version>-…`). Both install beside the stable
+app and connect to the same daemon. Every updater only takes releases that carry its own update
+files: frogg follows stable releases, frogg beta the `-beta.N` releases with `electron-beta*.yml`,
+Frogg Next the `-next.N` releases with its feeds or APK.
 
 There is no separate beta daemon. A prerelease daemon is the normal daemon on a newer version,
 installed into the same home, service and port. Pick it with the **Beta** update channel in
@@ -70,18 +80,18 @@ installed into the same home, service and port. Pick it with the **Beta** update
 
 ```sh
 curl -fsSL https://frogg.app/install.sh | FROGG_CHANNEL=beta bash
-curl -fsSL https://frogg.app/install.sh | FROGG_VERSION=1.6.14-beta.2 bash
+curl -fsSL https://frogg.app/install.sh | FROGG_VERSION=1.6.14-next.1 bash
 ```
 
-The beta channel follows the newest release of either kind, so a beta daemon moves on to a
-stable release once it is newer. Promotion later builds Frogg Next under the brand's stable
-identity as plain frogg, replacing the classic app in place.
+The beta channel follows the newest stable or `-beta.N` release, so a beta daemon moves on to a
+stable release once it is newer. It skips `-next.N` daemons; install one by exact version.
 
 ### Develop frogg with frogg
 
 1. Run your agents in **frogg** (stable). They edit this repository.
-2. Try each beta in **Frogg Next**: install it from the newest prerelease on the
-   [releases page](https://github.com/frogg-app/frogg/releases). It connects to your normal
+2. Try each beta in **frogg beta** (newest `-beta.N`) and each Frogg Next build in **Frogg
+   Next** (newest `-next.N`), both from the
+   [releases page](https://github.com/frogg-app/frogg/releases). Both connect to your normal
    daemon on `localhost:9999`.
 3. To try a prerelease daemon, switch a host to the Beta update channel. To go back, switch to
    Stable and install the stable version.
@@ -89,8 +99,11 @@ identity as plain frogg, replacing the classic app in place.
    `npm run dev:live`. It uses its own home and free ports, so it does not touch your install,
    and each worktree can run its own.
 
-An older **frogg beta** install (`frogg-beta`, port 9989, `~/.frogg-beta`) no longer receives
-updates. Uninstall it with the uninstall script it shipped with.
+An older **frogg beta** app (1.6.14-beta.1 and before) updates in place to the next `-beta.N`.
+It keeps its saved hosts, including the retired beta daemon (`frogg-beta`, port 9989,
+`~/.frogg-beta`); add your normal daemon and uninstall the beta daemon with the uninstall
+script it shipped with. If it ever offers a manual install because a `-next.N` was newest when
+it checked, install the newest `-beta.N` from the releases page once.
 
 ## Everyday flow
 
@@ -207,6 +220,7 @@ them explicitly:
 | ------------------------------ | ----------- | --------------------------------------------------------------------------- |
 | `streams.development`          | `main`      | Branch that cuts betas                                                      |
 | `streams.stable`               | `stable`    | Branch that cuts stable releases                                            |
+| `streams.next`                 | `frogg-next` | Branch that cuts Frogg Next prereleases (`X.Y.Z-next.N`)                   |
 | `streams.upstream.remote`      | `upstream`  | Remote a fork pulls from                                                    |
 | `streams.upstream.repository`  | from remote | `owner/name`, for pull requests upstream                                    |
 | `streams.upstream.development` | `main`      | Upstream's development branch                                               |
@@ -219,7 +233,8 @@ The Release streams tab also treats a remote named `upstream` as the upstream st
 
 ## Forks
 
-A fork runs the same two streams under its own brand. Its prereleases carry its own Frogg Next
+A fork runs the same beta and stable streams under its own brand; `release:next` does not
+support a fork's build suffix yet. Its prereleases carry its own Frogg Next
 identity (`<name> Next`, `<applicationId>.next`; see
 [`next`](/docs/fork-and-rebrand/brand-manifest/#next) to rename it or turn it off) and its own
 daemon. The upstream stream is how updates arrive and how changes go back.

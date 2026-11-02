@@ -58,10 +58,15 @@ export function parseApkName(name: string, prefix: string) {
   return { version: g.version ?? "", abi: g.abi ?? "", debugSigned: g.flavour === "-unsigned" };
 }
 
-/** Newest non-draft release on the installed build's channel (prerelease or stable). */
+/**
+ * Newest non-draft release on the installed build's channel (prerelease or stable) that carries
+ * an APK with this build's prefix. Frogg Next prereleases (`-next.N`) share the release list with
+ * frogg beta (`-beta.N`), so a release without Frogg Next's APKs is never offered.
+ */
 export function selectRelease(
   releases: readonly GithubRelease[],
   currentVersion: string,
+  prefix?: string,
 ): GithubRelease | null {
   const wantPrerelease = !isStableVersion(currentVersion);
   let best: { release: GithubRelease; version: string } | null = null;
@@ -69,6 +74,8 @@ export function selectRelease(
     const version = normalize(release.tag_name);
     if (release.draft || !version) continue;
     if ((release.prerelease === true || !isStableVersion(version)) !== wantPrerelease) continue;
+    if (prefix && !(release.assets ?? []).some((asset) => parseApkName(asset.name, prefix)))
+      continue;
     if (!best || compareVersionStrings(version, best.version) > 0) best = { release, version };
   }
   return best?.release ?? null;
@@ -103,7 +110,7 @@ export function resolveApkUpdate(input: {
   prefix: string;
   installer: InstallerInfo;
 }): ApkUpdate {
-  const release = selectRelease(input.releases, input.currentVersion);
+  const release = selectRelease(input.releases, input.currentVersion, input.prefix);
   const latestVersion = normalize(release?.tag_name);
   const hasUpdate = Boolean(
     latestVersion && compareVersionStrings(latestVersion, input.currentVersion) > 0,

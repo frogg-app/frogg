@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { isStableVersion, artifactVersion } from "../../packages/protocol/dist/release-version.js";
-import { channelOfVersion, parseChannelVersion } from "./release-channel.mjs";
+import { channelOfVersion, parseChannelVersion, releaseLineOfVersion } from "./release-channel.mjs";
 
 const CASES = [
   ["1.6.0", "stable"],
@@ -35,4 +35,18 @@ test("splits a version into core, channel part and build counter", () => {
   assert.throws(() => channelOfVersion("nope"), /Not a release version/);
   // Artifact names drop the build counter and keep the channel part.
   assert.equal(artifactVersion("1.8.0-rc.1.acme.2"), "1.8.0-rc.1");
+});
+
+test("prereleases split into the frogg beta and Frogg Next lines", () => {
+  for (const [version, line] of [
+    ["1.8.0", "stable"],
+    ["1.8.0-acme.2", "stable"],
+    ["1.8.0-beta.3", "beta"],
+    ["1.8.0-rc.1.acme.1", "beta"],
+    ["1.8.0-next.1", "next"],
+    ["v1.8.0-next.2.acme.1", "next"],
+    ["1.8.0-acme.1.next.1", "stable"],
+  ])
+    assert.equal(releaseLineOfVersion(version), line, version);
+  assert.throws(() => releaseLineOfVersion("nope"), /Not a release version/);
 });

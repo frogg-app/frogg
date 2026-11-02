@@ -146,10 +146,10 @@ test("rejects two Mac payloads for the same architecture", async () => {
   }
 });
 
-test("prereleases carry Frogg Next and never a classic Electron feed", async () => {
+test("-next prereleases carry Frogg Next and never a classic Electron feed", async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), "frogg-next-assets-"));
   const out = path.join(dir, "metadata");
-  const version = "1.6.14-beta.2";
+  const version = "1.6.14-next.1";
   try {
     for (const suffix of ["win-x64.exe", "linux-x86_64.AppImage", "mac-x64.zip", "mac-arm64.zip"]) {
       await writeFile(path.join(dir, `Frogg-${version}-${suffix}`), suffix);
@@ -159,9 +159,14 @@ test("prereleases carry Frogg Next and never a classic Electron feed", async () 
       /cannot carry the classic client/,
     );
     await assert.rejects(
-      buildReleaseMetadata({ version: "1.6.14", client: "frogg-next", out }),
-      /cannot carry the frogg-next client/,
+      buildReleaseMetadata({ version, client: "classic-beta", assets: dir, out }),
+      /cannot carry the classic-beta client/,
     );
+    for (const other of ["1.6.14", "1.6.14-beta.4"])
+      await assert.rejects(
+        buildReleaseMetadata({ version: other, client: "frogg-next", out }),
+        /cannot carry the frogg-next client/,
+      );
     const descriptor = await buildReleaseMetadata({ version, out });
     assert.equal(descriptor.client, "frogg-next");
     assert.equal(descriptor.channel, "beta");
@@ -228,6 +233,17 @@ test("prereleases carry Frogg Next and never a classic Electron feed", async () 
           descriptor,
           manifests: {},
           release: withClassic(`Frogg-${version}-win-x64.exe`),
+          brand,
+          nextFeeds,
+        }),
+      /Classic app payloads/,
+    );
+    assert.throws(
+      () =>
+        verifyReleaseAssets({
+          descriptor,
+          manifests: {},
+          release: withClassic(`frogg-beta-${version}-android-arm64-v8a.apk`),
           brand,
           nextFeeds,
         }),
@@ -304,20 +320,89 @@ test("a stable release carries the classic app and no Frogg Next assets", async 
         /Frogg Next assets on a classic release/,
       );
     }
-    // An automatic classic path on a prerelease is refused at publication too.
-    const beta = structuredClone(descriptor);
-    beta.version = "1.6.14-beta.1";
-    beta.channel = "beta";
-    delete beta.client;
+    // A frogg beta feed on a stable release would move a beta install onto stable's payloads.
     assert.throws(
       () =>
         verifyReleaseAssets({
-          descriptor: beta,
+          descriptor,
           manifests,
-          release: { ...release, tag_name: "v1.6.14-beta.1" },
+          release: { ...release, assets: [...assets, { name: "electron-beta.yml" }] },
+          brand,
         }),
-      /stable releases only/,
+      /other classic channel on a classic release/,
     );
+    // An automatic classic path on a -next prerelease is refused at publication too.
+    const next = structuredClone(descriptor);
+    next.version = "1.6.14-next.1";
+    next.channel = "beta";
+    delete next.client;
+    assert.throws(
+      () =>
+        verifyReleaseAssets({
+          descriptor: next,
+          manifests,
+          release: { ...release, tag_name: "v1.6.14-next.1" },
+        }),
+      /classic Electron feeds are not published/,
+    );
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("a -beta release carries frogg beta on electron-beta feeds", async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), "frogg-classic-beta-"));
+  const out = path.join(dir, "metadata");
+  const version = "1.6.14-beta.4";
+  try {
+    for (const suffix of ["win-x64.exe", "linux-x86_64.AppImage", "mac-x64.zip", "mac-arm64.zip"])
+      await writeFile(path.join(dir, `frogg-beta-${version}-${suffix}`), suffix);
+    await assert.rejects(
+      buildReleaseMetadata({ version, client: "classic", assets: dir, out }),
+      /cannot carry the classic client/,
+    );
+    const descriptor = await buildReleaseMetadata({ version, assets: dir, out });
+    assert.equal(descriptor.client, "classic-beta");
+    assert.equal(descriptor.channel, "beta");
+    const update = descriptor.updatePaths["electron-updater"];
+    assert.equal(update.mode, "automatic");
+    assert.equal(update.channel, "electron-beta");
+    assert.deepEqual(
+      Object.values(update.platforms)
+        .map((platform) => platform.manifest)
+        .sort(),
+      ["electron-beta-linux.yml", "electron-beta-mac.yml", "electron-beta.yml"],
+    );
+    const manifests = {};
+    const assets = [{ name: "release.json" }];
+    for (const platform of Object.values(update.platforms)) {
+      manifests[platform.manifest] = JSON.parse(
+        await readFile(path.join(out, platform.manifest), "utf8"),
+      );
+      assets.push({ name: platform.manifest });
+      for (const file of platform.files)
+        assets.push({ name: file.url, size: file.size, digest: `sha256:${file.sha256}` });
+    }
+    const release = { tag_name: `v${version}`, assets };
+    const brand = {
+      artifactPrefix: "frogg",
+      next: { artifactPrefix: "Frogg-Next", feedPrefix: "frogg-next" },
+    };
+    verifyReleaseAssets({ descriptor, manifests, release, brand });
+    for (const [name, error] of [
+      ["electron-latest.yml", /other classic channel on a classic-beta release/],
+      ["frogg-next-latest.yml", /Frogg Next assets on a classic-beta release/],
+    ])
+      assert.throws(
+        () =>
+          verifyReleaseAssets({
+            descriptor,
+            manifests,
+            release: { ...release, assets: [...assets, { name }] },
+            brand,
+          }),
+        error,
+      );
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

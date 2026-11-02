@@ -8,6 +8,9 @@ export interface ReleaseDescriptor {
   updatePaths: object;
 }
 
+/** `release.json` `client` values that carry the classic app: stable releases and frogg beta. */
+const CLASSIC_CLIENTS: ReadonlySet<unknown> = new Set(["classic", "classic-beta"]);
+
 /** Missing descriptors identify older releases; other failures remain visible. */
 export async function fetchReleaseDescriptor(url: string): Promise<unknown | null> {
   const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
@@ -37,6 +40,10 @@ export function parseReleaseDescriptor(value: unknown): ReleaseDescriptor {
   // A fork rebuild (1.8.0-acme.2) is a stable release; only a channel part makes a beta.
   if (value.channel !== (isStableVersion(value.version) ? "stable" : "beta"))
     throw new Error("Release channel does not match its version.");
+  // Releases name the client they carry; older ones have no `client` and are classic. A Frogg
+  // Next prerelease is not an update for this app.
+  if ("client" in value && value.client !== undefined && !CLASSIC_CLIENTS.has(value.client))
+    throw new Error("This release does not carry this app. Install it from the release page.");
   return {
     schemaVersion: 1,
     version: value.version,
