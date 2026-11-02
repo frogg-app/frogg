@@ -13,6 +13,8 @@ process.env.EXPO_PUBLIC_FROGG_RELEASE_REPO = identity.repository;
 // Daemon bundle names, so the host update picker lists only versions the daemon can install.
 process.env.EXPO_PUBLIC_FROGG_BRAND_ARTIFACT_PREFIX = brand.artifactPrefix;
 process.env.EXPO_PUBLIC_FROGG_DAEMON_ARTIFACT_PREFIX = brand.daemonArtifactPrefix;
+// Opt-in usage statistics and bug reports; unset means the app never sends either.
+process.env.EXPO_PUBLIC_FROGG_COLLECTOR_URL = brand.services.collectorUrl ?? "";
 // Same env-driven release signing as the classic app; scripts/build-apk.mjs documents the variables.
 const withAndroidReleaseSigning = require("../ui/plugins/with-android-release-signing");
 

@@ -17,6 +17,7 @@ import {
 } from "./hosts";
 import { clientId, clientIdReady, deviceLabel } from "./client-id";
 import type { Session, TimelineEntry } from "./types";
+import { track, usageSlug } from "../usage-stats/store";
 
 type Conn = "connecting" | "online" | "offline";
 const CONN: Partial<Record<string, Conn>> = { connected: "online", connecting: "connecting" };
@@ -496,6 +497,7 @@ export async function createSession(input: {
     initialPrompt: input.initialPrompt,
     worktree: input.worktree,
   });
+  track("session_started", { provider: usageSlug(input.provider) });
   useDaemon.setState((st) => ({
     sessions: {
       ...st.sessions,

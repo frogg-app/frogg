@@ -26,6 +26,7 @@ import {
 import { useFormFactor } from "../theme/layout";
 import { color, font, overlayMs, web } from "../theme/tokens";
 import { useUi } from "../ui-store";
+import { track, usageSlug } from "../usage-stats/store";
 import { providerLabel } from "../util";
 import { Button } from "./Button";
 import { Cut } from "./Cut";
@@ -334,6 +335,7 @@ async function startAgent(
     images,
     attachments,
   });
+  track("session_started", { provider: usageSlug(provider) });
   await focusHost(hostId);
   useDaemon.setState((st) => ({
     sessions: {
