@@ -5,7 +5,7 @@ import { DEFAULT_SSH_DAEMON_PORT } from "@frogg/protocol/ssh-transport";
 import { addHost, parseHostAddress, updateHost, useHosts, type Host } from "../../daemon/hosts";
 import { parsePairInput, usePendingPair } from "../../daemon/pairing";
 import { connect, suggestedEndpoint, useUnpaired } from "../../daemon/store";
-import { color, font, web } from "../../theme/tokens";
+import { alpha, color, font, web } from "../../theme/tokens";
 import { Button } from "../Button";
 import { T } from "../Text";
 import { Dialog } from "../tools/Dialog";
@@ -405,7 +405,7 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: "transparent",
   },
-  methodOn: { borderColor: color.cyan, backgroundColor: "rgba(37,181,200,0.08)" },
+  methodOn: { borderColor: color.cyan, backgroundColor: alpha(color.cyan, 0.08) },
   methodTitle: { fontSize: 13, fontWeight: "600" },
   methodSub: { color: color.faint, fontSize: 11.5, marginTop: 2, lineHeight: 16 },
   form: { gap: 10, marginTop: 6 },

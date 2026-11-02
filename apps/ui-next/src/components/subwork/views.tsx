@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Easing, Pressable, StyleSheet, View } from "react-native";
 import type { Bucket } from "../../daemon/types";
 import { useNow } from "../../daemon/subwork";
-import { anim, color, ease, frames, glide, subworkMs } from "../../theme/tokens";
+import { alpha, anim, color, ease, frames, glide, subworkMs } from "../../theme/tokens";
 import { Cut } from "../Cut";
 import { Num } from "../CountUp";
 import { useReducedMotion } from "../Meter";
@@ -35,9 +35,9 @@ export const statusColor: Record<SubWorkStatus, string> = {
 };
 const wash: Record<SubWorkStatus, string> = {
   running: color.cyanWash,
-  attention: "rgba(245,184,74,0.1)",
+  attention: alpha(color.amber, 0.1),
   failed: color.coralWash,
-  done: "rgba(63,207,142,0.08)",
+  done: alpha(color.mint, 0.08),
   idle: color.wash,
 };
 export const bucketOfStatus: Record<SubWorkStatus, Bucket> = {

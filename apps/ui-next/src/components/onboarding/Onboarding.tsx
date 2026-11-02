@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Modal, Platform, Pressable, StyleSheet, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { hostsReady, useHosts } from "../../daemon/hosts";
-import { color, motion, web } from "../../theme/tokens";
+import { alpha, color, motion, web } from "../../theme/tokens";
 import { useUi } from "../../ui-store";
 import { Cut } from "../Cut";
 import { Num } from "../CountUp";
@@ -216,10 +216,12 @@ const s = StyleSheet.create({
   wrap: { flex: 1, alignItems: "center", justifyContent: "center" },
   scrim: { ...StyleSheet.absoluteFillObject, backgroundColor: color.scrim },
   box: {
-    shadowColor: "#000",
+    shadowColor: color.shadow,
     shadowOpacity: 0.55,
     shadowRadius: 32,
-    ...web({ boxShadow: "0 24px 64px rgba(0,0,0,0.55), 0 0 0 1px rgba(127,217,230,0.06)" }),
+    ...web({
+      boxShadow: `0 24px 64px ${alpha(color.shadow, 0.55)}, 0 0 0 1px ${alpha(color.cyan2, 0.06)}`,
+    }),
   },
   phone: { flex: 1, backgroundColor: color.bg2 },
   fill: { flex: 1 },
@@ -231,10 +233,10 @@ const s = StyleSheet.create({
     backgroundColor: color.raise,
     borderWidth: 1,
     borderColor: color.line2,
-    ...web({ boxShadow: "0 10px 28px rgba(0,0,0,0.45)" }),
+    ...web({ boxShadow: `0 10px 28px ${alpha(color.shadow, 0.45)}` }),
   },
   chipEnter: motion.enter,
-  chipOk: { borderColor: "rgba(63,207,142,0.45)" },
+  chipOk: { borderColor: alpha(color.mint, 0.45) },
   snap: motion.snap,
   chipMain: {
     flexDirection: "row",

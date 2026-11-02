@@ -2,7 +2,7 @@
 import { Check, type LucideIcon } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { Animated, Easing, Pressable, StyleSheet, View } from "react-native";
-import { color, font, glide, web } from "../../theme/tokens";
+import { alpha, color, font, glide, web } from "../../theme/tokens";
 import { Brackets } from "../Brackets";
 import { Num } from "../CountUp";
 import { Cut } from "../Cut";
@@ -187,9 +187,11 @@ const s = StyleSheet.create({
   choiceCompact: { minHeight: 70, padding: 12 },
   choiceHover: { backgroundColor: color.raise },
   choiceOn: {
-    borderColor: "rgba(127,217,230,0.35)",
-    backgroundColor: "rgba(37,181,200,0.12)",
-    ...web({ backgroundImage: "linear-gradient(135deg, #7fd9e624, #25b5c812)" }),
+    borderColor: alpha(color.cyan2, 0.35),
+    backgroundColor: alpha(color.cyan, 0.12),
+    ...web({
+      backgroundImage: `linear-gradient(135deg, ${alpha(color.cyan2, 0.14)}, ${alpha(color.cyan, 0.07)})`,
+    }),
   },
   choiceTop: { flexDirection: "row", alignItems: "center", gap: 9 },
   choiceTitle: { flex: 1, fontWeight: "600" },
@@ -210,7 +212,7 @@ const s = StyleSheet.create({
   fill: {
     height: 2,
     backgroundColor: color.cyan2,
-    ...web({ backgroundImage: "linear-gradient(90deg, #25b5c8, #7fd9e6)" }),
+    ...web({ backgroundImage: `linear-gradient(90deg, ${color.cyan}, ${color.cyan2})` }),
   },
   count: { fontSize: 11, color: color.muted, minWidth: 28, textAlign: "right" },
   glyph: {

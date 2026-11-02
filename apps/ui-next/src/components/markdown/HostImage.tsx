@@ -11,7 +11,7 @@ import {
 } from "react";
 import { Animated, Easing, Image, Platform, Pressable, StyleSheet, View } from "react-native";
 import { getClient, onHostSwitch } from "../../daemon/store";
-import { anim, color, ease, frames, glide, web } from "../../theme/tokens";
+import { alpha, anim, color, ease, frames, glide, web } from "../../theme/tokens";
 import { Lightbox } from "./Lightbox";
 import { useReducedMotion } from "../Meter";
 import { T } from "../Text";
@@ -185,7 +185,7 @@ const s = StyleSheet.create({
     top: 8,
     right: 8,
     padding: 6,
-    backgroundColor: "rgba(10,14,16,0.78)",
+    backgroundColor: alpha(color.bg, 0.78),
     borderWidth: 1,
     borderColor: color.line2,
     ...web({ transition: `opacity 140ms ${ease}` }),

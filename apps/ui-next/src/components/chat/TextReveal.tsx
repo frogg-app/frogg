@@ -30,7 +30,7 @@ import {
   type TextStyle,
 } from "react-native";
 import { usePrefs } from "../../prefs";
-import { anim, color, ease, font, web } from "../../theme/tokens";
+import { alpha, anim, color, rgbOf, ease, font, web } from "../../theme/tokens";
 import { HostImage } from "../markdown/HostImage";
 import { MdTable } from "../markdown/MdTable";
 import {
@@ -137,12 +137,12 @@ const kf = {
   blur: { "0%": { opacity: 0, filter: "blur(6px)" } },
   slide: { "0%": { opacity: 0, left: "-4px" } },
   typeFade: { "0%": { opacity: 0 } },
-  glow: { "0%": { color: color.cyan2, textShadow: "0 0 10px rgba(37,181,200,0.95)" } },
+  glow: { "0%": { color: color.cyan2, textShadow: `0 0 10px ${alpha(color.cyan, 0.95)}` } },
   wipe: {
     "0%": {
       maskPosition: "100% 0",
       WebkitMaskPosition: "100% 0",
-      textShadow: "0 0 10px rgba(127,217,230,0.9)",
+      textShadow: `0 0 10px ${alpha(color.cyan2, 0.9)}`,
     },
     "100%": { maskPosition: "0% 0", WebkitMaskPosition: "0% 0", textShadow: "0 0 0 transparent" },
   },
@@ -158,7 +158,7 @@ const kf = {
     "0%": {
       maskPosition: "100% 0",
       WebkitMaskPosition: "100% 0",
-      textShadow: "0 0 14px rgba(127,217,230,0.9)",
+      textShadow: `0 0 14px ${alpha(color.cyan2, 0.9)}`,
     },
     "100%": { maskPosition: "0% 0", WebkitMaskPosition: "0% 0", textShadow: "0 0 0 transparent" },
   },
@@ -346,12 +346,12 @@ type Base = "text" | "cyan" | "muted" | "coral";
 export type Tone = Base;
 const BASES: Base[] = ["text", "cyan", "muted", "coral"];
 const RGB: Record<Base, [number, number, number]> = {
-  text: [242, 246, 247],
-  cyan: [127, 217, 230],
-  muted: [154, 166, 169],
-  coral: [255, 107, 107],
+  text: rgbOf(color.text),
+  cyan: rgbOf(color.cyan2),
+  muted: rgbOf(color.muted),
+  coral: rgbOf(color.coral),
 };
-const COOL: [number, number, number] = [127, 217, 230];
+const COOL = rgbOf(color.cyan2);
 const mix = (a: number[], b: number[], p: number) =>
   a.map((v, i) => Math.round(v + (b[i] - v) * p));
 const rgba = (c: number[], a: number) =>
@@ -1210,7 +1210,7 @@ const st = StyleSheet.create({
     fontFamily: font.mono,
     fontSize: 12.5,
     color: color.cyan2,
-    backgroundColor: "rgba(127,217,230,0.08)",
+    backgroundColor: alpha(color.cyan2, 0.08),
   },
   bold: { fontWeight: "600" },
   italic: { fontStyle: "italic", color: color.muted },

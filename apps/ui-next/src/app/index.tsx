@@ -347,7 +347,7 @@ const s = StyleSheet.create({
     left: 0,
     top: 0,
     bottom: 0,
-    shadowColor: "#000",
+    shadowColor: color.shadow,
     shadowOpacity: 0.5,
     shadowRadius: 24,
   },

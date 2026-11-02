@@ -10,7 +10,7 @@ import {
   watchTerminals,
 } from "../daemon/terminals";
 import { setPref, usePrefs } from "../prefs";
-import { color, ease, web } from "../theme/tokens";
+import { alpha, color, ease, web } from "../theme/tokens";
 import { useUi } from "../ui-store";
 import { Button } from "./Button";
 import { GroupHead, PanelHead } from "./PanelHead";
@@ -294,7 +294,7 @@ const st = StyleSheet.create({
     padding: 10,
   },
   rowHover: { backgroundColor: color.wash },
-  rowOn: { backgroundColor: "rgba(127,217,230,0.05)" },
+  rowOn: { backgroundColor: alpha(color.cyan2, 0.05) },
   name: { fontSize: 10.5, color: color.faint },
   terminal: { flex: 1, backgroundColor: color.bg },
   termBack: {

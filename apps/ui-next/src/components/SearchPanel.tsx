@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { getClient, useDaemon } from "../daemon/store";
 import { bucketOf, type Placement, type Agent } from "../daemon/types";
-import { color, font, web } from "../theme/tokens";
+import { alpha, color, font, web } from "../theme/tokens";
 import { useUi } from "../ui-store";
 import { ago } from "../util";
 import { Cut } from "./Cut";
@@ -182,7 +182,7 @@ const s = StyleSheet.create({
   head: { flexDirection: "row", alignItems: "center", gap: 8 },
   time: { fontSize: 10.5 },
   sub: { marginLeft: 17, marginTop: 3, fontSize: 11 },
-  mark: { color: color.cyan2, backgroundColor: "rgba(127,217,230,0.12)" },
+  mark: { color: color.cyan2, backgroundColor: alpha(color.cyan2, 0.12) },
   box: {
     marginHorizontal: 12,
     marginBottom: 6,

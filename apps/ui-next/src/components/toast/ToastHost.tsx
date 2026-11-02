@@ -13,7 +13,7 @@ import Svg, { Polygon } from "react-native-svg";
 import { useDaemon } from "../../daemon/store";
 import { bucketOf, type Bucket } from "../../daemon/types";
 import { useFormFactor } from "../../theme/layout";
-import { color, glide, toastMotion, toastMs, web } from "../../theme/tokens";
+import { alpha, color, glide, toastMotion, toastMs, web } from "../../theme/tokens";
 import { usePrefs } from "../../prefs";
 import { useUi } from "../../ui-store";
 import { Cut } from "../Cut";
@@ -532,9 +532,9 @@ const s = StyleSheet.create({
     borderColor: color.line2,
     ...web({
       backgroundImage: [
-        "repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 3px)",
-        "linear-gradient(rgba(37,181,200,0.05) 1px, transparent 1px)",
-        "linear-gradient(90deg, rgba(37,181,200,0.05) 1px, transparent 1px)",
+        `repeating-linear-gradient(0deg, ${alpha(color.ink, 0.025)} 0px, ${alpha(color.ink, 0.025)} 1px, transparent 1px, transparent 3px)`,
+        `linear-gradient(${alpha(color.cyan, 0.05)} 1px, transparent 1px)`,
+        `linear-gradient(90deg, ${alpha(color.cyan, 0.05)} 1px, transparent 1px)`,
       ].join(", "),
       backgroundSize: "100% 3px, 16px 16px, 16px 16px",
     }),

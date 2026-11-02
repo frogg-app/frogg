@@ -27,7 +27,7 @@ import {
 } from "../daemon/files";
 import { discard, useScm } from "../daemon/scm";
 import { useDaemon } from "../daemon/store";
-import { anim, color, ease, frames, web } from "../theme/tokens";
+import { alpha, anim, color, ease, frames, web } from "../theme/tokens";
 import { useUi } from "../ui-store";
 
 import { PanelHead } from "./PanelHead";
@@ -391,7 +391,7 @@ const st = StyleSheet.create({
     paddingRight: 8,
   },
   hovered: { backgroundColor: color.wash },
-  nodeOn: { backgroundColor: "rgba(127,217,230,0.05)" },
+  nodeOn: { backgroundColor: alpha(color.cyan2, 0.05) },
   chevSpacer: { width: 12 },
   nodeName: { flex: 1, fontSize: 13, color: color.text },
   nodeNameOn: { color: color.cyan2 },

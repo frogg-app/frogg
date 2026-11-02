@@ -11,7 +11,7 @@ import {
   type LayoutChangeEvent,
 } from "react-native";
 import { useModalLayer } from "../shell/modalStack";
-import { color, web } from "../../theme/tokens";
+import { alpha, color, web } from "../../theme/tokens";
 import { Cut } from "../Cut";
 import { T } from "../Text";
 
@@ -105,7 +105,7 @@ const s = StyleSheet.create({
   wrap: { flex: 1, alignItems: "center", justifyContent: "center" },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(4,7,9,0.72)",
+    backgroundColor: alpha(color.bg, 0.72),
     ...web({ backdropFilter: "blur(6px)" }),
   },
   place: { maxWidth: "94%" },

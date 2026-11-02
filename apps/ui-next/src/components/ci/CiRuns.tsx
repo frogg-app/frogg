@@ -4,6 +4,7 @@ import { ChevronRight, ExternalLink, RotateCcw, Square } from "lucide-react-nati
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Easing, Linking, Pressable, StyleSheet, View } from "react-native";
 import {
+  alpha,
   beamBand,
   color,
   glide,
@@ -506,13 +507,13 @@ const f = StyleSheet.create({
   sweep: { position: "absolute", top: 0, bottom: 0, left: 0, width: "40%", opacity: 0 },
   sweepOk: {
     ...web({
-      backgroundImage: "linear-gradient(90deg, transparent, rgba(63,207,142,0.12), transparent)",
+      backgroundImage: `linear-gradient(90deg, transparent, ${alpha(color.mint, 0.12)}, transparent)`,
     }),
     ...toolDoneMotion.sweep,
   },
   sweepFail: {
     ...web({
-      backgroundImage: "linear-gradient(90deg, transparent, rgba(255,107,107,0.10), transparent)",
+      backgroundImage: `linear-gradient(90deg, transparent, ${alpha(color.coral, 0.1)}, transparent)`,
     }),
     ...toolDoneMotion.sweep,
   },

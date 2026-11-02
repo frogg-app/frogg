@@ -1,7 +1,7 @@
 import { X } from "lucide-react-native";
 import { useMemo, useRef } from "react";
 import { Image, Modal, Platform, Pressable, StyleSheet, View } from "react-native";
-import { color, web } from "../../theme/tokens";
+import { alpha, color, web } from "../../theme/tokens";
 import { exitPointer, riseStyle, scrimStyle, usePresence } from "../presence";
 import { useModalLayer } from "../shell/modalStack";
 import { T } from "../Text";
@@ -64,7 +64,7 @@ const s = StyleSheet.create({
   wrap: { flex: 1, alignItems: "center", justifyContent: "center", padding: 32 },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(4,7,9,0.86)",
+    backgroundColor: alpha(color.bg, 0.86),
     ...web({ backdropFilter: "blur(6px)" }),
   },
   panel: { width: "100%", height: "100%", alignItems: "center", justifyContent: "center", gap: 10 },

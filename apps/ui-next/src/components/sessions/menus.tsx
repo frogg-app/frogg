@@ -16,7 +16,7 @@ import { useCallback, useMemo } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { useHosts } from "../../daemon/hosts";
 import { useDaemon } from "../../daemon/store";
-import { color } from "../../theme/tokens";
+import { alpha, color } from "../../theme/tokens";
 import { Select } from "../Select";
 import { Seg, Toggle } from "../settings/controls";
 import { copyText } from "../shell/copy";
@@ -297,7 +297,7 @@ const s = StyleSheet.create({
   k: { fontSize: 13 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   chip: { borderWidth: 1, borderColor: color.line2, paddingHorizontal: 9, paddingVertical: 4 },
-  chipOn: { borderColor: "rgba(37,181,200,0.45)", backgroundColor: "rgba(37,181,200,0.1)" },
+  chipOn: { borderColor: alpha(color.cyan, 0.45), backgroundColor: alpha(color.cyan, 0.1) },
   chipT: { fontSize: 12, color: color.faint },
   chipTOn: { fontSize: 12, color: color.cyan2 },
 });

@@ -10,7 +10,7 @@ import {
   View,
   type LayoutChangeEvent,
 } from "react-native";
-import { color, web } from "../../theme/tokens";
+import { alpha, color, web } from "../../theme/tokens";
 import { Cut } from "../Cut";
 import { useModalLayer } from "../shell/modalStack";
 import { T } from "../Text";
@@ -221,8 +221,8 @@ const s = StyleSheet.create({
     paddingVertical: 7,
     marginHorizontal: 4,
   },
-  rowHover: { backgroundColor: "rgba(37,181,200,0.1)" },
-  rowOn: { backgroundColor: "rgba(127,217,230,0.06)" },
+  rowHover: { backgroundColor: alpha(color.cyan, 0.1) },
+  rowOn: { backgroundColor: alpha(color.cyan2, 0.06) },
   icon: { width: 14, alignItems: "center" },
   body: { flex: 1 },
   label: { fontSize: 13, color: color.text },

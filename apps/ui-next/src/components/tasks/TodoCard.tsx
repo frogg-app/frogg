@@ -10,7 +10,7 @@ import {
   type TodoPriority,
   type TodoStatus,
 } from "../../daemon/todos";
-import { anim, color, ease, web } from "../../theme/tokens";
+import { alpha, anim, color, ease, web } from "../../theme/tokens";
 import { Brackets } from "../Brackets";
 import { Cut } from "../Cut";
 import { T } from "../Text";
@@ -182,7 +182,7 @@ const GLOW = { "0%": { opacity: 1 }, "100%": { opacity: 0 } };
 const s = StyleSheet.create({
   glow: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(63,207,142,0.22)",
+    backgroundColor: alpha(color.mint, 0.22),
     ...anim(GLOW, "1.4s", "ease-out", 1, "forwards"),
   },
   card: {

@@ -7,7 +7,7 @@ import { Globe, Laptop, Smartphone } from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { getClient, useDaemon } from "../../daemon/store";
-import { color } from "../../theme/tokens";
+import { alpha, color } from "../../theme/tokens";
 import { useUi } from "../../ui-store";
 import { agoText } from "../../util";
 import { Button } from "../Button";
@@ -259,7 +259,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     padding: 12,
-    backgroundColor: "rgba(245,184,74,0.06)",
+    backgroundColor: alpha(color.amber, 0.06),
   },
   diamond: {
     width: 8,

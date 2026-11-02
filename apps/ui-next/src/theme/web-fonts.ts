@@ -1,3 +1,5 @@
+import { alpha, color } from "./tokens";
+
 // Web: load the three faces and the page reset once. Native will bundle them via expo-font.
 export function loadWebFonts(): void {
   const doc = (globalThis as { document?: Document }).document;
@@ -10,8 +12,8 @@ export function loadWebFonts(): void {
   doc.head.appendChild(link);
   const style = doc.createElement("style");
   style.textContent = `
-html,body,#root{background:#080b0d;height:100%}
-*{scrollbar-width:thin;scrollbar-color:#ffffff29 transparent}
+html,body,#root{background:${color.bg};height:100%}
+*{scrollbar-width:thin;scrollbar-color:${alpha(color.ink, 0.16)} transparent}
 @media (prefers-reduced-motion: reduce){*{animation-duration:1ms!important;animation-iteration-count:1!important;transition-duration:1ms!important}}
 `;
   doc.head.appendChild(style);

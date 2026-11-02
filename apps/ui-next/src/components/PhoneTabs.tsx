@@ -23,7 +23,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { color, font, glide, web } from "../theme/tokens";
+import { alpha, color, font, glide, web } from "../theme/tokens";
 import { useUi, type Tool } from "../ui-store";
 import { Cut } from "./Cut";
 import { GROUP_NAMES, type ToolMeta, useShownGroups } from "./Rail";
@@ -282,7 +282,7 @@ const s = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: color.wash2,
   },
-  rowIconOn: { backgroundColor: "rgba(37,181,200,0.16)" },
+  rowIconOn: { backgroundColor: alpha(color.cyan, 0.16) },
   rowT: { flex: 1, fontSize: 14.5, color: color.text },
   rowBadge: {
     minWidth: 18,
@@ -303,10 +303,10 @@ const s = StyleSheet.create({
   },
   tabWrap: { flex: 1 },
   tab: { alignItems: "center", gap: 4, paddingVertical: 6 },
-  on: { backgroundColor: "rgba(127,217,230,0.1)" },
+  on: { backgroundColor: alpha(color.cyan2, 0.1) },
   pill: { position: "absolute" },
   pillHidden: { opacity: 0 },
-  pillFill: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(127,217,230,0.1)" },
+  pillFill: { ...StyleSheet.absoluteFillObject, backgroundColor: alpha(color.cyan2, 0.1) },
   l: { fontSize: 10.5, color: color.faint, ...web({ transition: `color ${glide.ms}ms ease-out` }) },
   lOn: { color: color.cyan2 },
   badge: {
@@ -323,7 +323,7 @@ const s = StyleSheet.create({
     fontSize: 9,
     lineHeight: 14,
     fontWeight: "600",
-    color: "#1a1204",
+    color: color.onWarn,
     textAlign: "center",
   },
 });

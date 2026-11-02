@@ -33,7 +33,7 @@ import { useFormFactor } from "../theme/layout";
 import { BranchMenu } from "./tools/BranchMenu";
 import { useConfirm, type ConfirmSpec } from "./tools/Confirm";
 import { Menu, useAnchor, type MenuEntry } from "./tools/Menu";
-import { color, font, web } from "../theme/tokens";
+import { alpha, color, font, web } from "../theme/tokens";
 import { useUi } from "../ui-store";
 import { Button } from "./Button";
 import { Cut } from "./Cut";
@@ -511,7 +511,7 @@ const s = StyleSheet.create({
   },
   error: { color: color.coral },
   fileHover: { backgroundColor: color.wash },
-  fileOn: { backgroundColor: "rgba(127,217,230,0.05)" },
+  fileOn: { backgroundColor: alpha(color.cyan2, 0.05) },
   letter: { width: 14, fontSize: 10.5 },
   fileName: { fontSize: 13 },
   dir: { fontSize: 10.5, color: color.faint },
