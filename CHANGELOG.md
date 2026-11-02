@@ -24,6 +24,12 @@
   `--chrome`, `--remote-control`) in their host-stored preferences (`launchArgs`), set from
   Frogg Next's Settings → Accounts; new sessions on that account start with them, under any
   project `agentDefaults`. Daemons advertise `providerAccountLaunchArgs`.
+- **Claude Code plugin updates in Frogg Next.** Settings → Plugins lists each Claude account's
+  installed Claude Code plugins with installed and declared versions, and marks the ones with an
+  update due. It says whether Claude Code applies the update itself when an agent restarts or it
+  needs `/plugin`. New read-only RPC `provider.claude_plugins.list`, advertised as
+  `claudePluginUpdates`. `frogg plugins pack` and `index build` now require a plugin
+  `description`.
 - **Agents can see the host's connectors.** The Frogg MCP server adds `list_connectors` and
   `call_connector_tool`, and non-chat agents get a short summary of running plugins in their
   hidden system context. Plugins API v2 plugins contribute agent tools with
