@@ -31,6 +31,13 @@ export interface DesktopBridge {
   /** Pops a session out into its own window; absent in shells older than 1.6.14. */
   openSessionWindow?(sessionId: string, hostId?: string | null): Promise<boolean>;
   onOpenUrl(listener: (url: string) => void): () => void;
+  /** Saves the theme's shell colours for the next launch and repaints open windows. */
+  setWindowTheme?(colors: {
+    bg: string;
+    faint: string;
+    accent: string;
+    symbols: string;
+  }): Promise<void>;
 }
 
 export const desktopBridge = (): DesktopBridge | null =>

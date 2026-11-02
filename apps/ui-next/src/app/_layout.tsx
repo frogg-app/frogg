@@ -1,6 +1,9 @@
 import { loadWebFonts } from "../theme/web-fonts";
+import { syncShellTheme } from "../theme/stored";
+import { color, scheme } from "../theme/tokens";
 import { Slot, usePathname } from "expo-router";
 import { useEffect } from "react";
+import { StatusBar } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "../components/shell/ErrorBoundary";
 import { hostsReady, useHosts } from "../daemon/hosts";
@@ -8,6 +11,7 @@ import { connect } from "../daemon/store";
 import { popout } from "../popout";
 import { startUsageStats } from "../usage-stats/store";
 loadWebFonts();
+syncShellTheme({ bg: color.bg, faint: color.faint, accent: color.cyan, symbols: color.muted });
 
 /** A popped-out session window dials the host its session lives on (once hosts are loaded). */
 function popoutHost() {
@@ -25,6 +29,10 @@ export default function RootLayout() {
   }, [lab]);
   return (
     <SafeAreaProvider>
+      <StatusBar
+        barStyle={scheme === "light" ? "dark-content" : "light-content"}
+        backgroundColor={color.bg}
+      />
       <ErrorBoundary>
         <Slot />
       </ErrorBoundary>

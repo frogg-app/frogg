@@ -77,7 +77,11 @@ export interface ThemeDef {
   id: string;
   label: string;
   description: string;
+  /** Light or dark surfaces; native status bar and the few scheme-specific touches follow it. */
+  scheme: "dark" | "light";
   palette: Palette & Partial<Derived>;
+  /** Workspace label colours; dark themes share LABEL_TINT. */
+  labelTint?: Record<string, string>;
   syntax: SyntaxTokens;
   terminal: TerminalColors;
 }
@@ -135,6 +139,7 @@ const material: ThemeDef = {
   id: "material",
   label: "Material",
   description: "Neutral graphite with a calm blue accent. Minimal glow.",
+  scheme: "dark",
   palette: {
     bg: "#16181b",
     bg2: "#1a1d20",
@@ -200,6 +205,7 @@ const blueTech: ThemeDef = {
   id: "blue-tech",
   label: "Blue Tech",
   description: "The original deep-teal Bracket look with cyan glow.",
+  scheme: "dark",
   palette: {
     bg: "#080b0d",
     bg2: "#0c1114",
@@ -269,7 +275,93 @@ const blueTech: ThemeDef = {
   },
 };
 
-export const THEMES: ThemeDef[] = [material, blueTech];
+/**
+ * Material Light: the same token set on cool paper surfaces. Every text token (text, muted, faint,
+ * the accents and status hues, diff text) clears WCAG AA (4.5:1) on bg, bg2, panel and raise, and
+ * white `onAccent` / `onWarn` clear it on the accent, mint, amber and coral fills
+ * (themes.test.ts checks this).
+ */
+const materialLight: ThemeDef = {
+  id: "material-light",
+  label: "Material Light",
+  description: "Material on light paper surfaces, the same calm blue accent.",
+  scheme: "light",
+  palette: {
+    bg: "#f5f6f8",
+    bg2: "#eceef2",
+    panel: "#ffffff",
+    raise: "#e9ecf0",
+    text: "#1a1f26",
+    muted: "#4a535e",
+    faint: "#5f6873",
+    cyan: "#2557c2",
+    cyan2: "#1d4aa6",
+    deep: "#173a85",
+    mint: "#1b7a3a",
+    violet: "#6a3fc0",
+    amber: "#8a5800",
+    coral: "#c0283a",
+    onAccent: "#ffffff",
+    onWarn: "#ffffff",
+    addText: "#18652f",
+    delText: "#a01f2e",
+    ink: "#0b1220",
+    shadow: "#3a4556",
+    line: "rgba(11,18,32,0.11)",
+    line2: "rgba(11,18,32,0.2)",
+    wash: "rgba(11,18,32,0.03)",
+    wash2: "rgba(11,18,32,0.05)",
+    wash3: "rgba(11,18,32,0.09)",
+    scrim: "rgba(26,31,38,0.32)",
+  },
+  labelTint: {
+    violet: "#6a4fb0",
+    sky: "#1f6a9a",
+    emerald: "#1e7356",
+    orange: "#9a5413",
+    pink: "#a8336b",
+    indigo: "#4650a8",
+    teal: "#17706e",
+    red: "#a8343a",
+    amber: "#7a6100",
+    blue: "#2f5ea8",
+  },
+  syntax: {
+    keyword: "#7a3cb8",
+    comment: "#5f6873",
+    string: "#1b6b33",
+    number: "#9a4a00",
+    literal: "#9a4a00",
+    function: "#2050b0",
+    definition: "#2050b0",
+    class: "#8a5800",
+    type: "#8a5800",
+    tag: "#b0263a",
+    attribute: "#7a3cb8",
+    property: "#265f80",
+    variable: "#1a1f26",
+    operator: "#0b6a80",
+    punctuation: "#4a535e",
+    regexp: "#0b6a80",
+    escape: "#9a4a00",
+    meta: "#5f6873",
+    heading: "#2050b0",
+    link: "#1d6f6a",
+  },
+  terminal: {
+    black: "#1a1f26",
+    blue: "#2557c2",
+    white: "#5f6873",
+    brightRed: "#a01f2e",
+    brightGreen: "#18652f",
+    brightYellow: "#7a4e00",
+    brightBlue: "#1d4aa6",
+    brightMagenta: "#5a32a8",
+    brightWhite: "#4a535e",
+  },
+};
+
+export const THEMES: ThemeDef[] = [material, materialLight, blueTech];
 export const DEFAULT_THEME_ID = material.id;
 
 /** The stored choice: a theme id plus per-token overrides (`#rrggbb`). */
@@ -341,7 +433,7 @@ export function resolveTheme(choice: Partial<ThemeChoice> | null | undefined): R
     def,
     color,
     syntax: { ...def.syntax },
-    labelTint: { ...LABEL_TINT },
+    labelTint: { ...(def.labelTint ?? LABEL_TINT) },
     terminal: { ...def.terminal },
   };
 }

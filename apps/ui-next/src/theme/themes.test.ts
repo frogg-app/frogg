@@ -1,5 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { alpha, DEFAULT_THEME_ID, resolveTheme, THEMES } from "./themes";
+import { alpha, DEFAULT_THEME_ID, resolveTheme, rgbOf, THEMES } from "./themes";
+
+const lum = (hex: string) => {
+  const [r, g, b] = rgbOf(hex).map((v) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+const contrast = (a: string, b: string) => {
+  const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+};
 
 describe("themes", () => {
   it("defaults to Material and keeps Blue Tech available", () => {
@@ -35,5 +47,36 @@ describe("themes", () => {
   it("alpha() expands short hex and passes non-hex through", () => {
     expect(alpha("#fff", 0.5)).toBe("rgba(255,255,255,0.5)");
     expect(alpha("transparent", 0.5)).toBe("transparent");
+  });
+
+  it("Material Light meets WCAG AA for text on every surface and on accent fills", () => {
+    const c = resolveTheme({ id: "material-light" }).color;
+    expect(resolveTheme({ id: "material-light" }).def.scheme).toBe("light");
+    const surfaces = [c.bg, c.bg2, c.panel, c.raise];
+    const texts = [
+      c.text,
+      c.muted,
+      c.faint,
+      c.cyan,
+      c.cyan2,
+      c.deep,
+      c.mint,
+      c.violet,
+      c.amber,
+      c.coral,
+      c.addText,
+      c.delText,
+    ];
+    for (const fg of texts)
+      for (const surface of surfaces) expect(contrast(fg, surface)).toBeGreaterThanOrEqual(4.5);
+    for (const fill of [c.cyan, c.cyan2, c.deep, c.mint, c.coral])
+      expect(contrast(c.onAccent, fill)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(c.onWarn, c.amber)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("Material Light's syntax and label colours stay readable on the panel", () => {
+    const t = resolveTheme({ id: "material-light" });
+    for (const v of [...Object.values(t.syntax), ...Object.values(t.labelTint)])
+      expect(contrast(v, t.color.panel)).toBeGreaterThanOrEqual(4.5);
   });
 });

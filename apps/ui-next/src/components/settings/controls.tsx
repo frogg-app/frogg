@@ -7,7 +7,7 @@ import {
   View,
   type LayoutChangeEvent,
 } from "react-native";
-import { alpha, color, font, glide, web } from "../../theme/tokens";
+import { alpha, color, font, glide, scheme, web } from "../../theme/tokens";
 import { useGlide } from "../Glide";
 import { T } from "../Text";
 
@@ -221,7 +221,10 @@ const s = StyleSheet.create({
     backgroundColor: color.muted,
     ...web({ transition: "transform .3s cubic-bezier(0.22,1,0.36,1)" }),
   },
-  knobOn: { backgroundColor: color.ink, transform: [{ translateX: 14 }] },
+  knobOn: {
+    backgroundColor: scheme === "light" ? color.onAccent : color.ink,
+    transform: [{ translateX: 14 }],
+  },
   seg: { flexDirection: "row", borderWidth: 1, borderColor: color.line2 },
   segI: { paddingHorizontal: 11, paddingVertical: 5 },
   segPill: { position: "absolute", backgroundColor: alpha(color.ink, 0.08) },

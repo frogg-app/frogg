@@ -49,7 +49,8 @@
 html,
 body,
 #root {
-  background: #080b0d;
+  /* The splash's saved-theme colour (splash.cjs); the UI's themed reset takes over on load. */
+  background: var(--fs-bg, #16181b);
   height: 100%;
 }
 * {

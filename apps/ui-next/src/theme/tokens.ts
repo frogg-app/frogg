@@ -9,6 +9,9 @@ export const activeTheme = resolveTheme(readStoredTheme());
 
 export const color = activeTheme.color;
 
+/** Light or dark surfaces, for the few touches that differ by scheme (status bar, toggle knob). */
+export const scheme = activeTheme.def.scheme;
+
 export const font = {
   body: "Inter",
   display: "Space Grotesk",

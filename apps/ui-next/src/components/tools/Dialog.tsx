@@ -114,7 +114,7 @@ const s = StyleSheet.create({
     backgroundColor: color.panel,
     borderWidth: 1,
     borderColor: color.line2,
-    ...web({ boxShadow: "0 24px 60px #000c" }),
+    ...web({ boxShadow: `0 24px 60px ${alpha(color.shadow, 0.8)}` }),
   },
   head: { flexDirection: "row", alignItems: "flex-start", gap: 12, padding: 20, paddingBottom: 8 },
   flex: { flex: 1 },
