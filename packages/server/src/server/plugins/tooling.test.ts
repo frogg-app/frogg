@@ -117,6 +117,15 @@ describe("pack, index build, sign, verify", () => {
     expect(await fs.readFile(`${packed.file}.sha256`, "utf8")).toContain(packed.sha256);
   });
 
+  it("refuses to pack a manifest without a description", async () => {
+    const { dir, out } = await setup();
+    const file = path.join(dir, "frogg-plugin.json");
+    const manifest = JSON.parse(await fs.readFile(file, "utf8")) as Record<string, unknown>;
+    delete manifest.description;
+    await fs.writeFile(file, JSON.stringify(manifest));
+    await expect(packPlugin(dir, out)).rejects.toThrow(/description is required to publish/);
+  });
+
   it("builds, signs and verifies an index; detects tampering", async () => {
     const { src, out } = await setup();
     const keys = generatePluginRepoKeyPair();

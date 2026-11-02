@@ -44,6 +44,7 @@ export async function writeFixturePlugin(root: string, spec: FixturePluginSpec):
   const manifest = {
     id: spec.id,
     name: `Fixture ${spec.id}`,
+    description: `Fixture plugin ${spec.id}`,
     version: spec.version,
     apiVersion: spec.apiVersion ?? 1,
     scope,

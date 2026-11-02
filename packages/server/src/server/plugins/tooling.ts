@@ -148,8 +148,20 @@ export interface PackResult {
 }
 
 /** Validates the manifest and writes `<id>-<version>.tgz` and `<…>.tgz.sha256` to `outDir`. */
+/**
+ * Publishing needs more than loading: a repository entry must carry a description so the catalog
+ * and update prompts can say what changed hands. `name` and a semver `version` are already
+ * required by the manifest schema; the host compares `version` against the signed index to offer
+ * updates. Installed manifests without a description still load.
+ */
+export function assertPublishable(manifest: PluginManifest, where: string): void {
+  if (!manifest.description?.trim())
+    throw new PluginToolingError(`${where}: description is required to publish a plugin`);
+}
+
 export async function packPlugin(dir: string, outDir: string): Promise<PackResult> {
   const manifest = await readPluginManifest(dir);
+  assertPublishable(manifest, path.join(dir, PLUGIN_MANIFEST_FILENAME));
   const tgz = createTarGz(await collectPluginFiles(dir, manifest));
   const sha256 = sha256Hex(tgz);
   await fs.mkdir(outDir, { recursive: true });
@@ -227,6 +239,7 @@ export async function buildPluginIndex(opts: BuildIndexOptions): Promise<PluginI
   const plugins: PluginIndexEntry[] = [];
   for (const { dir, category } of await findPluginDirs(opts.pluginsDir)) {
     const manifest = await readPluginManifest(dir);
+    assertPublishable(manifest, path.join(dir, PLUGIN_MANIFEST_FILENAME));
     if (category && categories && !categories.has(category)) {
       throw new PluginToolingError(
         `${dir}: category "${category}" is not declared in ${opts.categoriesFile}`,
