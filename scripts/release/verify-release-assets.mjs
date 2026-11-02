@@ -10,9 +10,9 @@ import { parseArgs } from "node:util";
 import { pathToFileURL } from "node:url";
 
 /**
- * `brand` (the generated brand.json, optional) names the two clients' asset families so a release
- * can be checked to carry only its own client's: the classic app on stable, Frogg Next on a
- * prerelease. `nextFeeds` holds the text of the Frogg Next feed files a prerelease names.
+ * `brand` (the generated brand.json, optional) names the clients' asset families so a release can
+ * be checked to carry only its own client's: the classic app on stable, frogg beta on `-beta.N`,
+ * Frogg Next on `-next.N`. `nextFeeds` holds the text of the Frogg Next feed files a prerelease names.
  */
 export function verifyReleaseAssets({
   descriptor,
@@ -68,6 +68,16 @@ function verifyClientAssets({ descriptor, assets, brand, nextFeeds }) {
     );
     if (stray.length)
       throw new Error(`Frogg Next assets on a ${descriptor.client} release: ${stray.join(", ")}`);
+    // A stable release feeds only electron-latest, a frogg beta only electron-beta: an install
+    // of one must never find the other's feed.
+    const other = descriptor.client === "classic-beta" ? "latest" : "beta";
+    const crossed = names.filter((name) =>
+      new RegExp(`^electron-${other}(-\\w+)?\\.yml$`).test(name),
+    );
+    if (crossed.length)
+      throw new Error(
+        `Feeds of the other classic channel on a ${descriptor.client} release: ${crossed.join(", ")}`,
+      );
     return;
   }
   verifyNoClassicAssets(descriptor.version, names, brand);
@@ -86,10 +96,15 @@ function verifyNoClassicAssets(version, names, brand) {
   if (feeds.length)
     throw new Error(`Classic update feeds on a Frogg Next release: ${feeds.join(", ")}`);
   if (!brand) return;
-  // The classic desktop and Android payloads share the brand prefix with the daemon bundles.
+  // The classic desktop and Android payloads share the brand prefix with the daemon bundles;
+  // frogg beta's carry `<prefix>-beta`.
+  const prefixes = [
+    brand.artifactPrefix,
+    brand.channels?.beta?.artifactPrefix ?? `${brand.artifactPrefix}-beta`,
+  ];
   const classic = names.filter(
     (name) =>
-      lower(name).startsWith(lower(`${brand.artifactPrefix}-${version}-`)) &&
+      prefixes.some((prefix) => lower(name).startsWith(lower(`${prefix}-${version}-`))) &&
       !/-daemon\.(tar\.gz|zip)(\.sha256)?$/.test(name),
   );
   if (classic.length)

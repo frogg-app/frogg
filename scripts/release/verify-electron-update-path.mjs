@@ -1,4 +1,4 @@
-import { channelOfVersion } from "./release-channel.mjs";
+import { classicElectronChannel } from "./electron-release-manifests.mjs";
 import { createReadStream } from "node:fs";
 import { createHash } from "node:crypto";
 import path from "node:path";
@@ -12,10 +12,8 @@ export function verifyElectronUpdatePath({ version, update, manifests, assets })
     !gte(descriptor.version, descriptor.minimumClientVersion)
   )
     throw new Error("Invalid minimum client version");
-  // Classic Electron feeds are stable-only: a prerelease ships Frogg Next, not the classic app.
-  if (channelOfVersion(descriptor.version) !== "stable")
-    throw new Error("Classic Electron updates are published for stable releases only");
-  const channel = "electron-latest";
+  // electron-latest on stable, electron-beta on `-beta.N`; a `-next.N` carries no classic feeds.
+  const channel = classicElectronChannel(descriptor.version);
   if (descriptor.channel !== channel) throw new Error("Release channel mismatch");
 
   for (const [platform, count] of [

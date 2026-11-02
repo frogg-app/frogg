@@ -1,4 +1,4 @@
-import { channelOfVersion } from "./release-channel.mjs";
+import { releaseLineOfVersion } from "./release-channel.mjs";
 import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { mkdir, readdir, stat, writeFile } from "node:fs/promises";
@@ -29,9 +29,9 @@ export async function buildElectronReleaseManifests({
   platformVersions = {},
 }) {
   if (!/^\d+\.\d+\.\d+(?:-[\w.-]+)?$/.test(version)) throw new Error("Invalid release version");
-  // The classic app follows stable releases only; prereleases ship Frogg Next with its own feeds.
-  if (channelOfVersion(version) !== "stable")
-    throw new Error("Classic Electron update feeds are published for stable releases only");
+  // Stable releases feed the classic app (electron-latest), `-beta.N` frogg beta (electron-beta).
+  // A `-next.N` prerelease ships Frogg Next, which has its own feeds.
+  const channel = classicElectronChannel(version);
   const { windowsVersion, linuxVersion, macVersion } = resolvePlatformVersions(
     version,
     platformVersions,
@@ -58,7 +58,6 @@ export async function buildElectronReleaseManifests({
     throw new Error("Electron Mac updates require one x64 and one arm64 payload");
   }
   await mkdir(out, { recursive: true });
-  const channel = "electron-latest";
   const releaseDate = new Date().toISOString();
   const platforms = {};
   for (const [platform, groupNames] of Object.entries(groups)) {
@@ -117,4 +116,14 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   if (!values.version || !values.assets || !values.out)
     throw new Error("Required: --version --assets --out");
   await buildElectronReleaseManifests(values);
+}
+
+/** The classic app's electron-updater channel for a release version. */
+export function classicElectronChannel(version) {
+  const line = releaseLineOfVersion(version);
+  if (line === "next")
+    throw new Error(
+      "A -next prerelease ships Frogg Next; classic Electron feeds are not published",
+    );
+  return line === "beta" ? "electron-beta" : "electron-latest";
 }
