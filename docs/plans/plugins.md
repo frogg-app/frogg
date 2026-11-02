@@ -97,6 +97,10 @@ No arbitrary React. `contributes` may declare:
 - `views`: `{ id, title }` → a custom surface: the client entry's exported `views[id](root, ctx)`
   renders into a visible sandboxed iframe opened as a workspace tab (`ui.view`; client or
   hybrid scope; view ids must not repeat panel ids since both use the `plugin_panel` tab).
+- `agentTools` (API v2): tools for the host's agents, reached through the Frogg MCP tools
+  `list_connectors` and `call_connector_tool`. Each has `id`, `title`, `description` and an
+  optional JSON Schema `inputSchema`; a call invokes plugin RPC `tool.<id>` with the agent's
+  arguments, and the RPC context carries `agentId`. Needs `rpc`.
 - `composerActions`: buttons in the composer toolbar; invoke plugin RPC `<id>` with
   `{ agentId, cwd }` (`composer`).
 

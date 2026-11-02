@@ -24,6 +24,11 @@
   `--chrome`, `--remote-control`) in their host-stored preferences (`launchArgs`), set from
   Frogg Next's Settings → Accounts; new sessions on that account start with them, under any
   project `agentDefaults`. Daemons advertise `providerAccountLaunchArgs`.
+- **Agents can see the host's connectors.** The Frogg MCP server adds `list_connectors` and
+  `call_connector_tool`, and non-chat agents get a short summary of running plugins in their
+  hidden system context. Plugins API v2 plugins contribute agent tools with
+  `contributes.agentTools` (host feature `agent.tools`), so agents use a plugin without touching
+  its credentials.
 - **Turn providers on and off in Frogg Next.** Settings → Providers & models has a per-provider
   switch for host owners.
 

@@ -163,6 +163,10 @@ in which case the option is hidden on hosts and in the desktop app alike.
   in the desktop and web apps.
 - **Composer actions** appear under a puzzle button in the composer toolbar and run against the
   composer's agent and directory.
+- **Agent tools** let the agents on the host use the plugin, for example to read a Discord
+  channel's history. Agents find them with the Frogg MCP tool `list_connectors` and call them
+  with `call_connector_tool`; the plugin runs them with its own credentials. They need plugin API
+  v2 and the `rpc` permission. See [Frogg MCP tools](/docs/agents-and-providers/mcp/#tools).
 - **Settings** appear on the plugin's settings page.
 - **Notifications** from a plugin show as toasts.
 - **Frogg features** are optional parts of Frogg, such as
