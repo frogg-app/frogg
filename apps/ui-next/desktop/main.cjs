@@ -9,7 +9,13 @@ const {
   sessionWindowQuery,
 } = require("./session-window.cjs");
 const { createUpdater } = require("./updater.cjs");
-const { acceleratorFor, chromeMode, windowChromeOptions } = require("./window-chrome.cjs");
+const {
+  acceleratorFor,
+  chromeMode,
+  titleBarOverlay,
+  windowChromeOptions,
+} = require("./window-chrome.cjs");
+const { readWindowTheme, writeWindowTheme } = require("./window-theme.cjs");
 
 // Name, data folder and scheme come from the brand (identity.json, written by the build).
 const identity = loadPackagedIdentity(path.join(__dirname, "identity.json"));
@@ -74,14 +80,31 @@ function runAccelerator(window, action) {
   else if (action === "zoomReset") contents.setZoomLevel(0);
 }
 
+let savedWindowTheme = null;
+/** The saved theme's shell colours (read once, then kept in step with the UI). */
+function windowTheme() {
+  if (!savedWindowTheme) savedWindowTheme = readWindowTheme(app.getPath("userData"));
+  return savedWindowTheme;
+}
+
+/** Saves the UI's theme colours for the next launch and repaints every open window. */
+function setWindowTheme(colors) {
+  savedWindowTheme = writeWindowTheme(app.getPath("userData"), colors);
+  for (const window of BrowserWindow.getAllWindows()) {
+    window.setBackgroundColor(savedWindowTheme.bg);
+    if (process.platform !== "darwin")
+      window.setTitleBarOverlay?.(titleBarOverlay(savedWindowTheme));
+  }
+}
+
 function createWindow({ route = {}, size = { width: 1440, height: 960 } } = {}) {
   const window = new BrowserWindow({
     title: identity.name,
     ...size,
     minWidth: route.popout ? 480 : 800,
     minHeight: route.popout ? 400 : 600,
-    backgroundColor: "#080b0d",
-    ...windowChromeOptions(process.platform),
+    backgroundColor: windowTheme().bg,
+    ...windowChromeOptions(process.platform, windowTheme()),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -168,6 +191,7 @@ app.whenReady().then(() => {
   createMainWindow();
   createUpdater(identity);
   ipcMain.handle("frogg-next:open-session-window", (_event, request) => openSessionWindow(request));
+  ipcMain.handle("frogg-next:set-window-theme", (_event, colors) => setWindowTheme(colors));
   app.on("activate", () => {
     if (!mainWindow) createMainWindow();
   });

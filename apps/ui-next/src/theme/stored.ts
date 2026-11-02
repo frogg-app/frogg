@@ -33,3 +33,14 @@ export function writeStoredTheme(choice: ThemeChoice): void {
 export function reloadForTheme(): void {
   DevSettings.reload();
 }
+
+/** Colours the desktop shell paints before the bundle loads; see stored.web.ts. */
+export interface ShellColors {
+  bg: string;
+  faint: string;
+  accent: string;
+  symbols: string;
+}
+
+/** Native has no desktop shell; its launch splash comes from the app config. */
+export function syncShellTheme(_colors: ShellColors): void {}

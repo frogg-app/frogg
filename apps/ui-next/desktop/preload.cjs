@@ -16,6 +16,8 @@ contextBridge.exposeInMainWorld("froggNextDesktop", {
   /** Pops a session out into its own window (focuses it when already open). */
   openSessionWindow: (sessionId, hostId) =>
     ipcRenderer.invoke("frogg-next:open-session-window", { sessionId, hostId }),
+  /** Saves the theme's shell colours for the next launch and repaints open windows. */
+  setWindowTheme: (colors) => ipcRenderer.invoke("frogg-next:set-window-theme", colors),
   onOpenUrl(listener) {
     const handler = (_event, url) => listener(url);
     ipcRenderer.on("frogg-next:open-url", handler);
