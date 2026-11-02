@@ -9760,6 +9760,92 @@ test("authoritative timeline records a daemon-handled submitted prompt before it
   }
 });
 
+test.skipIf(process.platform === "win32")(
+  "!cmd runs on the daemon as a shell tool call and its output rides with the next turn",
+  async () => {
+    const workdir = mkdtempSync(join(tmpdir(), "agent-manager-shell-escape-"));
+    const storage = new AgentStorage(join(workdir, "agents"), logger);
+    const prompts: AgentPromptInput[] = [];
+
+    class RecordingSession extends TestAgentSession {
+      override async startTurn(prompt: AgentPromptInput): Promise<{ turnId: string }> {
+        prompts.push(prompt);
+        return super.startTurn();
+      }
+    }
+    class RecordingClient extends TestAgentClient {
+      override async createSession(config: AgentSessionConfig): Promise<AgentSession> {
+        return new RecordingSession(config);
+      }
+    }
+    const manager = new AgentManager({
+      clients: { codex: new RecordingClient() },
+      registry: storage,
+      logger,
+      idFactory: () => "00000000-0000-4000-8000-000000000404",
+    });
+
+    try {
+      const snapshot = await manager.createAgent({ provider: "codex", cwd: workdir }, undefined, {
+        workspaceId: undefined,
+      });
+      await startAgentRun(manager, snapshot.id, "!echo shell-escape-ok", logger, {
+        runOptions: { clientMessageId: "msg-shell" },
+      });
+      await vi.waitFor(() => {
+        const items = manager
+          .fetchTimeline(snapshot.id, { direction: "tail", limit: 20 })
+          .rows.map((row) => row.item);
+        expect(items[0]).toEqual({
+          type: "user_message",
+          text: "!echo shell-escape-ok",
+          clientMessageId: "msg-shell",
+        });
+        // Running, then completed under the same callId (the client merges them).
+        expect(items.slice(1).map((item) => item.type === "tool_call" && item.status)).toEqual([
+          "running",
+          "completed",
+        ]);
+        expect(items[2]).toMatchObject({
+          name: "Bash",
+          detail: {
+            type: "shell",
+            command: "echo shell-escape-ok",
+            cwd: workdir,
+            output: "shell-escape-ok\n",
+            exitCode: 0,
+          },
+        });
+      });
+      expect(prompts).toEqual([]);
+
+      await startAgentRun(manager, snapshot.id, "what did it print?", logger, {
+        runOptions: { clientMessageId: "msg-next" },
+      });
+      await vi.waitFor(() => expect(prompts).toHaveLength(1));
+      expect(prompts[0]).toBe(
+        "<bash-input>echo shell-escape-ok</bash-input>\n" +
+          "<bash-stdout>shell-escape-ok\n</bash-stdout><bash-stderr></bash-stderr>\n\n" +
+          "what did it print?",
+      );
+      // The bubble shows what was typed, not the handed-over context.
+      await vi.waitFor(() =>
+        expect(
+          manager
+            .fetchTimeline(snapshot.id, { direction: "tail", limit: 20 })
+            .rows.map((row) => row.item)
+            .filter((item) => item.type === "user_message")
+            .map((item) => (item.type === "user_message" ? item.text : "")),
+        ).toEqual(["!echo shell-escape-ok", "what did it print?"]),
+      );
+    } finally {
+      await manager.flush().catch(() => undefined);
+      await storage.flush().catch(() => undefined);
+      rmSync(workdir, { recursive: true, force: true });
+    }
+  },
+);
+
 test("replaceAgentRun succeeds when foreground turn terminal event is never delivered", async () => {
   const workdir = mkdtempSync(join(tmpdir(), "agent-manager-stale-fg-"));
   const storagePath = join(workdir, "agents");

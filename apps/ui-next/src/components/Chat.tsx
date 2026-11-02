@@ -113,6 +113,10 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
     };
   }, [a.id, blocked, canCut]);
   const commands = useCallback(() => listCommands(a.id), [a.id]);
+  const shellEscape = useMemo(
+    () => (online && hasFeature("agentShellEscape") ? { cwd: a.cwd } : undefined),
+    [online, a.cwd],
+  );
   const initialAttachments = useMemo(() => {
     const draft = forkDrafts.get(a.id);
     return draft ? [draft] : [];
@@ -212,6 +216,7 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
                 onTyping={setTyping}
                 above={here}
                 cut={cut}
+                shellEscape={shellEscape}
               >
                 <ProviderChip agent={a} compact={!!onBack} />
                 <AgentControls agent={a} />

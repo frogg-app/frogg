@@ -159,6 +159,7 @@ function answer(id: string, requestId: string, allow: boolean): void {
 
 const features = {
   agentCleanCut: true,
+  agentShellEscape: true,
   providerAccounts: true,
   providerUsageAccountScoped: true,
   agentProviderAccountTransfer: true,

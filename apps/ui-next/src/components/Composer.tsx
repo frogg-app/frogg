@@ -63,6 +63,7 @@ export function Composer({
   onTyping,
   above,
   cut,
+  shellEscape,
   disabled = false,
 }: {
   placeholder: string;
@@ -93,6 +94,8 @@ export function Composer({
   above?: ReactNode;
   /** A second send button (scissors) that sends the message after a clean cut. */
   cut?: CutSend;
+  /** `!cmd` runs on the host (the daemon supports it): say so while one is typed. */
+  shellEscape?: { cwd: string };
 }) {
   const [sending, setSending] = useState(false);
   const [commandError, setCommandError] = useState(false);
@@ -266,6 +269,7 @@ export function Composer({
         <Cut size={10} style={[s.box, dragOver && s.boxDrop]}>
           {notices}
           {stash && <StashNote stash={stash} />}
+          {shellEscape && !atts.length && <ShellNote text={text} cwd={shellEscape.cwd} />}
           {atts.length > 0 && <AttachChips items={atts} onRemove={removeAtt} />}
           {expandable && (
             <View
@@ -339,6 +343,18 @@ export function Composer({
           </View>
         </Cut>
       </View>
+    </View>
+  );
+}
+
+/** While a `!cmd` is typed: where it runs and where its output goes. */
+function ShellNote({ text, cwd }: { text: string; cwd: string }) {
+  if (!/^\s*!\S/.test(text)) return null;
+  return (
+    <View style={s.stash}>
+      <T v="mono" style={s.shellT} numberOfLines={1}>
+        {`Shell command · runs in ${cwd}; the output goes to the agent with your next message`}
+      </T>
     </View>
   );
 }
@@ -459,6 +475,7 @@ const s = StyleSheet.create({
   boxDrop: { borderColor: color.cyan2, backgroundColor: color.wash2 },
   stash: { marginBottom: 6 },
   stashT: { fontSize: 11, color: color.muted },
+  shellT: { fontSize: 11, color: color.cyan2 },
   inputBox: { position: "relative", overflow: "hidden" },
   input: {
     flex: 1,
