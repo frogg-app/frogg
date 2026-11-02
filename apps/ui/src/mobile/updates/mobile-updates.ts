@@ -128,17 +128,28 @@ export function selectApkAsset(
   return { asset: null, signatureMismatch: false };
 }
 
+/** Which classic build this is: the stable app, or frogg beta (`-beta.N` prereleases). */
+export type MobileReleaseChannel = "stable" | "beta";
+
 /**
- * The newest published stable release. The classic app only follows stable releases, so a
- * prerelease (flagged, or with a prerelease version) is never offered.
+ * The newest published release for this build's channel. The stable app only follows stable
+ * releases. frogg beta follows prereleases, but every prerelease line shares one release list
+ * (Frogg Next ships `-next.N` there too), so a prerelease only counts when it carries an APK with
+ * this build's own artifact prefix.
  */
-export function selectRelease(releases: readonly GithubRelease[]): GithubRelease | null {
+export function selectRelease(
+  releases: readonly GithubRelease[],
+  channel: MobileReleaseChannel = brand.channel,
+): GithubRelease | null {
   let best: { release: GithubRelease; version: string } | null = null;
   for (const release of releases) {
     if (release.draft) continue;
     const version = normalizeVersion(release.tag_name);
     if (!version) continue;
-    if (release.prerelease === true || !isStableVersion(version)) continue;
+    const prerelease = release.prerelease === true || !isStableVersion(version);
+    if (prerelease !== (channel === "beta")) continue;
+    if (channel === "beta" && !release.assets?.some((asset) => parseApkAssetName(asset.name)))
+      continue;
     if (!best || compareReleaseVersions(version, best.version) > 0) {
       best = { release, version };
     }
@@ -151,13 +162,15 @@ export interface CheckMobileAppUpdateInput {
   currentVersion: string | null;
   installer: Pick<AndroidInstallerInfo, "supportedAbis" | "debugSigned" | "packageName">;
   checkedAt: number;
+  /** Default: the build's brand.channel. */
+  channel?: MobileReleaseChannel;
 }
 
 export function resolveMobileAppUpdate(
   input: CheckMobileAppUpdateInput,
 ): MobileAppUpdateCheckResult {
   const currentVersion = normalizeVersion(input.currentVersion);
-  const release = selectRelease(input.releases);
+  const release = selectRelease(input.releases, input.channel);
   const latestVersion = normalizeVersion(release?.tag_name ?? null);
   const hasUpdate = isNewerVersion(latestVersion, currentVersion);
   const selection = hasUpdate
@@ -185,7 +198,7 @@ export async function fetchPublishedReleases(
   fetchImpl: typeof fetch = fetch,
 ): Promise<GithubRelease[]> {
   if (!RELEASES_API_URL) return [];
-  const response = await fetchImpl(`${RELEASES_API_URL}?per_page=20`, {
+  const response = await fetchImpl(`${RELEASES_API_URL}?per_page=50`, {
     headers: { Accept: "application/vnd.github+json" },
   });
   if (!response.ok) {
