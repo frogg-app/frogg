@@ -1,29 +1,39 @@
-import { ArrowLeft } from "lucide-react-native";
+import { PARENT_AGENT_ID_LABEL } from "@frogg/protocol/agent-labels";
+import { ArrowLeft, CornerLeftUp } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { loadConfig, useConfig } from "../daemon/config";
 import { useSubWorkStore } from "../daemon/subwork";
 import { useViewers } from "../daemon/viewers";
-import { cancelTurn, openTimeline, setAgentMode, setAgentModel, useDaemon } from "../daemon/store";
+import { cancelTurn, openTimeline, useDaemon } from "../daemon/store";
 import { bucketOf, type Agent, type Session, type TimelineEntry } from "../daemon/types";
 import { color, motion } from "../theme/tokens";
+import { useUi } from "../ui-store";
 import { providerLabel } from "../util";
 import { AccountChip } from "./chat/AccountChip";
+import { AgentControls } from "./chat/AgentControls";
 import { ContextMeter } from "./chat/ContextMeter";
 import { ProviderChip } from "./chat/ProviderChip";
 import { ComposerNotices } from "./chat/Notices";
 import { SessionMenu } from "./chat/SessionMenu";
 import { SessionState } from "./chat/SessionState";
 import { headerTitle } from "./chat/title";
-import { forkDrafts, listCommands, sendWithAttachments, type Attachment } from "./chat/actions";
+import {
+  cleanCut,
+  forkDrafts,
+  hasFeature,
+  listCommands,
+  sendWithAttachments,
+  type Attachment,
+} from "./chat/actions";
+import { queueMessage, setQueueSender } from "./chat/cutQueue";
+import { CUT, runSessionOp, useSessionOps } from "./chat/sessionOps";
 import { useBottomAnchor } from "./chat/useBottomAnchor";
 import { SubWorkDetail } from "./subwork/Detail";
 import { SubWorkStrip } from "./subwork/Strip";
 import { toastError } from "./toast/store";
-import { Composer } from "./Composer";
+import { Composer, type CutSend } from "./Composer";
 import { ImageRoot } from "./markdown/HostImage";
 import { PermissionCard } from "./PermissionCard";
-import { Select } from "./Select";
 import { bucketColor, StatusGlyph } from "./StatusGlyph";
 import { T } from "./Text";
 import { RevealHeading } from "./chat/TextReveal";
@@ -33,6 +43,18 @@ import { Viewers } from "./chat/Viewers";
 
 // The provider chip is live (ProviderChip), not a static composer chip.
 const NO_CHIPS: string[] = [];
+
+// Messages held behind a clean cut go out through the same path as a typed one.
+setQueueSender(sendWithAttachments);
+
+const busy = (agentId: string) => !!useSessionOps.getState()[agentId];
+
+/** Why the scissors send cannot cut now, or null. */
+function cutBlocked(entries: TimelineEntry[] | undefined, running: boolean): string | null {
+  if (running) return "Wait for the turn to finish to make a clean cut";
+  if (!entries?.some((e) => e.item.type === "user_message")) return "Nothing to summarise yet";
+  return null;
+}
 
 const bucketText = {
   needs: "Needs you",
@@ -69,12 +91,32 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
   const running = a.status === "running";
   const onSend = useCallback(
     async (t: string, attachments: Attachment[]) => {
-      await sendWithAttachments(a.id, t, attachments);
+      // A move or clean cut is rewriting the conversation: hold the message until it lands.
+      if (busy(a.id)) queueMessage(a.id, t, attachments);
+      else await sendWithAttachments(a.id, t, attachments);
       forkDrafts.delete(a.id);
     },
     [a.id],
   );
+  const blocked = useMemo(() => cutBlocked(entries, running), [entries, running]);
+  const canCut = online && hasFeature("agentCleanCut");
+  const cut = useMemo<CutSend | undefined>(() => {
+    if (!canCut) return undefined;
+    return {
+      blocked,
+      onSend: (t, attachments) => {
+        queueMessage(a.id, t, attachments);
+        forkDrafts.delete(a.id);
+        // Already cutting (from the menu or the cache notice): the message just waits for it.
+        if (!busy(a.id)) runSessionOp(a.id, CUT, () => cleanCut(a.id));
+      },
+    };
+  }, [a.id, blocked, canCut]);
   const commands = useCallback(() => listCommands(a.id), [a.id]);
+  const shellEscape = useMemo(
+    () => (online && hasFeature("agentShellEscape") ? { cwd: a.cwd } : undefined),
+    [online, a.cwd],
+  );
   const initialAttachments = useMemo(() => {
     const draft = forkDrafts.get(a.id);
     return draft ? [draft] : [];
@@ -90,9 +132,12 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
   return (
     <View style={s.root}>
       <View style={s.head}>
-        <T v="mono" numberOfLines={1} style={s.crumb}>
-          {[session.project?.projectName, branch].filter(Boolean).join(" / ")}
-        </T>
+        <View style={s.crumbRow}>
+          <T v="mono" numberOfLines={1} style={s.crumb}>
+            {[session.project?.projectName, branch].filter(Boolean).join(" / ")}
+          </T>
+          <ParentLink agent={a} />
+        </View>
         <View style={s.titleRow}>
           {onBack && (
             <Pressable onPress={onBack} hitSlop={10} accessibilityLabel="Back">
@@ -115,12 +160,13 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
           )}
         </View>
       </View>
-      {detail ? (
-        <SubWorkDetail key={detail} parentId={a.id} itemId={detail} provider={provider} />
-      ) : (
-        <>
-          <SubWorkStrip sessionId={a.id} />
-          <ImageRoot.Provider value={a.cwd}>
+      {/* Relative image paths resolve from the session's folder, in details as in the timeline. */}
+      <ImageRoot.Provider value={a.cwd}>
+        {detail ? (
+          <SubWorkDetail key={detail} parentId={a.id} itemId={detail} provider={provider} />
+        ) : (
+          <>
+            <SubWorkStrip sessionId={a.id} />
             <ScrollView
               ref={anchor.ref}
               style={s.scroll}
@@ -152,34 +198,67 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
                 <Thinking entries={entries} waiting={a.pendingPermissions.length > 0} />
               )}
             </ScrollView>
-          </ImageRoot.Provider>
-          <View style={s.composer}>
-            <Composer
-              key={a.id}
-              attach
-              disabled={conn !== "online"}
-              loadCommands={commands}
-              initialAttachments={initialAttachments}
-              notices={notices}
-              placeholder={`Message ${provider} — / commands`}
-              chips={NO_CHIPS}
-              onSend={onSend}
-              onStop={running ? stop : undefined}
-              compact={!!onBack}
-              expandable
-              sizeKey={a.id}
-              onTyping={setTyping}
-              above={here}
-            >
-              <ProviderChip agent={a} compact={!!onBack} />
-              <AgentControls agent={a} />
-              <AccountChip agent={a} />
-              <ContextMeter agent={a} />
-            </Composer>
-          </View>
+            <View style={s.composer}>
+              <Composer
+                key={a.id}
+                attach
+                disabled={conn !== "online"}
+                loadCommands={commands}
+                initialAttachments={initialAttachments}
+                notices={notices}
+                placeholder={`Message ${provider} — / commands`}
+                chips={NO_CHIPS}
+                onSend={onSend}
+                onStop={running ? stop : undefined}
+                compact={!!onBack}
+                expandable
+                sizeKey={a.id}
+                onTyping={setTyping}
+                above={here}
+                cut={cut}
+                shellEscape={shellEscape}
+              >
+                <ProviderChip agent={a} compact={!!onBack} />
+                <AgentControls agent={a} />
+                <AccountChip agent={a} />
+                <ContextMeter agent={a} />
+              </Composer>
+            </View>
+          </>
+        )}
+      </ImageRoot.Provider>
+    </View>
+  );
+}
+
+/** A subagent's way back: names the session that started it and opens it. */
+function ParentLink({ agent }: { agent: Agent }) {
+  const parentId = agent.labels?.[PARENT_AGENT_ID_LABEL];
+  const title = useDaemon((st) =>
+    parentId ? (st.sessions[parentId]?.agent.title ?? null) : undefined,
+  );
+  const open = useCallback(() => {
+    if (parentId) useUi.getState().select(parentId);
+  }, [parentId]);
+  // Not loaded here (archived, or another host's id): nothing to open.
+  if (!parentId || title === undefined) return null;
+  return (
+    <Pressable
+      onPress={open}
+      accessibilityRole="link"
+      accessibilityLabel={`Subagent of ${title || "a session"}, open it`}
+      hitSlop={6}
+      style={s.parent}
+    >
+      {({ hovered }) => (
+        <>
+          <CornerLeftUp size={11} color={hovered ? color.text : color.violet} />
+          <T numberOfLines={1} style={[s.parentT, hovered && s.parentHover]}>
+            Subagent of {title || "Untitled session"}
+          </T>
         </>
       )}
-    </View>
+    </Pressable>
   );
 }
 
@@ -223,71 +302,6 @@ function Thinking({
   );
 }
 
-/** Model and mode pickers for a live session, fed by the host's provider snapshot. */
-function AgentControls({ agent }: { agent: Agent }) {
-  const providers = useConfig((st) => st.providers);
-  useEffect(() => {
-    if (!providers) void loadConfig();
-  }, [providers]);
-  const model = agent.runtimeInfo?.model ?? agent.model;
-  const models = useMemo(
-    () =>
-      (providers?.entries.find((p) => p.provider === agent.provider)?.models ?? []).map((m) => ({
-        value: m.id,
-        label: m.label,
-        hint: m.description,
-      })),
-    [providers, agent.provider],
-  );
-  const modes = useMemo(
-    () =>
-      agent.availableModes.map((m) => ({
-        value: m.id,
-        label: m.label,
-        hint: m.description,
-      })),
-    [agent.availableModes],
-  );
-  const pickModel = useCallback(
-    (v: string) =>
-      void setAgentModel(agent.id, v).catch((e) => toastError("Could not change model", e)),
-    [agent.id],
-  );
-  const pickMode = useCallback(
-    (v: string) =>
-      void setAgentMode(agent.id, v).catch((e) => toastError("Could not change mode", e)),
-    [agent.id],
-  );
-  return (
-    <>
-      <Select
-        label="Model"
-        chip
-        mono
-        up
-        width="auto"
-        menuWidth={240}
-        value={model ?? null}
-        placeholder={model ?? "default model"}
-        options={models}
-        onChange={pickModel}
-      />
-      {modes.length > 0 && (
-        <Select
-          label="Mode"
-          chip
-          up
-          width="auto"
-          menuWidth={240}
-          value={agent.currentModeId}
-          options={modes}
-          onChange={pickMode}
-        />
-      )}
-    </>
-  );
-}
-
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.bg2 },
   head: {
@@ -297,7 +311,11 @@ const s = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: color.line,
   },
-  crumb: { fontSize: 11 },
+  crumbRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  crumb: { fontSize: 11, flexShrink: 1 },
+  parent: { flexDirection: "row", alignItems: "center", gap: 4, flexShrink: 1, minWidth: 0 },
+  parentT: { fontSize: 11.5, color: color.muted, flexShrink: 1 },
+  parentHover: { color: color.text },
   titleRow: {
     flexDirection: "row",
     alignItems: "center",

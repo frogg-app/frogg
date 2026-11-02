@@ -3,6 +3,14 @@
 import type { ToolCallDetail } from "@frogg/protocol/agent-types";
 import type { Agent, Placement, Session, TimelineEntry, TimelineItem } from "../daemon/types";
 
+/** Claude's effort levels, so the agent view's Thinking picker has something to offer. */
+const CLAUDE_THINKING = [
+  { id: "low", label: "Low", description: "Quick answers" },
+  { id: "medium", label: "Medium", description: "Balanced", isDefault: true },
+  { id: "high", label: "High", description: "Think harder" },
+  { id: "max", label: "Max", description: "Deepest reasoning" },
+];
+
 export type Permission = Agent["pendingPermissions"][number];
 
 const MIN = 60_000;
@@ -341,6 +349,7 @@ export const ID = {
   working: "s-working",
   review: "s-review",
   idle: "s-idle",
+  child: "s-child",
 } as const;
 
 function session(a: Agent, project: string, branch: string | null): Session {
@@ -434,6 +443,17 @@ export function sessions(): Record<string, Session> {
       "website",
       "docs/pairing",
     ),
+    // A subagent the pairing guide session started: listed under it, never as its own row.
+    session(
+      agent({
+        id: ID.child,
+        title: "Refresh pairing screenshots",
+        labels: { "frogg.parent-agent-id": ID.idle },
+        updatedAt: ago(60 * 26),
+      }),
+      "website",
+      "docs/pairing",
+    ),
   ];
   return Object.fromEntries(list.map((x) => [x.agent.id, x]));
 }
@@ -486,8 +506,16 @@ export const providers = {
           label: "Opus 4.5",
           description: "Most capable",
           isDefault: true,
+          thinkingOptions: CLAUDE_THINKING,
+          defaultThinkingOptionId: "medium",
         },
-        { id: "claude-sonnet-4-5", label: "Sonnet 4.5", description: "Fast and capable" },
+        {
+          id: "claude-sonnet-4-5",
+          label: "Sonnet 4.5",
+          description: "Fast and capable",
+          thinkingOptions: CLAUDE_THINKING,
+          defaultThinkingOptionId: "medium",
+        },
         { id: "claude-haiku-4-5", label: "Haiku 4.5", description: "Fastest" },
       ],
       // Two sign-ins, so the new-session sheet offers an account picker.

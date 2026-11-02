@@ -1,10 +1,10 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Chat } from "../../components/Chat";
 import { AccountChip } from "../../components/chat/AccountChip";
 import { ContextMeter } from "../../components/chat/ContextMeter";
 import type { Attachment, SlashCommand } from "../../components/chat/actions";
-import { AttachChips, AttachMenu } from "../../components/chat/Attach";
+import { AttachChips, AttachButton } from "../../components/chat/Attach";
 import { SessionMenu } from "../../components/chat/SessionMenu";
 import { SlashMenu } from "../../components/chat/SlashMenu";
 import { Composer } from "../../components/Composer";
@@ -19,6 +19,7 @@ import { color } from "../../theme/tokens";
 import { useUi } from "../../ui-store";
 import { commands as COMMANDS, entry, ID, toolDetails, toolItem } from "../fixtures";
 import { LAB_ATTACHMENTS } from "../sim/fs";
+import { useUploads } from "../../components/chat/upload";
 import { Above, Case, Cases, Fill, W, type Entry } from "../kit";
 
 type ToolItem = Extract<TimelineItem, { type: "tool_call" }>;
@@ -392,8 +393,8 @@ function Attachments() {
   const add = useCallback((a: Attachment[]) => setItems((l) => [...l, ...a]), []);
   return (
     <Cases>
-      <Case name="AttachMenu" props="onAdd" note="Click + for the menu (web file picker)." plain>
-        <AttachMenu onAdd={add} />
+      <Case name="AttachButton" props="onAdd" note="Click + to open the file chooser (web)." plain>
+        <AttachButton onAdd={add} onRemove={remove} />
       </Case>
       <Case
         name="AttachChips"
@@ -404,7 +405,29 @@ function Attachments() {
       >
         <AttachChips items={items} onRemove={remove} />
       </Case>
+      <Case
+        name="AttachChips · uploading"
+        props="items={[upload]}"
+        note="A large file streams to the host with progress; × cancels the upload."
+        w={W.phone}
+        plain
+      >
+        <UploadingChip />
+      </Case>
     </Cases>
+  );
+}
+
+const UPLOAD_SIZE = 1_997_000_000;
+function UploadingChip() {
+  useEffect(() => {
+    useUploads.setState({ lab: { sent: UPLOAD_SIZE * 0.42, total: UPLOAD_SIZE } });
+  }, []);
+  return (
+    <AttachChips
+      items={[{ kind: "upload", id: "lab", name: "project-backup.zip", size: UPLOAD_SIZE }]}
+      onRemove={noop}
+    />
   );
 }
 
@@ -541,7 +564,7 @@ export const chat: Entry[] = [
   },
   {
     id: "attach",
-    name: "AttachMenu / AttachChips",
+    name: "AttachButton / AttachChips",
     category: "Chat",
     path: "components/chat/Attach.tsx",
     purpose: "The + menu (web file picker) and removable chips for images, files and fork context.",

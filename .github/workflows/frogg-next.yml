@@ -1,0 +1,87 @@
+name: Frogg Next
+
+# The Frogg Next line (apps/ui-next) on the long-lived frogg-next branch (frogg.json
+# streams.next). Every push and pull request runs CI's jobs (ci.yml); a green push cuts the next
+# Frogg Next prerelease, X.Y.Z-next.N on main's version line, and dispatches the Release workflow,
+# which builds Frogg Next's desktop and Android clients (ui-next-desktop.yml, ui-next-android.yml)
+# with their own Frogg-Next-* packages and frogg-next-latest*.yml feeds, plus the daemon bundles.
+# main keeps shipping frogg beta (ci.yml's `beta` job); shared work lands there and reaches this
+# branch with `npm run release:sync-main`. docs/plans/frogg-next-release-flow.md has the design.
+
+on:
+  push:
+    branches: [frogg-next]
+  pull_request:
+    branches: [frogg-next]
+  workflow_dispatch:
+
+concurrency:
+  group: frogg-next-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  ci:
+    name: ci
+    uses: ./.github/workflows/ci.yml
+    # ci.yml's `beta` job only runs for main pushes, but a called workflow may not ask for more
+    # than its caller grants.
+    permissions:
+      contents: write
+      actions: write
+
+  next:
+    name: cut frogg next
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/frogg-next'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      actions: write
+    concurrency:
+      group: frogg-next-cut
+      cancel-in-progress: false
+    env:
+      ONNXRUNTIME_NODE_INSTALL: skip
+      CI: "true"
+      LEFTHOOK: "0"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: frogg-next
+          fetch-depth: 0
+
+      - name: Skip if frogg-next has moved on
+        id: current
+        run: |
+          if [ "$(git rev-parse HEAD)" != "$GITHUB_SHA" ]; then
+            echo "::notice::frogg-next moved past $GITHUB_SHA; the newer push cuts the prerelease."
+            echo "cut=false" >> "$GITHUB_OUTPUT"
+          elif [ "$(node scripts/release/streams.mjs needs-tests HEAD)" != "true" ]; then
+            echo "::notice::$GITHUB_SHA is a release cut; nothing new to ship."
+            echo "cut=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "cut=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.current.outputs.cut == 'true'
+        uses: ./.github/actions/setup-node-deps
+
+      # Pushed with GITHUB_TOKEN, which starts no workflows (no CI loop); the release is
+      # dispatched explicitly below.
+      - name: Cut and push the Frogg Next prerelease
+        if: steps.current.outputs.cut == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          node scripts/release/streams.mjs next --skip-check
+
+      - name: Start the release build
+        if: steps.current.outputs.cut == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run release.yml --ref frogg-next -f platforms=all -f tag="v$(node -p "require('./package.json').version")"

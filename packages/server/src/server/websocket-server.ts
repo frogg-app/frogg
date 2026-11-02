@@ -2059,6 +2059,11 @@ export class VoiceAssistantWebSocketServer {
     };
   }
 
+  private serverInfoTailscale(): Pick<ServerInfoStatusPayload, "tailscale"> {
+    const status = this.daemonRuntimeConfig?.getTailscaleStatus?.();
+    return status ? { tailscale: status } : {};
+  }
+
   private serverInfoSecurity(session: Session): Pick<ServerInfoStatusPayload, "security"> {
     const getPosture = this.daemonRuntimeConfig?.getSecurityPosture;
     if (!getPosture || session.getRole() !== "owner") return {};
@@ -2069,6 +2074,11 @@ export class VoiceAssistantWebSocketServer {
    * Re-send server_info so owners see a changed security posture (password
    * set or cleared, first claim, access settings updated) without reconnecting.
    */
+  /** Re-send server_info after a host fact it carries changed (e.g. the Tailscale node). */
+  public broadcastServerInfoChanged(): void {
+    this.broadcastCapabilitiesUpdate();
+  }
+
   public broadcastSecurityPostureChanged(): void {
     this.broadcastCapabilitiesUpdate();
   }
@@ -2092,6 +2102,8 @@ export class VoiceAssistantWebSocketServer {
       // COMPAT(securityPosture): added in v1.6.0. Owners only: findings name
       // how the daemon can be taken over, which is not every device's business.
       ...this.serverInfoSecurity(session),
+      // COMPAT(tailscaleStatus): added in v1.6.14; absent without Tailscale on this machine.
+      ...this.serverInfoTailscale(),
       // COMPAT(chats): added in v1.5.57, remove optional after 2027-09-26.
       chatProviders: [...CHAT_SUPPORTED_PROVIDERS],
       features: {
@@ -2126,6 +2138,8 @@ export class VoiceAssistantWebSocketServer {
         // COMPAT(providerAccountPreferences): added in v1.5.6, remove after 2027-09-19.
         ...(this.providerAccountsEnabled ? { providerAccountPreferences: true } : {}),
         providerUpdates: true,
+        // COMPAT(claudePluginUpdates): added in v1.6.14, remove after 2027-11-02.
+        claudePluginUpdates: true,
         // COMPAT(agentProviderAccountTransfer): added in v1.5.7, remove after 2027-09-19.
         // Rides the same manifest gate as the accounts themselves. Whether the
         // agent's own provider can carry its history across is a per-provider
@@ -2133,6 +2147,8 @@ export class VoiceAssistantWebSocketServer {
         ...(this.providerAccountsEnabled ? { agentProviderAccountTransfer: true } : {}),
         // COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27.
         agentCleanCut: true,
+        // COMPAT(agentShellEscape): added in v1.6.14, remove after 2027-11-02.
+        agentShellEscape: true,
         // COMPAT(plugins): added in v1.6.2, remove gate after 2027-09-27.
         ...this.pluginFeatureFlags(),
         // COMPAT(workspaceLabels): added in v0.5.0, remove after 2027-08-14.
@@ -2284,6 +2300,8 @@ export class VoiceAssistantWebSocketServer {
         agentConfigApply: true,
         // COMPAT(claudeExtraArgs): added in v1.6.14, remove gate after 2027-10-15.
         claudeExtraArgs: true,
+        // COMPAT(providerAccountLaunchArgs): added in v1.6.14, remove gate after 2027-11-01.
+        providerAccountLaunchArgs: true,
       },
     };
   }

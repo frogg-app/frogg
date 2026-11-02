@@ -173,6 +173,7 @@ that would use it.
 | ---------------- | --------------------------------- | ------- | -------------------------------------------------------- |
 | `pairingUrl`     | HTTP(S) URL                       | none    | Hosted pairing page, e.g. `https://pair.acme.example`    |
 | `allowedOrigins` | array of URLs                     | `[]`    | Default CORS origins in a new daemon config (hosted web app origins) |
+| `collectorUrl`   | HTTP(S) URL                       | none    | Collector for opt-in [usage statistics and bug reports](/docs/using-frogg/usage-statistics/). Unset, neither is ever sent |
 
 A brand cannot ship a relay endpoint; `relayEndpoint` and `relayUseTls` are rejected.
 Each daemon owner configures their own relay.
@@ -416,8 +417,10 @@ API types. Without `FROGG_VERSION`, `FROGG_REF` names a branch, tag or commit of
 
 ## Next
 
-Every build has the brand's one identity: the fields above name the daemon, CLI, home, port and
-the classic app on every release. Prerelease tags (`-beta.N`) ship **Frogg Next**
+The fields above name the daemon, CLI, home, port and the classic app on every release; a
+`-beta.N` builds the classic app under the derived beta client identity (`<name> beta`,
+`<applicationId>.beta`, `<scheme>-beta`; rename it under `channels.beta`), with the same
+daemon. Frogg Next prerelease tags (`-next.N`, from the `frogg-next` branch) ship **Frogg Next**
 (`apps/ui-next`) instead of the classic app, under its own identity so it installs beside the
 classic app (see [Release streams](/docs/contributing/release-streams/#what-a-release-carries)).
 The `next` block names that identity. Every key is optional:

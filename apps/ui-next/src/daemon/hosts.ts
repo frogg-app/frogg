@@ -8,6 +8,8 @@ import {
   shouldUseTlsForDefaultHostedRelay,
 } from "@frogg/protocol/daemon-endpoints";
 import { create } from "zustand";
+import { popout } from "../popout";
+import { track } from "../usage-stats/store";
 
 export interface Host {
   id: string;
@@ -83,6 +85,9 @@ export const hostsReady: Promise<void> = AsyncStorage.getItem(KEY)
   })
   .catch(() => undefined /* corrupt or unavailable: start fresh */)
   .finally(() => {
+    // A popped-out session window reads the saved hosts but never writes them back, so it
+    // cannot overwrite a host the main window paired or renamed after it opened.
+    if (popout) return;
     useHosts.subscribe(
       (s) => void AsyncStorage.setItem(KEY, JSON.stringify(s)).catch(() => undefined),
     );
@@ -139,8 +144,14 @@ export function activeHost(fallbackEndpoint: string): Host {
   return host;
 }
 
+function hostTransport(h: Pick<Host, "endpoint" | "relay">) {
+  if (h.relay) return "relay" as const;
+  return /^(localhost|127\.|\[::1\])/.test(h.endpoint) ? ("local" as const) : ("direct" as const);
+}
+
 export function addHost(input: Omit<Host, "id">): Host {
   const host = { ...input, id: newHostId() };
+  track("host_added", { transport: hostTransport(input) });
   useHosts.setState((s) => ({ hosts: [...s.hosts, host] }));
   return host;
 }

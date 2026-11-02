@@ -1,7 +1,11 @@
 import { KeyboardFrame } from "../components/shell/KeyboardFrame";
 import { ToastHost } from "../components/toast/ToastHost";
+import { SignInDialog } from "../components/signin/SignInDialog";
 import { HostToasts } from "../components/toast/HostToasts";
+import { UsageStatsPrompt } from "../components/toast/UsageStatsPrompt";
 import { TitleBar } from "../components/shell/TitleBar";
+import { SessionWindow } from "../components/shell/SessionWindow";
+import { popout } from "../popout";
 import { useCallback, useEffect, useMemo, type ReactNode } from "react";
 import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
@@ -40,7 +44,7 @@ import type { Session } from "../daemon/types";
 import { useFormFactor } from "../theme/layout";
 import { usePrefs } from "../prefs";
 import { color, ease, motion, web } from "../theme/tokens";
-import { useUi, type Tool } from "../ui-store";
+import { sessionsTerminal, useUi, type Tool } from "../ui-store";
 
 function sidePanel(tool: Tool): ReactNode {
   switch (tool) {
@@ -108,6 +112,7 @@ function MainDetail({ ui, phone, docked, openRun, session }: DetailProps): React
   } = ui;
   const backDiff = useCallback(() => openDiff(null), [openDiff]);
   const backTerminal = useCallback(() => openTerminal(null), [openTerminal]);
+  const backSessionTerminal = useCallback(() => ui.openSessionTerminal(null), [ui]);
   const backFile = useCallback(() => openFile(null), [openFile]);
   const backSettings = useCallback(() => openSettings(null), [openSettings]);
   const backInbox = useCallback(() => openInbox(null), [openInbox]);
@@ -117,6 +122,15 @@ function MainDetail({ ui, phone, docked, openRun, session }: DetailProps): React
   if (tool === "terminals" && terminalId)
     return (
       <TerminalDetail id={terminalId} docked={docked} onBack={phone ? backTerminal : undefined} />
+    );
+  const inSessions = sessionsTerminal(ui);
+  if (inSessions)
+    return (
+      <TerminalDetail
+        id={inSessions}
+        docked={docked}
+        onBack={phone ? backSessionTerminal : undefined}
+      />
     );
   if (tool === "prs" && openRun)
     return <CiRunDetail id={openRun} onBack={phone ? closeRun : undefined} />;
@@ -152,6 +166,7 @@ function hasDetailFor(
   session: Session | undefined,
 ): boolean {
   const { tool } = ui;
+  if (sessionsTerminal(ui)) return true;
   if (session && CHAT_TOOLS.has(tool)) return true;
   if (tool === "scm") return !!ui.diffPath;
   if (tool === "terminals") return !!ui.terminalId;
@@ -163,7 +178,12 @@ function hasDetailFor(
   return false;
 }
 
-export default function Shell() {
+/** The main window, or a session popped out into its own desktop window. */
+export default function Index() {
+  return popout ? <SessionWindow route={popout} /> : <Shell />;
+}
+
+function Shell() {
   const ff = useFormFactor();
   const docked = useWindowDimensions().width >= 900;
   const ui = useUi();
@@ -199,7 +219,8 @@ export default function Shell() {
   );
   // Terminals: the list beside an open terminal can be collapsed; the rail stays.
   const termListHidden = usePrefs((p) => p.terminalListHidden);
-  const sideHidden = tool === "terminals" && !!ui.terminalId && termListHidden;
+  const sideHidden =
+    ((tool === "terminals" && !!ui.terminalId) || !!sessionsTerminal(ui)) && termListHidden;
   const phoneHasDetail = phone && hasPhoneDetail(ui, openRun, session);
   // Keyed so switching tools replays a short enter; frequent, so it stays under 200ms.
   const side = (
@@ -219,12 +240,14 @@ export default function Shell() {
         <KeyboardFrame style={s.fill}>
           {crash !== undefined && <Crash />}
           <HostToasts />
+          <UsageStatsPrompt />
           <View style={s.fill}>{phoneHasDetail ? detailEl : side}</View>
           {!phoneHasDetail && !keyboard && <PhoneTabs badges={badges} />}
         </KeyboardFrame>
         <Palette />
         <NewSession />
         <ToastHost />
+        <SignInDialog />
         <Onboarding phone chipBottom={phoneHasDetail ? 16 : 76} />
       </SafeAreaView>
     );
@@ -237,6 +260,7 @@ export default function Shell() {
       <KeyboardFrame style={s.fill}>
         {crash !== undefined && <Crash />}
         <HostToasts />
+        <UsageStatsPrompt />
         <View style={s.row}>
           <Rail badges={badges} />
           {FULL_TOOLS.has(tool) && <View style={[s.fill, s.full]}>{side}</View>}
@@ -270,7 +294,8 @@ export default function Shell() {
       <Palette />
       <NewSession />
       <ToastHost />
-      <Onboarding phone={false} chipBottom={40} chipLeft={224} />
+      <SignInDialog />
+      <Onboarding phone={false} />
     </SafeAreaView>
   );
 }
@@ -298,6 +323,7 @@ function backAction(phone: boolean, openRun: string | null | undefined): (() => 
   if (ui.newSessionOpen) return () => ui.setNewSession(false);
   if (tool === "scm" && ui.diffPath) return () => ui.openDiff(null);
   if (tool === "terminals" && ui.terminalId) return () => ui.openTerminal(null);
+  if (sessionsTerminal(ui)) return () => ui.openSessionTerminal(null);
   if (tool === "prs" && openRun) return closeRun;
   if (tool === "files" && ui.filePath) return () => ui.openFile(null);
   if (tool === "settings" && ui.settingsPage && phone) return () => ui.openSettings(null);
@@ -337,7 +363,7 @@ const s = StyleSheet.create({
     left: 0,
     top: 0,
     bottom: 0,
-    shadowColor: "#000",
+    shadowColor: color.shadow,
     shadowOpacity: 0.5,
     shadowRadius: 24,
   },

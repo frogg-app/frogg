@@ -3,14 +3,15 @@ name: Frogg Next desktop
 # Frogg Next (apps/ui-next) desktop clients: Mac ARM and Intel (ad-hoc signed), Windows x64
 # (Azure Trusted Signing when its secrets are set, like the classic app) and Linux x64 (AppImage,
 # deb). Name, app id, scheme and artifact prefix come from the brand's `next` identity. Versioned
-# with the root package. On every main push that touches the client this uploads workflow
-# artifacts; the Release workflow calls it with `release-tag` on prerelease tags to attach
+# with the root package. On every frogg-next push that touches the client this uploads workflow
+# artifacts; the Release workflow calls it with `release-tag` on `-next.N` tags to attach
 # <prefix>-<version>-* installers and blockmaps, the electron-updater feeds
 # <feedPrefix>-latest.yml / -latest-mac.yml / -latest-linux.yml and one
 # <prefix>-<version>-SHA256SUMS to that tag's GitHub release (release-process.mdx).
 on:
   push:
-    branches: [main]
+    # Frogg Next lives on frogg-next (frogg.json streams.next); main ships the classic beta.
+    branches: [frogg-next]
     paths:
       - "apps/ui-next/**"
       - "packages/client/**"

@@ -21,6 +21,7 @@ import { Select } from "./Select";
 import { Field } from "./settings/pages/kit";
 import { T } from "./Text";
 import { TodoBoard, useColumns, useProjectNames, useTodoLoader } from "./tasks/TodoBoard";
+import { FilterNote } from "./tasks/FilterNote";
 import { TodoCard } from "./tasks/TodoCard";
 import { NewTodoSheet, TodoDetailSheet } from "./tasks/TodoSheets";
 import { Tabs } from "./tools/Tabs";
@@ -119,10 +120,16 @@ export function TasksPanel() {
               />
             </View>
           </View>
-          {phone && (
+          <FilterNote />
+          {phone ? (
             <View style={st.views}>
               <Tabs tabs={VIEWS} value={view} onChange={setView} />
             </View>
+          ) : (
+            <T style={st.caption}>
+              The board beside this shows the same to-dos by column. Filters apply to both; select
+              one to edit it.
+            </T>
           )}
           {errorList.map(([id, e]) => (
             <T v="mono" key={id} style={st.error}>
@@ -194,6 +201,13 @@ const st = StyleSheet.create({
   },
   searchField: { borderWidth: 0, paddingLeft: 0 },
   views: { paddingBottom: 4 },
+  caption: {
+    fontSize: 11.5,
+    lineHeight: 16,
+    color: color.faint,
+    paddingHorizontal: 14,
+    paddingBottom: 8,
+  },
   list: { paddingBottom: 20 },
   cards: { gap: 8, paddingHorizontal: 12 },
   empty: { padding: 16, gap: 12, alignItems: "flex-start" },

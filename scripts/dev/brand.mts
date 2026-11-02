@@ -12,6 +12,7 @@ const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: {
     brand: { type: "string" },
+    channel: { type: "string" },
     dir: { type: "string" },
     id: { type: "string" },
     name: { type: "string" },
@@ -72,15 +73,15 @@ if (command === "init") {
       (values.icon ? "" : `Placeholder ${filename} written; replace it before you ship.\n`),
   );
 } else if (command === "check") {
-  const build = resolveBrand(values.brand);
+  const build = resolveBrand(values.brand, values.channel);
   await validateAssets(build);
   process.stdout.write(
     values.json
       ? JSON.stringify(build.brand, null, 2) + "\n"
-      : `${build.brand.name}: valid (${build.brand.applicationId}); updates ${build.brand.distribution.updateMode}\n`,
+      : `${build.brand.name}: valid (${build.brand.applicationId}, ${build.channel} channel); updates ${build.brand.distribution.updateMode}\n`,
   );
 } else if (command === "prepare") {
-  const build = await prepareBrand(values.brand);
+  const build = await prepareBrand(values.brand, values.channel);
   process.stdout.write(`Brand prepared: ${build.brand.name} (${build.fingerprint.slice(0, 12)})\n`);
 } else if (command === "stage") {
   process.stdout.write((await stageBrand(values.brand)) + "\n");
@@ -90,5 +91,7 @@ if (command === "init") {
     JSON.stringify(z.toJSONSchema(BrandManifestSchema), null, 2) + "\n",
   );
 } else {
-  throw new Error("Usage: brand.ts init|check|prepare|schema [--brand <directory>]");
+  throw new Error(
+    "Usage: brand.ts init|check|prepare|schema [--brand <directory>] [--channel stable|beta]",
+  );
 }

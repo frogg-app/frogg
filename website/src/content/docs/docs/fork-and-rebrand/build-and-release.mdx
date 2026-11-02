@@ -267,14 +267,15 @@ Docker tag, `release.json`, and the client below instead of the classic desktop 
 
 ### Frogg Next
 
-Prereleases ship **Frogg Next**, the new client in `apps/ui-next`, under your brand's
+`-next.N` prereleases (from the `frogg-next` branch) ship **Frogg Next**, the new client in
+`apps/ui-next`, under your brand's
 [`next`](/docs/fork-and-rebrand/brand-manifest/#next) identity (see
 [Release process](/docs/contributing/release-process/#frogg-next)). For Acme it derives to
 `Acme Studio Next`, `com.acme.studio.next`, `acme-next://` and `acme-next-<version>-*` assets,
 with update feeds `acme-next-latest*.yml`; set `next` fields in `brand.json` to rename it.
 
-`next.enabled` decides whether your prereleases carry it. It defaults to off for any brand
-other than upstream frogg, so a fork's prereleases carry only the daemon until it opts in:
+`next.enabled` decides whether your `-next.N` prereleases carry it. It defaults to off for any
+brand other than upstream frogg, so a fork's `-next.N` carry only the daemon until it opts in:
 
 ```json
 { "next": { "enabled": true } }

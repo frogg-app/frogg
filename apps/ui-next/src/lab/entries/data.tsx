@@ -249,14 +249,17 @@ if (this.entries.size >= this.max) this.evictOldest();
 \`\`\`
 `;
 const MD_GAPS = `1. Numbered item
-> A quote
-*italic* and [a link](https://frogg.dev)
+2. Second, with a nested list:
+  - nested bullet
+  - [x] a finished task
+  - [ ] an open task
+> A quote that runs on
+> over two lines
+*italic*, ~~struck~~ and [a link](https://frogg.app), or a bare https://frogg.app/docs
 
 ---
 
-| Key | Default |
-| --- | --- |
-| maxEntries | 200 |
+###### A small heading
 `;
 const MD_TABLES = `Prize split for the next two cups:
 
@@ -310,7 +313,7 @@ const MarkdownFull = () => (
   </Case>
 );
 const MarkdownGaps = () => (
-  <Case name="Markdown" props="text={unsupported}" w={680} plain>
+  <Case name="Markdown" props="text={lists, quotes, links}" w={680} plain>
     <Markdown text={MD_GAPS} />
   </Case>
 );
@@ -574,15 +577,15 @@ export const data: Entry[] = [
     category: "Data display",
     path: "components/Markdown.tsx",
     purpose:
-      "Assistant replies and plans: headings, bullets, tables, images, fenced code, inline code and bold.",
+      "Assistant replies and plans: headings, lists, quotes, rules, tables, images, fenced code, links and inline styles.",
     usedBy: 6,
     polish: "none",
     variants: [
       { id: "full", label: "Supported syntax", C: MarkdownFull },
       {
         id: "gaps",
-        label: "Unsupported syntax",
-        note: "Quotes, links and rules render as plain text.",
+        label: "Lists, quotes, links, rules",
+        note: "Numbered, nested and task lists; quotes; links and bare URLs; strikethrough; rules.",
         C: MarkdownGaps,
       },
       { id: "short", label: "One line", C: MarkdownShort },

@@ -1,5 +1,5 @@
 import { Download, File, FilePlus, FolderPlus, MoreHorizontal, Plus, X } from "lucide-react-native";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import {
   addTab,
@@ -83,11 +83,13 @@ function FileEditor({ path, onBack }: { path: string; onBack?: () => void }) {
   useEffect(() => {
     if (dirty || mode === "edit") pinTab(path);
   }, [dirty, mode, path]);
+  const root = useRef<View>(null);
+  useSaveShortcut(dirty && !saving ? save : null, root);
   const text = doc && "text" in doc ? doc.text : null;
   const name = path.split("/").pop() ?? path;
   const crumbs = path.split("/").slice(0, -1);
   return (
-    <View style={st.fill}>
+    <View ref={root} style={st.fill}>
       <FileTabs active={path} dirty={dirty} />
       {confirm.dialog}
       <View style={st.viewerHead}>
@@ -163,6 +165,40 @@ function FileEditor({ path, onBack }: { path: string; onBack?: () => void }) {
       </View>
     </View>
   );
+}
+
+/**
+ * Ctrl+S / Cmd+S saves the open file (web and desktop). The browser's own "save page" is
+ * suppressed while an editor is open, even with nothing to save.
+ */
+function useSaveShortcut(save: (() => void) | null, root: RefObject<View | null>): void {
+  const latest = useRef(save);
+  latest.current = save;
+  useEffect(() => {
+    const doc = (globalThis as { document?: Document }).document;
+    if (!doc) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey || e.key.toLowerCase() !== "s")
+        return;
+      // Another text field has focus (the composer stashes its draft on Ctrl+S): not ours.
+      if (typingElsewhere(e.target, root.current)) return;
+      e.preventDefault();
+      latest.current?.();
+    };
+    // Capture: the editor's textarea handles its own keys before they would bubble here.
+    doc.addEventListener("keydown", onKey, true);
+    return () => doc.removeEventListener("keydown", onKey, true);
+  }, [root]);
+}
+
+/** Whether a key went to an editable field outside the file viewer. */
+function typingElsewhere(target: EventTarget | null, root: View | null): boolean {
+  const el = target as HTMLElement | null;
+  if (!el?.tagName) return false;
+  const editable = el.tagName === "TEXTAREA" || el.tagName === "INPUT" || el.isContentEditable;
+  // On web a View ref is its div.
+  const inside = (root as unknown as HTMLElement | null)?.contains?.(el) ?? false;
+  return editable && !inside;
 }
 
 function DocumentBody({

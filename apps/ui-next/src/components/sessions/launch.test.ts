@@ -4,8 +4,12 @@ import {
   accountIdFor,
   flagsText,
   parseFlags,
+  plainFlags,
   PRIMARY_ACCOUNT,
   tokenize,
+  accountLaunchArgs,
+  mergeFlags,
+  withoutAccountFlags,
 } from "./launch";
 
 describe("launch flags", () => {
@@ -59,5 +63,43 @@ describe("account choices", () => {
     expect(
       accountChoices({ accounts: [a("default:claude", "default")], defaultAccountId: null }),
     ).toBeNull();
+  });
+});
+
+describe("account launch flags", () => {
+  it("starts from the account's flags and lets the project override a shared one", () => {
+    expect(
+      mergeFlags(["--chrome", "--remote-control", "mac"], ["--remote-control", "work"]),
+    ).toEqual(["--chrome", "--remote-control", "work"]);
+    expect(mergeFlags([], ["--add-dir", "/x"])).toEqual(["--add-dir", "/x"]);
+  });
+
+  it("keeps an account's flags out of the project's saved defaults", () => {
+    expect(withoutAccountFlags("--chrome --add-dir /x", ["--chrome"])).toEqual(["--add-dir", "/x"]);
+    // Same flag, different value: the project means it.
+    expect(withoutAccountFlags("--remote-control work", ["--remote-control", "mac"])).toEqual([
+      "--remote-control",
+      "work",
+    ]);
+  });
+
+  it("reads the picked account's flags from the snapshot", () => {
+    const entry = {
+      accounts: [
+        { id: "a", name: "mac", authenticated: true, preferences: { launchArgs: ["--chrome"] } },
+        { id: "b", name: "win", authenticated: true },
+      ],
+    };
+    expect(accountLaunchArgs(entry, "a")).toEqual(["--chrome"]);
+    expect(accountLaunchArgs(entry, "b")).toEqual([]);
+    expect(accountLaunchArgs(entry, null)).toEqual([]);
+  });
+});
+
+describe("plainFlags", () => {
+  it("turns smart dashes and quotes back into what was typed", () => {
+    expect(plainFlags("\u2014chrome")).toBe("--chrome");
+    expect(plainFlags("\u2013add-dir \u201c/a b\u201d")).toBe('--add-dir "/a b"');
+    expect(plainFlags("--chrome")).toBe("--chrome");
   });
 });

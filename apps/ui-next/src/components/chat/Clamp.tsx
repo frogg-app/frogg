@@ -8,7 +8,7 @@ import {
   View,
   type LayoutChangeEvent,
 } from "react-native";
-import { color, ease, font, glide, web } from "../../theme/tokens";
+import { alpha, color, ease, font, glide, web } from "../../theme/tokens";
 import { useReducedMotion } from "../Meter";
 import { T } from "../Text";
 
@@ -100,10 +100,10 @@ const s = StyleSheet.create({
     right: 0,
     bottom: 0,
     height: FADE,
-    backgroundColor: "rgba(8,11,13,0.6)",
+    backgroundColor: alpha(color.bg, 0.6),
     ...web({
       backgroundColor: "transparent",
-      backgroundImage: `linear-gradient(180deg, rgba(8,11,13,0) 0%, ${color.bg} 100%)`,
+      backgroundImage: `linear-gradient(180deg, ${alpha(color.bg, 0)} 0%, ${color.bg} 100%)`,
     }),
   },
   bar: {

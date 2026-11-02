@@ -29,3 +29,14 @@ test("keeps the useful menu accelerators", () => {
   assert.equal(key("a", { control: true }), null);
   assert.equal(acceleratorFor({ type: "keyUp", key: "F5" }), null);
 });
+
+test("the title bar overlay follows the saved theme", () => {
+  const options = windowChromeOptions("win32", {
+    bg: "#f5f6f8",
+    faint: "#5f6873",
+    accent: "#2557c2",
+    symbols: "#4a535e",
+  });
+  assert.equal(options.titleBarOverlay.color, "#f5f6f8");
+  assert.equal(options.titleBarOverlay.symbolColor, "#4a535e");
+});

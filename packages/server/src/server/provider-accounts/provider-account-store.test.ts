@@ -485,6 +485,18 @@ describe("ProviderAccountStore rename, sign-out and portability", () => {
     expect(store.systemPromptFor("claude", account.id)).toBe("Be terse.");
   });
 
+  it("preferences: keeps launch flags, trimmed, and drops an all-blank list", () => {
+    const account = createAccount("peter");
+
+    store.setPreferences(account.id, { launchArgs: [" --chrome ", "", "--remote-control", "mac"] });
+    expect(store.findAccount(account.id)?.preferences).toEqual({
+      launchArgs: ["--chrome", "--remote-control", "mac"],
+    });
+
+    store.setPreferences(account.id, { launchArgs: ["  "] });
+    expect(store.findAccount(account.id)?.preferences).toBeUndefined();
+  });
+
   it("preferences: null or all-blank clears them", () => {
     const account = createAccount("peter");
     store.setPreferences(account.id, { color: "teal" });

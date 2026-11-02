@@ -17,6 +17,7 @@ import {
 } from "./hosts";
 import { clientId, clientIdReady, deviceLabel } from "./client-id";
 import type { Session, TimelineEntry } from "./types";
+import { track, usageSlug } from "../usage-stats/store";
 
 type Conn = "connecting" | "online" | "offline";
 const CONN: Partial<Record<string, Conn>> = { connected: "online", connecting: "connecting" };
@@ -496,6 +497,7 @@ export async function createSession(input: {
     initialPrompt: input.initialPrompt,
     worktree: input.worktree,
   });
+  track("session_started", { provider: usageSlug(input.provider) });
   useDaemon.setState((st) => ({
     sessions: {
       ...st.sessions,
@@ -524,4 +526,13 @@ export async function setAgentModel(agentId: string, model: string): Promise<voi
 
 export async function setAgentMode(agentId: string, modeId: string): Promise<void> {
   await client?.setAgentMode(agentId, modeId);
+}
+
+/** Sets the agent's thinking/effort level; the provider applies it live where it can. */
+export async function setAgentThinking(
+  agentId: string,
+  thinkingOptionId: string | null,
+): Promise<string | null> {
+  const notice = await client?.setAgentThinkingOption(agentId, thinkingOptionId);
+  return notice?.message ?? null;
 }

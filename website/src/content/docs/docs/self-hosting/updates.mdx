@@ -17,8 +17,9 @@ frogg update --to 0.6.18        # pin a version, including older ones
 ```
 
 There is one daemon install. It updates on one of two channels: **stable** takes stable
-releases only; **beta** takes the newest release of either kind, prereleases (`-beta.N`)
-included, so a prerelease daemon moves on to the next stable release when that is newer. Both
+releases only; **beta** takes the newest stable or `-beta.N` release, so a prerelease daemon
+moves on to the next stable release when that is newer. Frogg Next's `-next.N` daemons are
+skipped by both; install one by exact version. Both
 install into the same home, service and port. Without `--channel`, the CLI (and a client check
 that names no channel) uses the running version's channel: a `-beta.N` version is on beta,
 anything else on stable.
@@ -137,8 +138,9 @@ Prereleases carry the same daemon bundles as stable releases, under the same ide
 one fresh with the install script:
 
 ```sh
-curl -fsSL https://frogg.app/install.sh | FROGG_CHANNEL=beta bash          # newest prerelease
+curl -fsSL https://frogg.app/install.sh | FROGG_CHANNEL=beta bash          # newest -beta.N or stable
 curl -fsSL https://frogg.app/install.sh | FROGG_VERSION=1.6.14-beta.2 bash # an exact one
+curl -fsSL https://frogg.app/install.sh | FROGG_VERSION=1.6.14-next.1 bash # Frogg Next's daemon
 ```
 
 For Docker, a prerelease image is pushed under its exact tag only:
@@ -183,7 +185,7 @@ Desktop and mobile apps don't update in place across the rename; install them ag
 ## Desktop and mobile apps
 
 - **Desktop** checks GitHub releases and installs on quit. The classic app follows stable
-  releases; Frogg Next, which prereleases ship, follows prereleases. See
+  releases, the beta app `-beta.N` releases, and Frogg Next `-next.N` releases. See
   [desktop app](/docs/desktop-mobile-cli/desktop/#updates).
 - **Android** checks GitHub releases in the app and installs the new APK itself, on the same
   split. See [Android and iOS](/docs/desktop-mobile-cli/mobile/#updates).

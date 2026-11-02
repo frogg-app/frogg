@@ -44,6 +44,7 @@ export function simulatedRpcs(emit: Emit): Rpcs {
     duplicateFileEntry: files.duplicateFileEntry,
     deleteFileEntry: files.deleteFileEntry,
     uploadFile: files.uploadFile,
+    uploadFileStream: files.uploadFileStream,
     getDirectorySuggestions: files.getDirectorySuggestions,
     subscribeCheckoutDiff: async () => ({ files: files.labDiff(), error: null }),
     checkoutStreamsGetGraph,

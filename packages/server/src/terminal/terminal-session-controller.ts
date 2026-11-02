@@ -37,6 +37,9 @@ import { applyTerminalSize } from "./terminal-size-ownership.js";
 import type { TerminalActivity } from "@frogg/protocol/terminal-activity";
 import { terminalSubscriptionKey } from "@frogg/protocol/terminal-subscription-key";
 
+/** Workspace tag for provider sign-in terminals started outside any workspace. */
+export const PROVIDER_LOGIN_WORKSPACE_ID = "provider-login";
+
 const MAX_TERMINAL_STREAM_SLOTS = 256;
 
 interface BufferedTerminalOutput {
@@ -558,7 +561,11 @@ export class TerminalSessionController {
         return;
       }
 
-      const workspaceId = msg.workspaceId ?? (await this.resolveLegacyTerminalWorkspaceId(msg.cwd));
+      // A provider sign-in terminal needs no project: a host with none yet must still sign in.
+      const workspaceId =
+        msg.workspaceId ??
+        (await this.resolveLegacyTerminalWorkspaceId(msg.cwd)) ??
+        (msg.providerAccountId ? PROVIDER_LOGIN_WORKSPACE_ID : null);
       if (!workspaceId) {
         this.emit({
           type: "create_terminal_response",

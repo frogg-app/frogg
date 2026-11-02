@@ -164,7 +164,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
     backgroundColor: color.cyan,
-    ...web({ backgroundImage: "linear-gradient(90deg,#7fd9e6,#25b5c8)" }),
+    ...web({ backgroundImage: `linear-gradient(90deg,${color.cyan2},${color.cyan})` }),
   },
   mainHover: { opacity: 0.9 },
   off: { backgroundColor: color.raise, ...web({ backgroundImage: "none" }) },

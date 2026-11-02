@@ -2,10 +2,18 @@
 // desktop and tablet, full screen on phones), and shows the resume chip while it's minimised.
 import { Check, Sparkles, X } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Modal, Platform, Pressable, StyleSheet, View, useWindowDimensions } from "react-native";
+import {
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  View,
+  useWindowDimensions,
+  type LayoutChangeEvent,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { hostsReady, useHosts } from "../../daemon/hosts";
-import { color, motion, web } from "../../theme/tokens";
+import { alpha, color, motion, web } from "../../theme/tokens";
 import { useUi } from "../../ui-store";
 import { Cut } from "../Cut";
 import { Num } from "../CountUp";
@@ -13,6 +21,7 @@ import { useHostView } from "../hosts/state";
 import { exitPointer, riseStyle, scrimStyle, usePresence } from "../presence";
 import { useModalLayer } from "../shell/modalStack";
 import { T } from "../Text";
+import { setToastFloor } from "../toast/store";
 import { OnboardingCard } from "./Card";
 import { nextStep, progressOf, STEPS } from "./model";
 import { useAway } from "./nav";
@@ -78,26 +87,18 @@ function useAutoResume(): void {
 }
 
 /**
- * `chipLeft` places the resume chip bottom-left, clear of the toast stack (desktop passes the
- * expanded rail's width: RN-web views each stack at z-index 0, so the rail can't cover it).
- * Without it the chip sits bottom-right.
+ * While minimised, the resume chip lives bottom-right. Desktop and tablet dock it at the right
+ * end of the status bar (`StatusBar` renders `ResumeChip docked`), so it never covers the chat
+ * or composer; phones float it `chipBottom` above the edge, with the toast stack lifted above it.
  */
-export function Onboarding({
-  phone,
-  chipBottom,
-  chipLeft,
-}: {
-  phone: boolean;
-  chipBottom: number;
-  chipLeft?: number;
-}) {
+export function Onboarding({ phone, chipBottom }: { phone: boolean; chipBottom?: number }) {
   useFirstRun();
   useAutoResume();
   const status = useOnboarding((st) => st.status);
   return (
     <>
       <OnboardingModal phone={phone} open={status === "active"} />
-      {status === "minimised" && <ResumeChip bottom={chipBottom} left={chipLeft} />}
+      {status === "minimised" && chipBottom !== undefined && <ResumeChip bottom={chipBottom} />}
     </>
   );
 }
@@ -155,8 +156,11 @@ function OnboardingModal({ phone, open }: { phone: boolean; open: boolean }) {
   );
 }
 
-/** Bottom-right while minimised: progress, resume, dismiss. Turns mint when the step it left for is done. */
-export function ResumeChip({ bottom, left }: { bottom: number; left?: number }) {
+/**
+ * Bottom-right while minimised: progress, resume, dismiss. Turns mint when the step it left for
+ * is done. `docked` renders it in flow as a status bar segment instead of a floating card.
+ */
+export function ResumeChip({ bottom = 16, docked }: { bottom?: number; docked?: boolean }) {
   const done = useDone();
   const level = useOnboarding((st) => st.level);
   const status = useOnboarding((st) => st.status);
@@ -171,19 +175,31 @@ export function ResumeChip({ bottom, left }: { bottom: number; left?: number }) 
     if (at && done.has(at)) openOnboarding(nextStep(at, done, level));
     else openOnboarding();
   }, [done, level]);
-  const place = useMemo(
-    () => [s.chipPlace, left === undefined ? s.chipRight : { left }, { bottom }],
-    [bottom, left],
-  );
+  const place = useMemo(() => [s.chipPlace, s.chipRight, { bottom }], [bottom]);
+  // Toasts share this corner: hold the chip's height (and a gap) under their stack.
+  const [height, setHeight] = useState(0);
+  const measure = useCallback((e: LayoutChangeEvent) => setHeight(e.nativeEvent.layout.height), []);
+  const shown = status === "minimised" && !docked;
+  useEffect(() => {
+    setToastFloor(shown && height ? bottom + height + 8 : 0);
+    return () => setToastFloor(0);
+  }, [shown, height, bottom]);
   const format = useCallback((v: number) => `${Math.round(v)}/${total}`, [total]);
   if (status !== "minimised") return null;
   const label = STEPS.find((x) => x.id === awayStep)?.label;
   let title = started ? "Resume getting started" : "New here? Take the tour";
   if (finishedAway && label) title = `${label} done · continue`;
   return (
-    <View style={place} pointerEvents="box-none">
-      <Cut size={10} style={[s.chip, s.chipEnter, finishedAway && s.chipOk]}>
-        <Pressable onPress={resume} style={s.chipMain} accessibilityRole="button">
+    <View style={docked ? s.dock : place} pointerEvents="box-none" onLayout={measure}>
+      <Cut
+        size={docked ? 0 : 10}
+        style={[s.chip, docked && s.chipDocked, s.chipEnter, finishedAway && s.chipOk]}
+      >
+        <Pressable
+          onPress={resume}
+          style={[s.chipMain, docked && s.chipMainDocked]}
+          accessibilityRole="button"
+        >
           {({ hovered }) => (
             <>
               {finishedAway ? (
@@ -193,7 +209,7 @@ export function ResumeChip({ bottom, left }: { bottom: number; left?: number }) 
               ) : (
                 <Sparkles size={15} color={color.cyan2} strokeWidth={1.6} />
               )}
-              <T style={[s.chipT, hovered && s.chipTH]}>{title}</T>
+              <T style={[s.chipT, docked && s.chipTDocked, hovered && s.chipTH]}>{title}</T>
               {started && <Num value={n} format={format} duration={FILL_MS} style={s.chipN} />}
             </>
           )}
@@ -203,9 +219,11 @@ export function ResumeChip({ bottom, left }: { bottom: number; left?: number }) 
           accessibilityRole="button"
           accessibilityLabel="Dismiss getting started"
           hitSlop={8}
-          style={s.chipX}
+          style={[s.chipX, docked && s.chipXDocked]}
         >
-          {({ hovered }) => <X size={13} color={hovered ? color.text : color.faint} />}
+          {({ hovered }) => (
+            <X size={docked ? 11 : 13} color={hovered ? color.text : color.faint} />
+          )}
         </Pressable>
       </Cut>
     </View>
@@ -216,10 +234,12 @@ const s = StyleSheet.create({
   wrap: { flex: 1, alignItems: "center", justifyContent: "center" },
   scrim: { ...StyleSheet.absoluteFillObject, backgroundColor: color.scrim },
   box: {
-    shadowColor: "#000",
+    shadowColor: color.shadow,
     shadowOpacity: 0.55,
     shadowRadius: 32,
-    ...web({ boxShadow: "0 24px 64px rgba(0,0,0,0.55), 0 0 0 1px rgba(127,217,230,0.06)" }),
+    ...web({
+      boxShadow: `0 24px 64px ${alpha(color.shadow, 0.55)}, 0 0 0 1px ${alpha(color.cyan2, 0.06)}`,
+    }),
   },
   phone: { flex: 1, backgroundColor: color.bg2 },
   fill: { flex: 1 },
@@ -231,10 +251,26 @@ const s = StyleSheet.create({
     backgroundColor: color.raise,
     borderWidth: 1,
     borderColor: color.line2,
-    ...web({ boxShadow: "0 10px 28px rgba(0,0,0,0.45)" }),
+    ...web({ boxShadow: `0 10px 28px ${alpha(color.shadow, 0.45)}` }),
+  },
+  dock: { flexDirection: "row", alignItems: "stretch" },
+  chipDocked: {
+    borderWidth: 0,
+    borderLeftWidth: 1,
+    borderColor: color.line,
+    backgroundColor: color.cyanWash,
+    ...web({ boxShadow: "none" }),
+  },
+  chipMainDocked: { gap: 6, paddingLeft: 10, paddingVertical: 0, alignSelf: "stretch" },
+  chipTDocked: { fontSize: 11.5 },
+  chipXDocked: {
+    paddingHorizontal: 8,
+    paddingVertical: 0,
+    alignSelf: "stretch",
+    justifyContent: "center",
   },
   chipEnter: motion.enter,
-  chipOk: { borderColor: "rgba(63,207,142,0.45)" },
+  chipOk: { borderColor: alpha(color.mint, 0.45) },
   snap: motion.snap,
   chipMain: {
     flexDirection: "row",

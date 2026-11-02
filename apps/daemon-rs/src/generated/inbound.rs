@@ -347,6 +347,8 @@ pub enum SessionMessage {
     ProviderUpdateInstallRequest(ProviderUpdateInstallRequest),
     #[serde(rename = "provider.update.set_preferences.request")]
     ProviderUpdateSetPreferencesRequest(ProviderUpdateSetPreferencesRequest),
+    #[serde(rename = "provider.claude_plugins.list.request")]
+    ProviderClaudePluginsListRequest(ProviderClaudePluginsListRequest),
     #[serde(rename = "provider.account.list.request")]
     ProviderAccountListRequest(ProviderAccountListRequest),
     #[serde(rename = "provider.account.create.request")]
@@ -2087,6 +2089,8 @@ pub struct SetDaemonConfigRequestConfig {
         skip_serializing_if = "Option::is_none"
     )]
     pub auto_resume_on_usage_limit: Option<bool>,
+    #[serde(rename = "usageStats", skip_serializing_if = "Option::is_none")]
+    pub usage_stats: Option<bool>,
     #[serde(rename = "companionModel", skip_serializing_if = "Option::is_none")]
     pub companion_model: Option<serde_json::Value>,
     #[serde(rename = "cleanCut", skip_serializing_if = "Option::is_none")]
@@ -2666,6 +2670,12 @@ pub struct ProviderUpdateSetPreferencesRequest {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderClaudePluginsListRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProviderAccountListRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub provider: Option<String>,
@@ -2783,6 +2793,8 @@ pub struct ProviderAccountImportRequestBundleAccountsItemAccountPreferences {
         skip_serializing_if = "Option::is_none"
     )]
     pub default_thinking_option_id: Option<String>,
+    #[serde(rename = "launchArgs", skip_serializing_if = "Option::is_none")]
+    pub launch_args: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

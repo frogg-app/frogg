@@ -7,7 +7,7 @@ import {
   View,
   type ViewStyle,
 } from "react-native";
-import { color, glide } from "../theme/tokens";
+import { alpha, color, glide } from "../theme/tokens";
 import { fmt, Num } from "./CountUp";
 import { T } from "./Text";
 
@@ -295,7 +295,7 @@ const s = StyleSheet.create({
   pctNone: { color: color.faint, fontSize: 12 },
   bar: { flexDirection: "row", gap: 2, height: 6 },
   cellBox: { flex: 1 },
-  cellOff: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(255,255,255,0.07)" },
+  cellOff: { ...StyleSheet.absoluteFillObject, backgroundColor: alpha(color.ink, 0.07) },
   fillAbs: StyleSheet.absoluteFillObject as ViewStyle,
   glow: { backgroundColor: color.text },
   detail: { fontSize: 10.5, color: color.faint },

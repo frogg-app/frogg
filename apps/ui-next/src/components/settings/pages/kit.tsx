@@ -5,7 +5,7 @@ import type { LucideIcon } from "lucide-react-native";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Animated, Easing, StyleSheet, TextInput, View, type TextInputProps } from "react-native";
 import { getClient, useDaemon } from "../../../daemon/store";
-import { color, font, glide, web } from "../../../theme/tokens";
+import { alpha, color, font, glide, web } from "../../../theme/tokens";
 import {
   levelOf,
   useLabelFlash,
@@ -376,8 +376,10 @@ export const s = StyleSheet.create({
     marginBottom: 26,
     backgroundColor: color.panel,
     borderWidth: 1,
-    borderColor: "rgba(37,181,200,0.18)",
-    ...web({ backgroundImage: "linear-gradient(135deg, rgba(37,181,200,0.08), transparent 60%)" }),
+    borderColor: alpha(color.cyan, 0.18),
+    ...web({
+      backgroundImage: `linear-gradient(135deg, ${alpha(color.cyan, 0.08)}, transparent 60%)`,
+    }),
   },
   bannerText: { flex: 1, minWidth: 200 },
   bannerT: { fontWeight: "600", fontSize: 14.5 },
@@ -398,7 +400,7 @@ export const s = StyleSheet.create({
   acts: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 },
   block: { paddingHorizontal: 16, paddingVertical: 13, gap: 10 },
   meterRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  meter: { width: 140, height: 6, backgroundColor: "rgba(255,255,255,0.08)" },
+  meter: { width: 140, height: 6, backgroundColor: alpha(color.ink, 0.08) },
   fill: { height: 6 },
   meterGlow: { ...StyleSheet.absoluteFillObject, backgroundColor: color.text },
   meterEdge: {

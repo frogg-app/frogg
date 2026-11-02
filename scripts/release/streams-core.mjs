@@ -205,3 +205,21 @@ function compareCoreParts(a, b) {
   }
   return 0;
 }
+
+/**
+ * The next Frogg Next prerelease: `<core>-next.N`, where the core is the development branch's
+ * version line (main's `1.6.14-beta.5` gives `1.6.14-next.N`). The counter continues while the
+ * next branch is on that core and restarts at 1 when the development line moves on. At an equal
+ * core `next` sorts above `beta`, so a Frogg Next prerelease is the newest of its core.
+ */
+export function nextFroggNextVersion({ nextVersion, developmentVersion }) {
+  const development = parseReleaseVersion(developmentVersion);
+  const current = /^(?<core>\d+\.\d+\.\d+)-next\.(?<n>\d+)$/.exec(nextVersion ?? "")?.groups;
+  if (current && current.core === development.baseVersion)
+    return `${current.core}-next.${Number(current.n) + 1}`;
+  if (current && compareCore(current.core, development.baseVersion) > 0)
+    throw new Error(
+      `The next branch (${nextVersion}) is ahead of the development line (${developmentVersion}); sync it first.`,
+    );
+  return `${development.baseVersion}-next.1`;
+}

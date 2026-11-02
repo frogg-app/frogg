@@ -30,13 +30,25 @@ export const useScm = create<ScmState>(() => ({
 
 let subId: string | null = null;
 let unsub: (() => void) | null = null;
+/** Set once the user picks a comparison; until then a clean tree on a branch ahead shows the branch. */
+let compareChosen = false;
 onHostSwitch(() => {
   subId = null;
   unsub = null;
+  compareChosen = false;
   useScm.setState({ cwd: null, status: null, files: null, error: null });
 });
 
-/** Point source control at a checkout and keep its diff live. */
+/** Whether the branch has commits its base lacks: what an agent that committed its work leaves. */
+function aheadOfBase(status: CheckoutStatus | null): boolean {
+  return !!status?.isGit && !!status.baseRef && (status.aheadBehind?.ahead ?? 0) > 0;
+}
+
+/**
+ * Point source control at a checkout and keep its diff live. Shows uncommitted changes, unless
+ * there are none and the branch is ahead of its base (the agent committed): then the branch's
+ * changes against the base, so a review is never empty while there is work to see.
+ */
 export async function watchCheckout(
   cwd: string,
   compare: Compare = useScm.getState().compare,
@@ -44,9 +56,11 @@ export async function watchCheckout(
   const client = getClient();
   if (!client) return;
   const st = useScm.getState();
-  if (st.cwd === cwd && st.compare === compare && subId) return;
+  if (st.cwd === cwd && st.compare === compare && subId && st.files !== null) return;
+  if (st.cwd !== cwd) compareChosen = false;
   if (subId) client.unsubscribeCheckoutDiff(subId);
-  subId = `ui-next-scm-${Date.now()}`;
+  const mine = `ui-next-scm-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  subId = mine;
   useScm.setState({ cwd, compare, files: null, error: null });
   unsub ??= client.subscribeRawMessages((m) => {
     if (m.type === "checkout_diff_update" && m.payload.subscriptionId === subId) {
@@ -54,15 +68,22 @@ export async function watchCheckout(
       void refreshStatus();
     }
   });
-  const [status, diff] = await Promise.all([
-    client.getCheckoutStatus(cwd),
-    client.subscribeCheckoutDiff(cwd, { mode: compare }, { subscriptionId: subId }),
-  ]);
-  useScm.setState({
-    status,
-    files: diff.files,
-    error: diff.error?.message ?? null,
-  });
+  try {
+    const [status, diff] = await Promise.all([
+      client.getCheckoutStatus(cwd),
+      client.subscribeCheckoutDiff(cwd, { mode: compare }, { subscriptionId: mine }),
+    ]);
+    // A newer call (another checkout or comparison) owns the panel now.
+    if (subId !== mine) return;
+    useScm.setState({ status, files: diff.files, error: diff.error?.message ?? null });
+    if (compare === "uncommitted" && !compareChosen && !diff.files.length && aheadOfBase(status))
+      await watchCheckout(cwd, "base");
+  } catch (e) {
+    if (subId !== mine) return;
+    // Let the next call retry instead of short-circuiting on a subscription that never answered.
+    subId = null;
+    useScm.setState({ files: [], error: e instanceof Error ? e.message : String(e) });
+  }
 }
 
 async function refreshStatus() {
@@ -94,6 +115,7 @@ export const commit = (message: string) =>
 export const pull = () => run("pull", (cwd) => getClient()!.checkoutPull(cwd));
 export const push = () => run("push", (cwd) => getClient()!.checkoutPush(cwd));
 export const setCompare = (compare: Compare) => {
+  compareChosen = true;
   const { cwd } = useScm.getState();
   if (cwd) void watchCheckout(cwd, compare);
 };

@@ -9,7 +9,7 @@ import {
   type HostLink,
 } from "../../daemon/hosts";
 import { connect } from "../../daemon/store";
-import { color, motion, stateMotion } from "../../theme/tokens";
+import { alpha, color, motion, stateMotion } from "../../theme/tokens";
 import { Button } from "../Button";
 import { T } from "../Text";
 import { authRefusal, identityMismatch, offlineReason, type IdentityMismatch } from "./access";
@@ -181,9 +181,9 @@ const s = StyleSheet.create({
     gap: 10,
     borderLeftWidth: 2,
     borderLeftColor: color.coral,
-    backgroundColor: "rgba(255,107,107,0.06)",
+    backgroundColor: alpha(color.coral, 0.06),
   },
-  bannerWait: { borderLeftColor: color.amber, backgroundColor: "rgba(245,184,74,0.05)" },
+  bannerWait: { borderLeftColor: color.amber, backgroundColor: alpha(color.amber, 0.05) },
   bannerHead: { flexDirection: "row", alignItems: "center", gap: 10 },
   flag: { width: 10, height: 10, backgroundColor: color.coral },
   flagWait: { backgroundColor: color.amber },

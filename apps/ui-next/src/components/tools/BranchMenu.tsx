@@ -8,7 +8,7 @@ import {
   useScmExtra,
   type BranchInfo,
 } from "../../daemon/scm";
-import { color, font, web } from "../../theme/tokens";
+import { alpha, color, font, web } from "../../theme/tokens";
 import { T } from "../Text";
 import { Popover, type Rect } from "./Menu";
 
@@ -186,8 +186,8 @@ const s = StyleSheet.create({
     paddingVertical: 8,
     marginHorizontal: 4,
   },
-  rowHover: { backgroundColor: "rgba(37,181,200,0.1)" },
-  rowOn: { backgroundColor: "rgba(127,217,230,0.08)" },
+  rowHover: { backgroundColor: alpha(color.cyan, 0.1) },
+  rowOn: { backgroundColor: alpha(color.cyan2, 0.08) },
   flex: { flex: 1 },
   name: { fontSize: 13, color: color.text },
   sub: { fontSize: 10.5, color: color.faint, marginTop: 1 },
@@ -198,7 +198,7 @@ const s = StyleSheet.create({
     margin: 6,
     marginTop: 4,
     padding: 10,
-    backgroundColor: "rgba(232,179,57,0.07)",
+    backgroundColor: alpha(color.amber, 0.07),
   },
   diamond: { width: 7, height: 7, backgroundColor: color.amber, transform: [{ rotate: "45deg" }] },
   warnText: { flex: 1, fontSize: 12, color: color.muted },

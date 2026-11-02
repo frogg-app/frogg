@@ -58,16 +58,20 @@ try {
   // Nothing is saved, so the app opens on pairing rather than an endless "disconnected".
   await page.getByText("Paste a link or enter the code").waitFor({ timeout: 15_000 });
 
-  // A second launch exits and passes its link to this window, which opens the confirm sheet.
-  const second = spawn(executable, [...args, pairLink], { env, stdio: "ignore" });
-  const code = await new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error("the second launch kept running")), 20_000);
-    second.on("exit", (exitCode) => {
-      clearTimeout(timer);
-      resolve(exitCode);
+  // A double click races two more launches: both exit, and one passes its link to this window,
+  // which opens the confirm sheet.
+  const launch = (extra) => {
+    const child = spawn(executable, [...args, ...extra], { env, stdio: "ignore" });
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error("a second launch kept running")), 20_000);
+      child.on("exit", (exitCode) => {
+        clearTimeout(timer);
+        resolve(exitCode);
+      });
     });
-  });
-  assert.equal(code, 0, "the second launch exits cleanly");
+  };
+  const codes = await Promise.all([launch([pairLink]), launch([])]);
+  assert.deepEqual(codes, [0, 0], "the extra launches exit cleanly");
   await page.getByText("smoke-host").first().waitFor({ timeout: 15_000 });
   assert.equal((await application.windows()).length, 1, "still one window");
   assert.deepEqual(errors, []);

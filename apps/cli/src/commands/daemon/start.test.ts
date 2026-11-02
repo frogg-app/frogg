@@ -48,6 +48,10 @@ class FakeStartRuntime implements StartRuntime {
   registration: ServiceRegistration | null = null;
   started: ServiceRegistration[] = [];
   serviceFailure: Error | null = null;
+  runKeyUpgrades = 0;
+  upgradeRunKey = () => {
+    this.runKeyUpgrades += 1;
+  };
   detectService = () => this.registration;
   startService = (registration: ServiceRegistration) => {
     if (this.serviceFailure) throw this.serviceFailure;
@@ -97,6 +101,15 @@ describe("daemon start with a registered service", () => {
     await expect(runStart({}, runtime)).rejects.toThrow("exit:1");
     expect(runtime.errors[0]).toContain("unit masked");
     expect(runtime.errors[1]).toContain("--foreground");
+  });
+});
+
+describe("daemon start on an installed Windows host", () => {
+  test("upgrades the login Run key even when a daemon is already running", async () => {
+    const runtime = new FakeStartRuntime();
+    runtime.states = [{ running: true, pidInfo: { pid: 1234 } }];
+    await runStart({}, runtime);
+    expect(runtime.runKeyUpgrades).toBe(1);
   });
 });
 

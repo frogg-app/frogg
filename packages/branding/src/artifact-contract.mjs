@@ -80,3 +80,15 @@ export function froggNextFeedNames(feedPrefix = froggNextFeedPrefix) {
 export function froggNextChecksumsName(version, prefix = froggNextArtifactPrefix) {
   return froggNextArtifactName(version, "SHA256SUMS", prefix);
 }
+
+/**
+ * electron-updater feed files of the classic app per release channel: the stable app reads
+ * `electron-latest*.yml`; frogg beta (the classic app on `-beta.N` prereleases) reads
+ * `electron-beta*.yml`, as it did up to 1.6.14-beta.1.
+ * @param {"stable" | "beta"} channel
+ * @returns {{ win32: string, darwin: string, linux: string }}
+ */
+export function classicFeedNames(channel) {
+  const stem = channel === "beta" ? "electron-beta" : "electron-latest";
+  return { win32: `${stem}.yml`, darwin: `${stem}-mac.yml`, linux: `${stem}-linux.yml` };
+}

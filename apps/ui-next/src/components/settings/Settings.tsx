@@ -2,6 +2,7 @@ import { AppUpdates } from "./pages/AppUpdates";
 import { Developer } from "./pages/Developer";
 import { DesignOptions } from "./pages/DesignOptions";
 import { About } from "./pages/About";
+import { Privacy } from "./pages/Privacy";
 import { Plugins } from "./pages/Plugins";
 import { Metadata } from "./pages/Metadata";
 import { Ci } from "./pages/Ci";
@@ -9,6 +10,7 @@ import { Scripts } from "./pages/Scripts";
 import { Worktrees } from "./pages/Worktrees";
 import { Orchestration } from "./pages/Orchestration";
 import { HostOverview } from "./pages/HostOverview";
+import { ThemeSettings } from "./pages/Appearance";
 import {
   Activity,
   AlertTriangle,
@@ -41,7 +43,7 @@ import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native
 import { loadConfig, patchConfig, useConfig } from "../../daemon/config";
 import { useHosts } from "../../daemon/hosts";
 import { useDaemon } from "../../daemon/store";
-import { color, font, web } from "../../theme/tokens";
+import { alpha, color, font, web } from "../../theme/tokens";
 import { useUi } from "../../ui-store";
 import { Button } from "../Button";
 import { Brackets, BracketScope } from "../Brackets";
@@ -63,6 +65,7 @@ import { ResourcesStorage } from "./pages/ResourcesStorage";
 import { DaemonUpdates } from "./pages/DaemonUpdates";
 import { Providers } from "./pages/Providers";
 import { OnboardingSettings } from "../onboarding/OnboardingSettings";
+import { kbd } from "../../kbd";
 
 type Scope = "You" | "Agents" | "Host" | "Project" | "App";
 interface Page {
@@ -131,7 +134,6 @@ function Automation() {
   );
 }
 
-const THEME_OPTIONS: Array<["dark", string]> = [["dark", "Dark"]];
 const DENSITY_OPTIONS: Array<["compact" | "comfortable", string]> = [
   ["compact", "Compact"],
   ["comfortable", "Comfortable"],
@@ -141,17 +143,17 @@ function Appearance() {
   const [density, setDensity] = useState<"compact" | "comfortable">("comfortable");
   const [motionOn, setMotionOn] = useState(true);
   return (
-    <Section title="Look and feel">
-      <Row label="Theme" hint="Light themes come with the theming pass.">
-        <Seg options={THEME_OPTIONS} value="dark" onChange={noop} />
-      </Row>
-      <Row label="Density">
-        <Seg options={DENSITY_OPTIONS} value={density} onChange={setDensity} />
-      </Row>
-      <Row label="Motion" hint="Rail indicator, bracket and panel transitions." last>
-        <Toggle value={motionOn} onChange={setMotionOn} />
-      </Row>
-    </Section>
+    <>
+      <ThemeSettings />
+      <Section title="Look and feel">
+        <Row label="Density">
+          <Seg options={DENSITY_OPTIONS} value={density} onChange={setDensity} />
+        </Row>
+        <Row label="Motion" hint="Rail indicator, bracket and panel transitions." last>
+          <Toggle value={motionOn} onChange={setMotionOn} />
+        </Row>
+      </Section>
+    </>
   );
 }
 
@@ -171,7 +173,7 @@ function Shortcuts() {
       {SHORTCUTS.map(([label, k]) => (
         <Row key={label} label={label} last={label === SHORTCUTS.at(-1)?.[0]}>
           <T v="mono" style={s.kbd}>
-            {k}
+            {kbd(k)}
           </T>
         </Row>
       ))}
@@ -284,6 +286,7 @@ export const PAGES: Page[] = [
     scope: "App",
     body: OnboardingSettings,
   },
+  { id: "privacy", label: "Privacy & feedback", icon: Shield, scope: "App", body: Privacy },
   { id: "about", label: "About & diagnostics", icon: Activity, scope: "App", body: About },
   { id: "developer", label: "Developer", icon: SquareTerminal, scope: "App", body: Developer },
   { id: "design", label: "Design options", icon: Palette, scope: "App", body: DesignOptions },
@@ -485,7 +488,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
-  itemOn: { backgroundColor: "rgba(127,217,230,0.05)" },
+  itemOn: { backgroundColor: alpha(color.cyan2, 0.05) },
   itemT: { flex: 1, color: color.text },
   itemTMuted: { flex: 1, color: color.muted },
   head: {
@@ -508,7 +511,7 @@ const s = StyleSheet.create({
   title: { fontSize: 21 },
   saving: { color: color.cyan2 },
   badge: {
-    backgroundColor: "rgba(139,124,246,0.12)",
+    backgroundColor: alpha(color.violet, 0.12),
     paddingHorizontal: 8,
     paddingVertical: 4,
   },

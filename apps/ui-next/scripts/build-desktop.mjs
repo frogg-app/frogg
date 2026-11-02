@@ -39,6 +39,7 @@ Object.assign(process.env, {
   EXPO_PUBLIC_FROGG_RELEASE_REPO: identity.repository,
   EXPO_PUBLIC_FROGG_BRAND_ARTIFACT_PREFIX: brand.artifactPrefix,
   EXPO_PUBLIC_FROGG_DAEMON_ARTIFACT_PREFIX: brand.daemonArtifactPrefix,
+  EXPO_PUBLIC_FROGG_COLLECTOR_URL: brand.services.collectorUrl ?? "",
 });
 const icons = path.join(root, ".generated/branding/icons");
 const feeds = feedFileNames(identity);
@@ -176,11 +177,16 @@ if (values["skip-export"]) {
   const indexPath = path.join(stage, "web/index.html");
   const policy =
     "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' ws: wss: https: http:; worker-src 'self' blob:";
+  // The splash paints with the HTML, before the bundle parses, so a launch shows at once.
+  const { injectSplash } = require("../desktop/splash.cjs");
   writeFileSync(
     indexPath,
-    readFileSync(indexPath, "utf8").replace(
-      "<head>",
-      `<head><meta http-equiv="Content-Security-Policy" content="${policy}"><link id="frogg-fonts" rel="stylesheet" href="/desktop-fonts.css">`,
+    injectSplash(
+      readFileSync(indexPath, "utf8").replace(
+        "<head>",
+        `<head><meta http-equiv="Content-Security-Policy" content="${policy}"><link id="frogg-fonts" rel="stylesheet" href="/desktop-fonts.css">`,
+      ),
+      identity.name,
     ),
   );
 }

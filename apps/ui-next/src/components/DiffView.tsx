@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { setCompare, useScm, type DiffFile } from "../daemon/scm";
 import { useFormFactor } from "../theme/layout";
-import { color, font, glide, web } from "../theme/tokens";
+import { alpha, color, font, glide, web } from "../theme/tokens";
 import { Tokens } from "./Code";
 import { useGlide } from "./Glide";
 import { T } from "./Text";
@@ -34,7 +34,8 @@ export function DiffView({ path, onBack }: { path: string; onBack?: () => void }
     ],
     [base],
   );
-  if (empty) return <EmptyDiff compare={compare} base={base} onBack={onBack} />;
+  const ahead = status?.isGit ? (status.aheadBehind?.ahead ?? 0) : 0;
+  if (empty) return <EmptyDiff compare={compare} base={base} ahead={ahead} onBack={onBack} />;
   return (
     <View style={s.root}>
       <View style={s.head}>
@@ -179,14 +180,14 @@ function SegItem<V extends string>({
 }
 
 const bg = {
-  add: "rgba(63,207,142,0.09)",
-  remove: "rgba(255,107,107,0.10)",
+  add: alpha(color.mint, 0.09),
+  remove: alpha(color.coral, 0.1),
   context: "transparent",
   header: "transparent",
 };
 const fg = {
-  add: "#a6ecc8",
-  remove: "#ffb3b3",
+  add: color.addText,
+  remove: color.delText,
   context: color.text,
   header: color.faint,
 };
@@ -196,7 +197,7 @@ const lineBg = StyleSheet.create({
   remove: { backgroundColor: bg.remove },
   context: { backgroundColor: bg.context },
   header: { backgroundColor: bg.header },
-  empty: { backgroundColor: "rgba(255,255,255,0.015)" },
+  empty: { backgroundColor: alpha(color.ink, 0.015) },
 });
 const lineFg = StyleSheet.create({
   add: { color: fg.add },
@@ -281,13 +282,23 @@ function Split({ lines, o, n }: { lines: Line[]; o: number; n: number }) {
 }
 
 /** No changes: the round-4 empty-diff state, still offering the base comparison. */
+function emptyText(compare: "uncommitted" | "base", base: string | null, ahead: number): string {
+  if (compare === "base")
+    return `This branch has nothing that is not already on ${base ?? "its base"}.`;
+  if (ahead > 0 && base)
+    return `Nothing uncommitted. ${ahead === 1 ? "1 commit" : `${ahead} commits`} on this branch ${ahead === 1 ? "is" : "are"} not on ${base} yet.`;
+  return "The agent hasn't edited anything. Changes show up here as soon as a file is touched.";
+}
+
 function EmptyDiff({
   compare,
   base,
+  ahead,
   onBack,
 }: {
   compare: "uncommitted" | "base";
   base: string | null;
+  ahead: number;
   onBack?: () => void;
 }) {
   const vsBase = useCallback(
@@ -306,18 +317,16 @@ function EmptyDiff({
               </Pressable>
             )}
             <T v="display" style={s.name} numberOfLines={2}>
-              No changes in this worktree yet
+              {compare === "uncommitted" && ahead > 0
+                ? "Nothing uncommitted"
+                : "No changes in this worktree yet"}
             </T>
           </View>
         </View>
       </View>
       <View style={s.emptyBody}>
         <View style={s.emptyMark} />
-        <T style={s.emptyText}>
-          {compare === "base"
-            ? `This branch has nothing that is not already on ${base ?? "its base"}.`
-            : "The agent hasn't edited anything. Changes show up here as soon as a file is touched."}
-        </T>
+        <T style={s.emptyText}>{emptyText(compare, base, ahead)}</T>
         {!!base && (
           <Pressable onPress={vsBase} accessibilityRole="button">
             {({ hovered }) => (
@@ -385,7 +394,7 @@ const s = StyleSheet.create({
     borderColor: color.line,
   },
   segI: { paddingHorizontal: 10, paddingVertical: 5 },
-  segPill: { position: "absolute", backgroundColor: "rgba(255,255,255,0.07)" },
+  segPill: { position: "absolute", backgroundColor: alpha(color.ink, 0.07) },
   segHidden: { opacity: 0 },
   hunk: {
     paddingHorizontal: 16,

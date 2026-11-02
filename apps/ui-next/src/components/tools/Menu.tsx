@@ -10,10 +10,11 @@ import {
   View,
   type LayoutChangeEvent,
 } from "react-native";
-import { color, web } from "../../theme/tokens";
+import { alpha, color, web } from "../../theme/tokens";
 import { Cut } from "../Cut";
 import { useModalLayer } from "../shell/modalStack";
 import { T } from "../Text";
+import { kbd } from "../../kbd";
 
 export interface Rect {
   x: number;
@@ -186,7 +187,7 @@ function MenuRow({ item, onClose }: { item: Item; onClose: () => void }) {
           </View>
           {item.kbd && (
             <T v="mono" style={s.kbd}>
-              {item.kbd}
+              {kbd(item.kbd)}
             </T>
           )}
           {item.on && <Check size={13} color={color.cyan2} />}
@@ -207,7 +208,7 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: color.line2,
     paddingVertical: 4,
-    ...web({ boxShadow: "0 16px 40px #000a" }),
+    ...web({ boxShadow: `0 16px 40px ${alpha(color.shadow, 0.67)}` }),
   },
   scroll: { flexGrow: 0 },
   rule: { height: 1, backgroundColor: color.line, marginVertical: 4, marginHorizontal: 6 },
@@ -220,8 +221,8 @@ const s = StyleSheet.create({
     paddingVertical: 7,
     marginHorizontal: 4,
   },
-  rowHover: { backgroundColor: "rgba(37,181,200,0.1)" },
-  rowOn: { backgroundColor: "rgba(127,217,230,0.06)" },
+  rowHover: { backgroundColor: alpha(color.cyan, 0.1) },
+  rowOn: { backgroundColor: alpha(color.cyan2, 0.06) },
   icon: { width: 14, alignItems: "center" },
   body: { flex: 1 },
   label: { fontSize: 13, color: color.text },

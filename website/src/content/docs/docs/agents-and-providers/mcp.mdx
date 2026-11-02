@@ -52,6 +52,12 @@ Without injection, agents can still use the `frogg` CLI from their shell.
 | Providers    | `list_providers`, `list_models`, `inspect_provider` |
 | Permissions  | `list_pending_permissions`, `respond_to_permission` |
 | To-dos       | `todo_list`, `todo_get`, `todo_create`, `todo_update`, `todo_update_plan`, `todo_claim`, `todo_release`, `todo_progress`, `todo_set_status` ([project to-dos](/docs/using-frogg/project-todos/)) |
+| Connectors   | `list_connectors`, `call_connector_tool` ([plugins](/docs/using-frogg/plugins/#what-plugins-add)) |
+
+`list_connectors` shows the plugins enabled on the host, their status and permissions, and the
+agent tools each one offers. `call_connector_tool` runs one of those tools; the plugin uses its
+own credentials, so the agent never sees them. Agents outside chats also get a one-line summary of
+the running connectors in their hidden system context. It doesn't appear in the timeline.
 
 Agents created by an agent run in the background, are labelled with their parent, and
 notify the parent when they finish.

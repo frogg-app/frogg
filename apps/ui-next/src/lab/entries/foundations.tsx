@@ -32,7 +32,8 @@ function Swatches({ map }: { map: Record<string, string> }) {
   );
 }
 
-const Palette = () => <Swatches map={color} />;
+const COLORS: Record<string, string> = { ...color };
+const Palette = () => <Swatches map={COLORS} />;
 const Labels = () => <Swatches map={labelTint} />;
 const Syntax = () => <Swatches map={syntax} />;
 

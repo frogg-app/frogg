@@ -37736,6 +37736,9 @@
                         "autoResumeOnUsageLimit": {
                           "type": "boolean"
                         },
+                        "usageStats": {
+                          "type": "boolean"
+                        },
                         "companionModel": {
                           "type": [
                             "string",
@@ -38259,6 +38262,9 @@
                           "type": "boolean"
                         },
                         "autoResumeOnUsageLimit": {
+                          "type": "boolean"
+                        },
+                        "usageStats": {
                           "type": "boolean"
                         },
                         "companionModel": {
@@ -50653,6 +50659,15 @@
                                     "defaultThinkingOptionId": {
                                       "type": "string",
                                       "minLength": 1
+                                    },
+                                    "launchArgs": {
+                                      "maxItems": 50,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 500
+                                      }
                                     }
                                   },
                                   "additionalProperties": false
@@ -50789,6 +50804,15 @@
                                         "defaultThinkingOptionId": {
                                           "type": "string",
                                           "minLength": 1
+                                        },
+                                        "launchArgs": {
+                                          "maxItems": 50,
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 500
+                                          }
                                         }
                                       },
                                       "additionalProperties": false
@@ -51151,6 +51175,15 @@
                                     "defaultThinkingOptionId": {
                                       "type": "string",
                                       "minLength": 1
+                                    },
+                                    "launchArgs": {
+                                      "maxItems": 50,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 500
+                                      }
                                     }
                                   },
                                   "additionalProperties": false
@@ -51287,6 +51320,15 @@
                                         "defaultThinkingOptionId": {
                                           "type": "string",
                                           "minLength": 1
+                                        },
+                                        "launchArgs": {
+                                          "maxItems": 50,
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 500
+                                          }
                                         }
                                       },
                                       "additionalProperties": false
@@ -52093,6 +52135,167 @@
               "properties": {
                 "type": {
                   "type": "string",
+                  "const": "provider.claude_plugins.list.response"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "sources": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "configDir": {
+                            "type": "string"
+                          },
+                          "accountIds": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "accountNames": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "plugins": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "marketplace": {
+                                  "type": "string"
+                                },
+                                "scope": {
+                                  "type": "string"
+                                },
+                                "projectPath": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "description": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "installedVersion": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "latestVersion": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "updateDue": {
+                                  "type": "boolean"
+                                },
+                                "autoUpdate": {
+                                  "type": "boolean"
+                                },
+                                "lastUpdated": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name",
+                                "marketplace",
+                                "scope",
+                                "projectPath",
+                                "description",
+                                "installedVersion",
+                                "latestVersion",
+                                "updateDue",
+                                "autoUpdate",
+                                "lastUpdated"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "marketplaces": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                },
+                                "autoUpdate": {
+                                  "type": "boolean"
+                                },
+                                "lastUpdated": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "name",
+                                "autoUpdate",
+                                "lastUpdated"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "configDir",
+                          "accountIds",
+                          "accountNames",
+                          "plugins",
+                          "marketplaces"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "error": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "sources",
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
                   "const": "provider.account.list.response"
                 },
                 "payload": {
@@ -52166,6 +52369,15 @@
                               "defaultThinkingOptionId": {
                                 "type": "string",
                                 "minLength": 1
+                              },
+                              "launchArgs": {
+                                "maxItems": 50,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 500
+                                }
                               }
                             },
                             "additionalProperties": false
@@ -52387,6 +52599,15 @@
                               "defaultThinkingOptionId": {
                                 "type": "string",
                                 "minLength": 1
+                              },
+                              "launchArgs": {
+                                "maxItems": 50,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 500
+                                }
                               }
                             },
                             "additionalProperties": false
@@ -52608,6 +52829,15 @@
                               "defaultThinkingOptionId": {
                                 "type": "string",
                                 "minLength": 1
+                              },
+                              "launchArgs": {
+                                "maxItems": 50,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 500
+                                }
                               }
                             },
                             "additionalProperties": false
@@ -52829,6 +53059,15 @@
                               "defaultThinkingOptionId": {
                                 "type": "string",
                                 "minLength": 1
+                              },
+                              "launchArgs": {
+                                "maxItems": 50,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 500
+                                }
                               }
                             },
                             "additionalProperties": false
@@ -53050,6 +53289,15 @@
                               "defaultThinkingOptionId": {
                                 "type": "string",
                                 "minLength": 1
+                              },
+                              "launchArgs": {
+                                "maxItems": 50,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 500
+                                }
                               }
                             },
                             "additionalProperties": false
@@ -53271,6 +53519,15 @@
                               "defaultThinkingOptionId": {
                                 "type": "string",
                                 "minLength": 1
+                              },
+                              "launchArgs": {
+                                "maxItems": 50,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 500
+                                }
                               }
                             },
                             "additionalProperties": false
@@ -53506,6 +53763,15 @@
                                           "defaultThinkingOptionId": {
                                             "type": "string",
                                             "minLength": 1
+                                          },
+                                          "launchArgs": {
+                                            "maxItems": 50,
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string",
+                                              "minLength": 1,
+                                              "maxLength": 500
+                                            }
                                           }
                                         },
                                         "additionalProperties": false
@@ -53662,6 +53928,15 @@
                               "defaultThinkingOptionId": {
                                 "type": "string",
                                 "minLength": 1
+                              },
+                              "launchArgs": {
+                                "maxItems": 50,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 500
+                                }
                               }
                             },
                             "additionalProperties": false
@@ -53883,6 +54158,15 @@
                               "defaultThinkingOptionId": {
                                 "type": "string",
                                 "minLength": 1
+                              },
+                              "launchArgs": {
+                                "maxItems": 50,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 500
+                                }
                               }
                             },
                             "additionalProperties": false
@@ -54104,6 +54388,15 @@
                               "defaultThinkingOptionId": {
                                 "type": "string",
                                 "minLength": 1
+                              },
+                              "launchArgs": {
+                                "maxItems": 50,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 500
+                                }
                               }
                             },
                             "additionalProperties": false

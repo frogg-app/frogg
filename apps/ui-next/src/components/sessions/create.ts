@@ -1,10 +1,8 @@
 // New-session helpers that work against any connected host, not just the active one.
-import { Buffer } from "buffer";
 import type { DaemonClient } from "@frogg/client/internal/daemon-client";
-import type { Picked } from "../chat/actions";
+import { isCancelled, uploadPicked, type Picked, type UploadedFile } from "../chat/upload";
 
 export type HostProviders = Awaited<ReturnType<DaemonClient["getProvidersSnapshot"]>>;
-type Uploaded = NonNullable<Awaited<ReturnType<DaemonClient["uploadFile"]>>["file"]>;
 
 /** A picked file waiting for the session to be created. */
 export interface Draft extends Picked {
@@ -17,23 +15,24 @@ export const toDraft = (p: Picked): Draft => {
   return { ...p, id: `d${seq}` };
 };
 
-export const isImage = (d: Draft) => d.mimeType.startsWith("image/");
+/** Small images go to the model inline; everything else is uploaded as a file. */
+export const isImage = (d: Draft) => d.base64 !== undefined;
 
-/** Images ride inline; other files are uploaded to the chosen host first. */
+/** Images ride inline; other files stream to the chosen host first. */
 export async function prepareDrafts(
   client: DaemonClient,
   drafts: Draft[],
-): Promise<{ images: Array<{ data: string; mimeType: string }>; attachments: Uploaded[] }> {
-  const images = drafts.filter(isImage).map((d) => ({ data: d.base64, mimeType: d.mimeType }));
-  const attachments: Uploaded[] = [];
+): Promise<{ images: Array<{ data: string; mimeType: string }>; attachments: UploadedFile[] }> {
+  const images = drafts.flatMap((d) =>
+    d.base64 !== undefined ? [{ data: d.base64, mimeType: d.mimeType }] : [],
+  );
+  const attachments: UploadedFile[] = [];
   for (const d of drafts.filter((x) => !isImage(x))) {
-    const res = await client.uploadFile({
-      fileName: d.name,
-      mimeType: d.mimeType || "application/octet-stream",
-      bytes: new Uint8Array(Buffer.from(d.base64, "base64")),
-    });
-    if (res.error || !res.file) throw new Error(res.error ?? `Could not upload ${d.name}`);
-    attachments.push(res.file);
+    try {
+      attachments.push(await uploadPicked(client, d, d.id));
+    } catch (e) {
+      throw isCancelled(e) ? new Error(`Upload of ${d.name} cancelled`) : e;
+    }
   }
   return { images, attachments };
 }

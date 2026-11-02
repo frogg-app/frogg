@@ -112,9 +112,10 @@ unpackaged development build. Set the repository and rebuild.
 
 ### `No Electron update feed has been published for this release channel yet.`
 
-The release is missing `electron-latest*.yml`. Those come from the `updater-manifest` job,
-which only runs for full-matrix stable releases. The classic app only reads stable releases;
-prereleases carry Frogg Next's own `<next.feedPrefix>-latest*.yml` feeds instead.
+The release is missing `electron-latest*.yml` (or, for the beta app, `electron-beta*.yml`).
+Those come from the `updater-manifest` job, which only runs for full-matrix stable and `-beta.N`
+releases. The stable app reads stable releases, the beta app `-beta.N` releases; `-next.N`
+releases carry Frogg Next's own `<next.feedPrefix>-latest*.yml` feeds instead.
 
 ### `This release requires a manual upgrade from clients older than X`
 

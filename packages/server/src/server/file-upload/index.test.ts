@@ -9,6 +9,7 @@ import {
   FileTransferOpcode,
   type FileTransferFrame,
 } from "@frogg/protocol/binary-frames/index";
+import { FILE_UPLOAD_MAX_BYTES } from "@frogg/protocol/messages";
 import { FileUploadStore } from "./index.js";
 
 const tempDirs: string[] = [];
@@ -54,6 +55,24 @@ describe("file uploads", () => {
       },
     });
     expect(readFileSync(path, "utf8")).toBe("hello world");
+  });
+
+  it("refuses an upload over the size limit before any bytes are written", async () => {
+    const froggHome = makeFroggHome();
+    const uploads = new FileUploadStore({ froggHome });
+
+    const rejected = uploads.beginUpload({
+      type: "file.upload.request",
+      fileName: "huge.zip",
+      mimeType: "application/zip",
+      size: FILE_UPLOAD_MAX_BYTES + 1,
+      modifiedAt: "2026-05-02T00:00:00.000Z",
+      requestId: "req-huge",
+    });
+    expect(rejected?.payload.file).toBeNull();
+    expect(rejected?.payload.error).toMatch(/too large/);
+    await expect(uploads.receiveFrame(uploadBegins("req-huge"))).resolves.toBeNull();
+    expect(existsSync(join(froggHome, "uploads", "upload_req-huge"))).toBe(false);
   });
 
   it("rejects chunks beyond the declared size and removes the partial file", async () => {

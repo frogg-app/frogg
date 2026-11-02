@@ -169,6 +169,85 @@ it("honors explicit migration instructions after the application architecture ch
   ).rejects.toThrow("no compatible automatic update path");
 });
 
+describe("frogg beta (brand.channel beta)", () => {
+  const release = (tag: string, assets: string[], extra: Record<string, unknown> = {}) => ({
+    tag_name: tag,
+    draft: false,
+    prerelease: !/^v\d+\.\d+\.\d+$/.test(tag),
+    assets: assets.map((name) => ({ name })),
+    ...extra,
+  });
+  const releases = [
+    release("v1.6.14-next.2", ["frogg-next-latest.yml", "release.json"]),
+    release("v1.6.15", ["electron-latest.yml", "release.json"]),
+    release("v1.6.14-beta.5", ["electron-beta.yml", "release.json"]),
+    release("v1.6.14-beta.6", ["electron-beta.yml"], { draft: true }),
+    release("v1.6.14-beta.4", ["electron-beta.yml", "release.json"]),
+  ];
+  const beta = (input: Partial<Parameters<typeof resolveFeed>[0]> = {}) =>
+    resolveElectronUpdateFeed({
+      releaseBase,
+      releaseChannel: "beta",
+      currentVersion: "1.6.14-beta.1",
+      fetchReleases: async () => releases,
+      ...input,
+    });
+
+  it("follows the newest published prerelease that carries electron-beta.yml", async () => {
+    const fetchReleases = vi.fn(async () => releases);
+    const fetchDescriptor = vi.fn(async () => ({
+      ...descriptor("1.6.14-beta.5", "1.6.0"),
+      client: "classic-beta",
+    }));
+    await expect(beta({ fetchReleases, fetchDescriptor })).resolves.toEqual({
+      url: `${releaseBase}/download/v1.6.14-beta.5`,
+      channel: "electron-beta",
+    });
+    expect(fetchReleases).toHaveBeenCalledWith(
+      "https://api.github.com/repos/frogg-app/frogg/releases?per_page=100",
+    );
+    expect(fetchDescriptor).toHaveBeenCalledWith(
+      `${releaseBase}/download/v1.6.14-beta.5/release.json`,
+    );
+  });
+
+  it("uses the selected tag's feed when the release has no descriptor", async () => {
+    await expect(beta()).resolves.toEqual({
+      url: `${releaseBase}/download/v1.6.14-beta.5`,
+      channel: "electron-beta",
+    });
+  });
+
+  it("never takes a Frogg Next prerelease or a stable release", async () => {
+    await expect(beta({ fetchReleases: async () => [releases[0], releases[1]] })).rejects.toThrow(
+      "No published beta release",
+    );
+  });
+
+  it("rejects a descriptor that disagrees with the selected release or names another client", async () => {
+    await expect(
+      beta({ fetchDescriptor: async () => descriptor("1.6.14-beta.4", "1.6.0") }),
+    ).rejects.toThrow("does not match the selected release");
+    await expect(
+      beta({
+        fetchDescriptor: async () => ({
+          ...descriptor("1.6.14-beta.5", "1.6.0"),
+          client: "frogg-next",
+        }),
+      }),
+    ).rejects.toThrow("does not carry this app");
+  });
+
+  it("leaves the stable build on GitHub's latest alias", async () => {
+    const fetchReleases = vi.fn(async () => releases);
+    await expect(resolveElectronUpdateFeed({ releaseBase, fetchReleases })).resolves.toEqual({
+      url: `${releaseBase}/latest/download`,
+      channel: "electron-latest",
+    });
+    expect(fetchReleases).not.toHaveBeenCalled();
+  });
+});
+
 describe("isUpdateRateLimitError", () => {
   it("recognises electron-updater and release-discovery 429s only", () => {
     expect(

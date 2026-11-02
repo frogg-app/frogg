@@ -15,7 +15,7 @@ import { useHosts } from "../daemon/hosts";
 import { parseQuestions } from "./chat/QuestionCard";
 import { answerPermission, connect, useDaemon, useOtherHostSessions } from "../daemon/store";
 import { bucketOf, type Bucket, type Session } from "../daemon/types";
-import { anim, color, font, web } from "../theme/tokens";
+import { alpha, anim, color, font, web } from "../theme/tokens";
 import { useUi } from "../ui-store";
 import { ago } from "../util";
 import { Button } from "./Button";
@@ -25,20 +25,25 @@ import { useRowSubWork } from "./subwork/hooks";
 import { SubWorkBody, SubWorkChip } from "./subwork/views";
 import { useContextMenu } from "./sessions/contextMenu";
 import { isChat, openSheet, projectIdOf, useDirectory, type Prefs } from "./sessions/directory";
+import { buildFamily, familyRows, sessionKey } from "./sessions/family";
 import { ageGroup, HistoryList } from "./sessions/history";
 import { DisplayMenu, ScopeMenu, SessionMenu } from "./sessions/menus";
+import { groupByHost, HostTerminals, useMergedTerminals } from "./sessions/merged";
+import type { TerminalInfo } from "../daemon/terminals";
+import { usePrefs } from "../prefs";
 import { LabelChip, SessionSheets } from "./sessions/sheets";
 import { StatusSummary } from "./sessions/StatusSummary";
 import { StatusGlyph } from "./StatusGlyph";
 import { T } from "./Text";
 import { useAnchor, type Rect } from "./tools/Menu";
 
-const ORDER: Array<{ b: Bucket; label: string }> = [
-  { b: "needs", label: "Needs you" },
-  { b: "failed", label: "Failed" },
-  { b: "review", label: "Ready to review" },
-  { b: "working", label: "Working" },
-  { b: "idle", label: "Idle" },
+/** State sections, most urgent first. A session sits in the most urgent state of itself and its subagents. */
+const ORDER: Array<{ b: Bucket; label: string; hint: string }> = [
+  { b: "needs", label: "Needs you", hint: "Waiting for your approval or answer" },
+  { b: "failed", label: "Failed", hint: "Stopped with an error" },
+  { b: "review", label: "Ready to review", hint: "Finished a turn you have not opened yet" },
+  { b: "working", label: "Working", hint: "Running a turn now" },
+  { b: "idle", label: "Idle", hint: "Waiting for your next message" },
 ];
 
 export function useBuckets() {
@@ -64,7 +69,11 @@ const openImport = () => openSheet({ kind: "import" });
 interface Group {
   key: string;
   label: string;
+  /** What the section means, under its label (state sections). */
+  hint?: string;
   list: Session[];
+  /** Grouped by host (terminals merged in): whose terminals follow the sessions. */
+  hostId?: string | null;
 }
 
 const branchOf = (x: Session) =>
@@ -88,7 +97,7 @@ function sorter(sort: Prefs["sort"], pinned: (x: Session) => boolean) {
 }
 
 /** The scoped, filtered, grouped rows the list shows, plus per-bucket counts for the meter. */
-function useListModel(needle: string) {
+function useListModel(needle: string, terminals: Record<string, TerminalInfo[]> | null) {
   const sessions = useDaemon((s) => s.sessions);
   const others = useOtherHostSessions();
   const hosts = useHosts((s) => s.hosts);
@@ -104,21 +113,24 @@ function useListModel(needle: string) {
     const pool =
       scope === "all" ? [...Object.values(sessions), ...others] : Object.values(sessions);
     const hostName = (x: Session) => hosts.find((h) => h.id === x.hostId)?.name ?? "host";
-    const inScope = pool.filter((x) => {
-      if (isChat(x, dir) !== chats) return false;
-      if (!chats && scope !== "all" && projectIdOf(x, dir) !== scope) return false;
-      return true;
+    // Children take their root's scope and section; their rows live under the parent's.
+    const fam = buildFamily(pool);
+    const { inScope, roots, nested, withKids } = familyRows(pool, fam, {
+      inScope: (root) =>
+        isChat(root, dir) === chats &&
+        (chats || scope === "all" || projectIdOf(root, dir) === scope),
+      passes: (root) =>
+        (prefs.showHidden || !hidden.includes(root.agent.id)) &&
+        (!prefs.label || labelsOf(root).includes(prefs.label)),
+      matches: (x) =>
+        !needle ||
+        `${x.agent.title ?? ""} ${projectName(x)} ${branchOf(x) ?? ""}`
+          .toLowerCase()
+          .includes(needle),
     });
     const counts: Record<Bucket, number> = { needs: 0, failed: 0, review: 0, working: 0, idle: 0 };
     for (const x of inScope) counts[bucketOf(x.agent)] += 1;
-    const visible = inScope.filter((x) => {
-      if (!prefs.showHidden && hidden.includes(x.agent.id)) return false;
-      if (prefs.label && !labelsOf(x).includes(prefs.label)) return false;
-      if (!needle) return true;
-      const hay = `${x.agent.title ?? ""} ${projectName(x)} ${branchOf(x) ?? ""}`.toLowerCase();
-      return hay.includes(needle);
-    });
-    visible.sort(sorter(prefs.sort, pinned));
+    const visible = roots.sort(sorter(prefs.sort, pinned));
     const groups: Group[] = [];
     const push = (key: string, label: string, x: Session) => {
       let g = groups.find((y) => y.key === key);
@@ -134,6 +146,15 @@ function useListModel(needle: string) {
         const g = ageGroup(x.agent.updatedAt);
         push(g, g, x);
       }
+    } else if (terminals) {
+      const activeId = useHosts.getState().activeId;
+      const withTerminals = new Set(
+        Object.entries(terminals)
+          // A project scope is the active host's, so only its terminals join it.
+          .filter(([id, l]) => l.length > 0 && (scope === "all" || id === activeId))
+          .map(([id]) => id),
+      );
+      groups.push(...groupByHost(visible, hosts, activeId, withTerminals));
     } else if (prefs.group === "project") {
       for (const x of visible) {
         if (x.hostId)
@@ -150,8 +171,8 @@ function useListModel(needle: string) {
       groups.sort((a, b) => a.label.localeCompare(b.label));
     } else {
       for (const o of ORDER) {
-        const list = visible.filter((x) => bucketOf(x.agent) === o.b);
-        if (list.length) groups.push({ key: o.b, label: o.label, list });
+        const list = visible.filter((x) => fam.bucketOf(x) === o.b);
+        if (list.length) groups.push({ key: o.b, label: o.label, hint: o.hint, list });
       }
     }
     const activeName = hosts.find((h) => h.id === useHosts.getState().activeId)?.name;
@@ -161,8 +182,9 @@ function useListModel(needle: string) {
       if (x.hostId) return hostName(x);
       return mixed ? activeName : undefined;
     };
-    return { groups, counts, total: inScope.length, scopeName: scopeName(dir), hostOf };
-  }, [sessions, others, hosts, dir, needle]);
+    for (const g of groups) g.list = withKids(g.list);
+    return { groups, counts, total: inScope.length, scopeName: scopeName(dir), hostOf, nested };
+  }, [sessions, others, hosts, dir, needle, terminals]);
 }
 
 function scopeName(d: ReturnType<typeof useDirectory.getState>): string {
@@ -183,7 +205,19 @@ export function SessionList() {
   const [q, setQ] = useState("");
   const scope = useDirectory((d) => d.scope);
   const needle = q.trim().toLowerCase();
-  const { groups, counts, total, scopeName: name, hostOf } = useListModel(needle);
+  // Terminals merged into this list (opt-in): grouped by host, outside the chats and history views.
+  const mergePref = usePrefs((p) => p.sessionsWithTerminals);
+  const merged = mergePref && scope !== "chats" && scope !== "archived";
+  const terminals = useMergedTerminals(merged);
+  const {
+    groups,
+    counts,
+    total,
+    scopeName: name,
+    hostOf,
+    nested,
+  } = useListModel(needle, merged ? terminals : null);
+  const terminalCount = merged ? Object.values(terminals).reduce((n, l) => n + l.length, 0) : 0;
   // Sub-work is read from the active host, so only its own sessions are asked about.
   const ids = useMemo(
     () => groups.flatMap((g) => g.list.filter((x) => !x.hostId).map((x) => x.agent.id)),
@@ -199,7 +233,8 @@ export function SessionList() {
   const history = scope === "archived";
   let body: ReactNode;
   if (history) body = <HistoryList />;
-  else if (!total) body = <Empty name={name} chats={chats} all={scope === "all"} />;
+  else if (!total && !terminalCount)
+    body = <Empty name={name} chats={chats} all={scope === "all"} />;
   else
     body = (
       <>
@@ -221,9 +256,16 @@ export function SessionList() {
             {groups.map((g) => (
               <View key={g.key}>
                 <View style={s.groupHead}>
-                  <T v="label">{g.label}</T>
+                  <View style={s.groupText}>
+                    <T v="label">{g.label}</T>
+                    {g.hint && (
+                      <T style={s.groupHint} numberOfLines={1}>
+                        {g.hint}
+                      </T>
+                    )}
+                  </View>
                   <T v="mono" style={s.groupN}>
-                    {g.list.length}
+                    {g.list.length + (g.hostId ? (terminals[g.hostId]?.length ?? 0) : 0)}
                   </T>
                 </View>
                 {g.list.map((sess) => (
@@ -232,9 +274,17 @@ export function SessionList() {
                     sess={sess}
                     chat={chats}
                     host={hostOf(sess)}
+                    nested={nested.has(sessionKey(sess))}
                     onMenu={openMenu}
                   />
                 ))}
+                {merged && g.hostId && (
+                  <HostTerminals
+                    hostId={g.hostId}
+                    list={terminals[g.hostId] ?? []}
+                    needle={needle}
+                  />
+                )}
               </View>
             ))}
           </BracketScope>
@@ -317,10 +367,13 @@ function Row({
   sess,
   chat,
   host,
+  nested,
   onMenu,
 }: {
   sess: Session;
   chat: boolean;
+  /** Another host's subagent, drawn indented under its parent's row. */
+  nested?: boolean;
   /** Host name, shown when the list mixes sessions from several hosts. */
   host?: string;
   onMenu: (id: string, r: Rect) => void;
@@ -366,7 +419,15 @@ function Row({
     <View ref={ref} collapsable={false}>
       <Pressable onPress={open} onLongPress={longPress} delayLongPress={350}>
         {({ hovered }) => (
-          <View style={[s.row, hovered && s.rowHover, selected && s.rowOn, hidden && s.rowHidden]}>
+          <View
+            style={[
+              s.row,
+              nested && s.rowNested,
+              hovered && s.rowHover,
+              selected && s.rowOn,
+              hidden && s.rowHidden,
+            ]}
+          >
             <Brackets on={selected} />
             <View style={s.rowTop}>
               <View style={s.glyph}>
@@ -391,6 +452,11 @@ function Row({
               </T>
             </View>
             <View style={s.meta}>
+              {nested && (
+                <T v="mono" style={s.branch}>
+                  subagent
+                </T>
+              )}
               {host && (
                 <T v="mono" numberOfLines={1} style={s.host}>
                   {host}
@@ -522,7 +588,7 @@ const s = StyleSheet.create({
   emptyMarkLoop: anim(
     {
       "0%, 55%": { transform: "rotate(45deg) scale(1)", backgroundColor: color.line2 },
-      "70%": { transform: "rotate(105deg) scale(0.86)", backgroundColor: "#3a4d52" },
+      "70%": { transform: "rotate(105deg) scale(0.86)", backgroundColor: color.faint },
       "82%, 100%": { transform: "rotate(135deg) scale(1)", backgroundColor: color.line2 },
     },
     "3.6s",
@@ -534,7 +600,7 @@ const s = StyleSheet.create({
     width: 34,
     height: 34,
     borderWidth: 1,
-    borderColor: "rgba(127,217,230,0.5)",
+    borderColor: alpha(color.cyan2, 0.5),
     opacity: 0,
     transform: [{ rotate: "45deg" }],
   },
@@ -587,6 +653,9 @@ const s = StyleSheet.create({
     paddingBottom: 6,
   },
   groupN: { color: color.faint, fontSize: 10.5 },
+  groupText: { flex: 1, gap: 2 },
+  groupHint: { fontSize: 11, color: color.faint },
+  rowNested: { marginLeft: 26, borderLeftWidth: 1, borderLeftColor: color.line },
   row: {
     marginHorizontal: 8,
     paddingHorizontal: 8,
@@ -595,7 +664,7 @@ const s = StyleSheet.create({
     borderBottomColor: color.line,
   },
   rowHover: { backgroundColor: color.wash },
-  rowOn: { backgroundColor: "rgba(127,217,230,0.05)" },
+  rowOn: { backgroundColor: alpha(color.cyan2, 0.05) },
   rowTop: { flexDirection: "row", alignItems: "flex-start", gap: 4 },
   glyph: { width: 14, paddingTop: 5 },
   title: { flex: 1, fontSize: 13.5, fontWeight: "500" },
@@ -615,7 +684,7 @@ const s = StyleSheet.create({
   permRow: { flexDirection: "row", gap: 8, marginTop: 8, marginLeft: 18 },
   permCmd: {
     flex: 1,
-    backgroundColor: "rgba(245,184,74,0.07)",
+    backgroundColor: alpha(color.amber, 0.07),
     paddingHorizontal: 8,
     justifyContent: "center",
   },
@@ -629,14 +698,14 @@ const s = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     backgroundColor: color.cyan2,
-    ...web({ backgroundImage: "linear-gradient(135deg, #7fd9e6, #25b5c8)" }),
+    ...web({ backgroundImage: `linear-gradient(135deg, ${color.cyan2}, ${color.cyan})` }),
   },
   approveT: { fontWeight: "600", color: color.onAccent, fontSize: 12.5 },
   approveK: {
     fontSize: 9.5,
     color: color.onAccent,
     borderWidth: 1,
-    borderColor: "rgba(4,22,26,0.35)",
+    borderColor: alpha(color.onAccent, 0.35),
     paddingHorizontal: 3,
   },
 });

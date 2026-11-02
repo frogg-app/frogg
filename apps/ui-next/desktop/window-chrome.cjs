@@ -1,7 +1,6 @@
 /** Height of the app-drawn title bar; the native window controls overlay it. Matches TitleBar.tsx. */
 const TITLE_BAR_HEIGHT = 32;
-const BACKGROUND = "#080b0d";
-const SYMBOLS = "#9aa6a9";
+const { DEFAULT_WINDOW_THEME } = require("./window-theme.cjs");
 
 /** Which chrome the UI draws for a platform: "windows", "linux" or "mac". */
 function chromeMode(platform) {
@@ -15,15 +14,20 @@ function chromeMode(platform) {
  * OS caption buttons as a title bar overlay (so Windows 11 snap layouts still open on the
  * maximise button); macOS keeps its traffic lights inset into the same strip.
  */
-function windowChromeOptions(platform) {
+function windowChromeOptions(platform, theme = DEFAULT_WINDOW_THEME) {
   if (platform === "darwin") {
     return { titleBarStyle: "hiddenInset", trafficLightPosition: { x: 12, y: 10 } };
   }
   return {
     titleBarStyle: "hidden",
-    titleBarOverlay: { color: BACKGROUND, symbolColor: SYMBOLS, height: TITLE_BAR_HEIGHT },
+    titleBarOverlay: titleBarOverlay(theme),
     autoHideMenuBar: true,
   };
+}
+
+/** The Windows/Linux caption-button strip, painted in the theme's background. */
+function titleBarOverlay(theme = DEFAULT_WINDOW_THEME) {
+  return { color: theme.bg, symbolColor: theme.symbols, height: TITLE_BAR_HEIGHT };
 }
 
 /**
@@ -44,4 +48,10 @@ function acceleratorFor(input) {
   return null;
 }
 
-module.exports = { TITLE_BAR_HEIGHT, chromeMode, windowChromeOptions, acceleratorFor };
+module.exports = {
+  TITLE_BAR_HEIGHT,
+  chromeMode,
+  windowChromeOptions,
+  titleBarOverlay,
+  acceleratorFor,
+};

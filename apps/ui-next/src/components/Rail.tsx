@@ -20,7 +20,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, View, type LayoutChangeEvent } from "react-native";
 import { usePluginGate } from "../daemon/plugins";
 import { usePrefs, setPref } from "../prefs";
-import { color, ease, font, web } from "../theme/tokens";
+import { alpha, color, ease, font, web } from "../theme/tokens";
 import { useUi, type Tool } from "../ui-store";
 import { Cut } from "./Cut";
 import { Logo } from "./Logo";
@@ -60,9 +60,14 @@ export const GROUPS = [0, 1, 2].map((g) => TOOLS.filter((t) => t.group === g));
 export function useToolShown(): (id: Tool) => boolean {
   const companion = usePluginGate((g) => g.companion);
   const companionPref = usePrefs((p) => p.companion);
+  // Terminals listed in the Sessions list replace the Terminals tool.
+  const merged = usePrefs((p) => p.sessionsWithTerminals);
   return useCallback(
-    (id: Tool) => id !== "companion" || (companion && companionPref),
-    [companion, companionPref],
+    (id: Tool) => {
+      if (id === "terminals") return !merged;
+      return id !== "companion" || (companion && companionPref);
+    },
+    [companion, companionPref, merged],
   );
 }
 
@@ -341,12 +346,14 @@ const s = StyleSheet.create({
   railOpen: { width: EXPANDED },
   railFloat: {
     borderRightColor: color.line2,
-    shadowColor: "#000",
+    shadowColor: color.shadow,
     shadowOpacity: 0.55,
     shadowRadius: 24,
     shadowOffset: { width: 8, height: 0 },
     elevation: 16,
-    ...web({ boxShadow: "10px 0 28px rgba(0,0,0,0.55), 1px 0 0 rgba(127,217,230,0.08)" }),
+    ...web({
+      boxShadow: `10px 0 28px ${alpha(color.shadow, 0.55)}, 1px 0 0 ${alpha(color.cyan2, 0.08)}`,
+    }),
   },
   logo: { flexDirection: "row", alignItems: "center", height: 30, marginBottom: 10 },
   logoMark: { width: 40, alignItems: "center" },
@@ -378,11 +385,11 @@ const s = StyleSheet.create({
   },
   icon: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
   riHover: { backgroundColor: color.wash3 },
-  riFocus: { borderWidth: 1, borderColor: "rgba(127,217,230,0.45)" },
+  riFocus: { borderWidth: 1, borderColor: alpha(color.cyan2, 0.45) },
   riOn: {
-    backgroundColor: "rgba(37,181,200,0.16)",
+    backgroundColor: alpha(color.cyan, 0.16),
     ...web({
-      backgroundImage: "linear-gradient(135deg, #7fd9e62e, #25b5c81a)",
+      backgroundImage: `linear-gradient(135deg, ${alpha(color.cyan2, 0.18)}, ${alpha(color.cyan, 0.1)})`,
     }),
   },
   label: {
@@ -413,7 +420,7 @@ const s = StyleSheet.create({
     height: 28,
     backgroundColor: color.cyan2,
     ...web({
-      backgroundImage: "linear-gradient(#7fd9e6, #25b5c8)",
+      backgroundImage: `linear-gradient(${color.cyan2}, ${color.cyan})`,
       transition: "transform 450ms cubic-bezier(0.22, 1, 0.36, 1)",
     }),
   },
@@ -431,7 +438,7 @@ const s = StyleSheet.create({
     fontSize: 9,
     lineHeight: 14,
     fontWeight: "600",
-    color: "#1a1204",
+    color: color.onWarn,
     textAlign: "center",
   },
 });

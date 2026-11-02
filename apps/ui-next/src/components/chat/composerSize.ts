@@ -141,5 +141,17 @@ export function useComposerHeight(sizeKey: string | undefined, min: number) {
 
   const expanded = size !== "auto";
   const toggle = useCallback(() => setSize(expanded ? "auto" : "expanded"), [expanded, setSize]);
-  return { height: h, setContent, grip: grip.panHandlers, dragging: held, expanded, toggle };
+  // After a send the big editor folds back; a height the user dragged to stays.
+  const collapse = useCallback(() => {
+    if (size === "expanded") setSize("auto");
+  }, [size, setSize]);
+  return {
+    height: h,
+    setContent,
+    grip: grip.panHandlers,
+    dragging: held,
+    expanded,
+    toggle,
+    collapse,
+  };
 }

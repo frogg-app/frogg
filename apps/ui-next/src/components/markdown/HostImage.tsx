@@ -1,9 +1,18 @@
 import { Buffer } from "buffer";
-import { ImageOff } from "lucide-react-native";
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Easing, Image, StyleSheet, View } from "react-native";
+import { ImageOff, Maximize2 } from "lucide-react-native";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { Animated, Easing, Image, Platform, Pressable, StyleSheet, View } from "react-native";
 import { getClient, onHostSwitch } from "../../daemon/store";
-import { anim, color, frames, glide, web } from "../../theme/tokens";
+import { alpha, anim, color, ease, frames, glide, web } from "../../theme/tokens";
+import { Lightbox } from "./Lightbox";
 import { useReducedMotion } from "../Meter";
 import { T } from "../Text";
 import { resolveImage, type ImageSource } from "./syntax";
@@ -104,9 +113,13 @@ export function HostImage({ src, alt }: { src: string; alt: string }) {
   return <Picture {...state} alt={alt} />;
 }
 
-function Picture({ uri, w, h, alt }: Loaded & { alt: string }) {
+/** The loaded picture: fades in; hovering shows an enlarge button, and a press opens it large. */
+export function Picture({ uri, w, h, alt }: Loaded & { alt: string }) {
   const reduced = useReducedMotion();
   const fade = useRef(new Animated.Value(reduced ? 1 : 0)).current;
+  const [big, setBig] = useState(false);
+  const open = useCallback(() => setBig(true), []);
+  const close = useCallback(() => setBig(false), []);
   useEffect(() => {
     if (reduced) return undefined;
     const a = Animated.timing(fade, {
@@ -128,8 +141,23 @@ function Picture({ uri, w, h, alt }: Loaded & { alt: string }) {
     [w, h, fade],
   );
   return (
-    <Animated.View style={box} accessibilityRole="image" accessibilityLabel={alt || "Image"}>
-      <Image source={source} style={s.fill} resizeMode="contain" />
+    <Animated.View style={box}>
+      <Pressable
+        onPress={open}
+        style={s.fill}
+        accessibilityRole="imagebutton"
+        accessibilityLabel={`${alt && alt !== "Image" ? alt : "Image"}, enlarge`}
+      >
+        {({ hovered }) => (
+          <>
+            <Image source={source} style={s.fill} resizeMode="contain" />
+            <View style={[s.enlarge, hovered ? s.enlargeOn : s.enlargeOff]} pointerEvents="none">
+              <Maximize2 size={13} color={color.text} />
+            </View>
+          </>
+        )}
+      </Pressable>
+      <Lightbox uri={uri} alt={alt} open={big} onClose={close} />
     </Animated.View>
   );
 }
@@ -151,7 +179,20 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: color.line,
   },
-  fill: { width: "100%", height: "100%" },
+  fill: { width: "100%", height: "100%", ...web({ cursor: "zoom-in" }) },
+  enlarge: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    padding: 6,
+    backgroundColor: alpha(color.bg, 0.78),
+    borderWidth: 1,
+    borderColor: color.line2,
+    ...web({ transition: `opacity 140ms ${ease}` }),
+  },
+  // Touch has no hover: the button stays visible there, faintly.
+  enlargeOn: { opacity: 1 },
+  enlargeOff: { opacity: Platform.OS === "web" ? 0 : 0.7 },
   failed: {
     flexDirection: "row",
     alignItems: "center",

@@ -468,6 +468,28 @@ export async function uploadFile(input: { fileName: string; mimeType: string; by
   };
 }
 
+/** Streams in a few steps so progress and cancel show; the bytes are never read. */
+export async function uploadFileStream(input: {
+  fileName: string;
+  mimeType: string;
+  size: number;
+  signal?: AbortSignal;
+  onProgress?: (sent: number, total: number) => void;
+}) {
+  const steps = 8;
+  for (let i = 1; i <= steps; i += 1) {
+    await latency(180);
+    if (input.signal?.aborted) {
+      const e = new Error("Upload cancelled");
+      e.name = "AbortError";
+      throw e;
+    }
+    input.onProgress?.(Math.round((input.size * i) / steps), input.size);
+  }
+  const res = await uploadFile({ ...input, bytes: { length: input.size } });
+  return { ...res, file: { ...res.file, size: input.size } };
+}
+
 // ---- diff: the branch's changes plus anything edited or created in the lab --------------------
 
 const PATH_MAP: Record<string, string> = {

@@ -34,6 +34,8 @@ export function createEncryptedTransport(
   let channel: EncryptedChannel | null = null;
   let opened = false;
   let closed = false;
+  // Bytes handed to the channel that it has not yet encrypted and passed to the socket.
+  let encrypting = 0;
 
   const openHandlers = new Set<OpenHandler>();
   const closeHandlers = new Set<CloseHandler>();
@@ -130,10 +132,19 @@ export function createEncryptedTransport(
       if (!channel) {
         throw new Error("Encrypted channel not ready");
       }
-      void channel.send(normalizeTransportPayload(data)).catch((error) => {
-        emitError(error);
-      });
+      const payload = normalizeTransportPayload(data);
+      const size = typeof payload === "string" ? payload.length : payload.byteLength;
+      encrypting += size;
+      void channel
+        .send(payload)
+        .catch((error) => {
+          emitError(error);
+        })
+        .finally(() => {
+          encrypting -= size;
+        });
     },
+    bufferedAmount: () => encrypting + (base.bufferedAmount?.() ?? 0),
     close: (code?: number, reason?: string) => {
       if (channel) {
         channel.close(code, reason);

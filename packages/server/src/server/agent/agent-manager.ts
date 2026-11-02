@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { parseShellEscape, prependShellContext, shellEscape } from "./shell-escape.js";
 import type { SkillLaunchPolicy } from "../skills/catalog.js";
 import { resolve } from "node:path";
 import { stat } from "node:fs/promises";
@@ -754,6 +755,8 @@ export class AgentManager {
   private readonly providerEnabled = new Map<AgentProvider, boolean>();
   private readonly providerDefinitions = new Map<AgentProvider, ProviderEnabledFlag>();
   private readonly agents = new Map<string, LiveManagedAgent>();
+  /** Output of `!cmd` runs not yet handed to the model; it rides along with the next turn. */
+  private readonly pendingShellContext = new Map<string, string[]>();
   private readonly timelineStore = new InMemoryAgentTimelineStore();
   private readonly providerSubagents = new ProviderSubagentStore();
   private readonly agentsAwaitingInitialSnapshotPersist = new Set<string>();
@@ -778,6 +781,7 @@ export class AgentManager {
   private resolveSkillLaunchPolicy?: () => SkillLaunchPolicy;
   private froggToolCatalogFactory: FroggToolCatalogFactory | null = null;
   private appendSystemPrompt: string;
+  private resolveConnectorContext: (() => string) | null = null;
   private readonly resolveProviderAccountSystemPrompt?: (
     provider: string,
     accountId: string | null | undefined,
@@ -908,6 +912,14 @@ export class AgentManager {
 
   setAppendSystemPrompt(prompt: string | null | undefined): void {
     this.appendSystemPrompt = prompt ?? "";
+  }
+
+  /**
+   * Source of the hidden connector summary appended to non-chat agents' system context (which
+   * plugins this host runs and their agent tools). Read at each launch.
+   */
+  setConnectorContextResolver(resolver: (() => string) | null): void {
+    this.resolveConnectorContext = resolver;
   }
 
   public getMetricsSnapshot(): AgentMetricsSnapshot {
@@ -1586,8 +1598,16 @@ export class AgentManager {
       lastUsage: preservedLastUsage,
       lastUsageAt: preservedLastUsageAt,
     } = resolveReloadSource(existing, overrides, options?.freshSession ?? false);
-    const preservedLastError = existing.lastError;
-    const preservedAttention = existing.attention;
+    // A fresh session (a clean cut) starts past whatever failed in the old one: carrying its
+    // error over would leave a "session failed" state on a conversation that is fine.
+    const fresh = options?.freshSession ?? false;
+    const preservedLastError = fresh ? undefined : existing.lastError;
+    const preservedAttention: AttentionState =
+      fresh &&
+      existing.attention.requiresAttention &&
+      existing.attention.attentionReason === "error"
+        ? { requiresAttention: false }
+        : existing.attention;
     const client = this.requireClient(provider);
     const refreshConfig = {
       ...existing.config,
@@ -2362,7 +2382,10 @@ export class AgentManager {
    */
   tryRunOutOfBand(agentId: string, prompt: AgentPromptInput, options?: AgentRunOptions): boolean {
     const agent = this.requireSessionAgent(agentId);
-    const handler = agent.session.tryHandleOutOfBand?.(prompt);
+    const shellCommand = parseShellEscape(prompt);
+    const handler = shellCommand
+      ? this.shellEscapeHandler(agent, shellCommand)
+      : agent.session.tryHandleOutOfBand?.(prompt);
     if (!handler) {
       return false;
     }
@@ -2398,6 +2421,33 @@ export class AgentManager {
       }
     })();
     return true;
+  }
+
+  /** `!cmd`: runs on the daemon for every provider, since none takes Claude Code's bash mode. */
+  private shellEscapeHandler(
+    agent: ActiveManagedAgent,
+    command: string,
+  ): { run: (ctx: { emit: (event: AgentStreamEvent) => void }) => Promise<void> } {
+    return {
+      run: async ({ emit }) => {
+        const context = await shellEscape({
+          command,
+          cwd: agent.cwd,
+          provider: agent.provider,
+          emit,
+        });
+        const pending = this.pendingShellContext.get(agent.id) ?? [];
+        this.pendingShellContext.set(agent.id, [...pending, context]);
+      },
+    };
+  }
+
+  /** The prompt with any pending `!cmd` output ahead of it; the output is then handed over. */
+  private takeShellContext(agentId: string, prompt: AgentPromptInput): AgentPromptInput {
+    const pending = this.pendingShellContext.get(agentId);
+    if (!pending?.length) return prompt;
+    this.pendingShellContext.delete(agentId);
+    return prependShellContext(prompt, pending);
   }
 
   async appendTimelineItem(
@@ -2444,7 +2494,7 @@ export class AgentManager {
   }): Promise<string> {
     const { agent, agentId, pendingRun, prompt, options } = params;
     try {
-      const result = await agent.session.startTurn(prompt, options);
+      const result = await agent.session.startTurn(this.takeShellContext(agentId, prompt), options);
       if (pendingRun.settled) {
         throw new Error(`Agent ${agentId} run was canceled before its turn started`);
       }
@@ -5184,14 +5234,19 @@ export class AgentManager {
         mcpBaseUrl: this.mcpBaseUrl,
         mcpAuthToken: this.mcpAuthToken,
       }),
+      { connectors: true },
     );
     return { storedConfig, launchConfig };
   }
 
-  private applyDaemonAppendSystemPrompt(config: AgentSessionConfig): AgentSessionConfig {
+  private applyDaemonAppendSystemPrompt(
+    config: AgentSessionConfig,
+    options: { connectors?: boolean } = {},
+  ): AgentSessionConfig {
     const daemonAppendSystemPrompt = [
       this.appendSystemPrompt.trim(),
       this.accountSystemPromptFor(config),
+      options.connectors ? this.connectorContext() : "",
     ]
       .filter((part) => part.length > 0)
       .join("\n\n");
@@ -5204,6 +5259,16 @@ export class AgentManager {
           daemonAppendSystemPrompt,
         }
       : next;
+  }
+
+  private connectorContext(): string {
+    if (!this.resolveConnectorContext || (!this.mcpBaseUrl && !this.froggToolsEnabled)) return "";
+    try {
+      return this.resolveConnectorContext().trim();
+    } catch (error) {
+      this.logger.warn({ err: error }, "Failed to resolve connector context");
+      return "";
+    }
   }
 
   /** COMPAT(providerAccountPreferences): added in v1.5.6, remove after 2027-09-19. */

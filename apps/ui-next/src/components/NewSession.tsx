@@ -26,12 +26,15 @@ import {
 import { useFormFactor } from "../theme/layout";
 import { color, font, overlayMs, web } from "../theme/tokens";
 import { useUi } from "../ui-store";
+import { track, usageSlug } from "../usage-stats/store";
 import { providerLabel } from "../util";
 import { Button } from "./Button";
 import { Cut } from "./Cut";
 import { Seg } from "./settings/controls";
 import { Select } from "./Select";
 import { canPickFiles, pickFiles } from "./chat/pickFiles";
+import { UploadBar, UploadProgress } from "./chat/Attach";
+import { cancelUpload, useUploads } from "./chat/upload";
 import {
   isImage,
   loadBranches,
@@ -47,6 +50,7 @@ import { LaunchFields, useLaunch, type Launch, type LaunchInput } from "./sessio
 import { FolderBrowser } from "./sessions/sheets";
 import { useModalLayer } from "./shell/modalStack";
 import { T } from "./Text";
+import { kbd } from "../kbd";
 
 type Isolation = "worktree" | "local";
 const NO_PROJECTS: Project[] = [];
@@ -333,6 +337,7 @@ async function startAgent(
     images,
     attachments,
   });
+  track("session_started", { provider: usageSlug(provider) });
   await focusHost(hostId);
   useDaemon.setState((st) => ({
     sessions: {
@@ -995,7 +1000,7 @@ function DeskSheet({
             <View style={s.headRow}>
               <View style={s.flex}>
                 <T v="mono" style={s.kbd}>
-                  ⌘N
+                  {kbd("⌘N")}
                 </T>
                 <T v="display" style={s.heading}>
                   New session
@@ -1249,17 +1254,28 @@ function DraftChips({ drafts, onRemove }: { drafts: Draft[]; onRemove: (id: stri
 }
 
 function DraftChip({ d, onRemove }: { d: Draft; onRemove: (id: string) => void }) {
-  const remove = useCallback(() => onRemove(d.id), [d.id, onRemove]);
+  // While the session is being created the file is streaming to the host: X cancels that.
+  const uploading = useUploads((st) => !!st[d.id]);
+  const remove = useCallback(
+    () => (uploading ? cancelUpload(d.id) : onRemove(d.id)),
+    [d.id, onRemove, uploading],
+  );
   const Icon = isImage(d) ? ImageIcon : FileText;
   return (
-    <View style={s.chip}>
+    <View style={[s.chip, s.chipClip]}>
       <Icon size={12} color={color.muted} />
       <T v="mono" style={s.chipName} numberOfLines={1}>
         {d.name}
       </T>
-      <Pressable onPress={remove} hitSlop={6} accessibilityLabel={`Remove ${d.name}`}>
+      {uploading && <UploadProgress id={d.id} size={d.size} />}
+      <Pressable
+        onPress={remove}
+        hitSlop={6}
+        accessibilityLabel={uploading ? `Cancel uploading ${d.name}` : `Remove ${d.name}`}
+      >
         <X size={11} color={color.faint} />
       </Pressable>
+      {uploading && <UploadBar id={d.id} />}
     </View>
   );
 }
@@ -1343,6 +1359,7 @@ const s = StyleSheet.create({
   attachTOn: { fontSize: 12.5, color: color.text },
   nameWide: { width: 240 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  chipClip: { overflow: "hidden" },
   chip: {
     flexDirection: "row",
     alignItems: "center",

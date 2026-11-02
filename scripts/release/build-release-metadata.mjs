@@ -1,4 +1,4 @@
-import { channelOfVersion } from "./release-channel.mjs";
+import { channelOfVersion, releaseLineOfVersion } from "./release-channel.mjs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { parseArgs } from "node:util";
@@ -12,48 +12,60 @@ import {
 import { buildElectronReleaseManifests } from "./electron-release-manifests.mjs";
 
 /**
- * Which client a release carries. Stable tags ship the classic app (apps/desktop + apps/ui);
- * prerelease tags ship Frogg Next (apps/ui-next), or no client at all for a brand that opts out
- * of Frogg Next. Every release carries the daemon bundles.
+ * Which client a release carries, by release line: stable tags ship the classic app (apps/desktop +
+ * apps/ui), `-beta.N` tags from `main` ship it as frogg beta (the brand's beta client identity),
+ * `-next.N` tags from `frogg-next` ship Frogg Next (apps/ui-next), or no client at all for a brand
+ * that opts out of Frogg Next. Every release carries the daemon bundles.
  */
-export const RELEASE_CLIENTS = Object.freeze(["classic", "frogg-next", "none"]);
+export const RELEASE_CLIENTS = Object.freeze(["classic", "classic-beta", "frogg-next", "none"]);
+
+const CLIENTS_BY_LINE = Object.freeze({
+  stable: ["classic"],
+  beta: ["classic-beta"],
+  next: ["frogg-next", "none"],
+});
+
+/** The client a version's release carries unless the brand opts out of Frogg Next. */
+export function defaultClientForVersion(version) {
+  return CLIENTS_BY_LINE[releaseLineOfVersion(version)][0];
+}
 
 /** @param {string} version @param {string} client */
 export function assertClientForVersion(version, client) {
   if (!RELEASE_CLIENTS.includes(client)) throw new Error(`Unknown release client: ${client}`);
-  const channel = channelOfVersion(version);
-  if ((client === "classic") !== (channel === "stable"))
+  const line = releaseLineOfVersion(version);
+  if (!CLIENTS_BY_LINE[line].includes(client))
     throw new Error(
-      `A ${channel} release cannot carry the ${client} client: stable releases ship the classic app, prereleases ship Frogg Next`,
+      `A ${line} release cannot carry the ${client} client: stable releases ship the classic app, -beta.N frogg beta, -next.N Frogg Next`,
     );
 }
 
 /** Product discovery is stable; packaging adapters supply versioned update protocols. */
 export async function buildReleaseMetadata(options) {
   const channel = channelOfVersion(options.version);
-  const client = options.client ?? (channel === "stable" ? "classic" : "frogg-next");
+  const client = options.client ?? defaultClientForVersion(options.version);
+  const classic = client === "classic" || client === "classic-beta";
   assertClientForVersion(options.version, client);
   const descriptor = {
     schemaVersion: 1,
     version: options.version,
     channel,
     client,
-    updatePaths:
-      client === "classic"
-        ? {
-            "electron-updater": await buildElectronReleaseManifests(options),
-            "tauri-updater": manual(
-              "Install this release manually: the installed updater cannot replace the new application layout safely.",
-            ),
-          }
-        : // An installed classic beta app that still looks at prereleases finds no classic
-          // payloads here, and says so instead of failing on a missing feed.
-          {
-            "electron-updater": manual(
-              `This prerelease ships ${options.next?.name ?? "Frogg Next"}, not the classic app. Install it from the release page, or use the stable app.`,
-            ),
-            "tauri-updater": manual("Install this release manually."),
-          },
+    updatePaths: classic
+      ? {
+          "electron-updater": await buildElectronReleaseManifests(options),
+          "tauri-updater": manual(
+            "Install this release manually: the installed updater cannot replace the new application layout safely.",
+          ),
+        }
+      : // A frogg beta from before 1.6.14-beta.4 takes the newest prerelease of any kind, so it
+        // can land here; it finds no classic payloads and says where its own releases are.
+        {
+          "electron-updater": manual(
+            `This prerelease ships ${options.next?.name ?? "Frogg Next"}, not the classic app. Install the newest -beta release from the release page, or use the stable app.`,
+          ),
+          "tauri-updater": manual("Install this release manually."),
+        },
     ...(client === "frogg-next"
       ? { froggNext: froggNextAssets(options.version, options.next) }
       : {}),
@@ -92,9 +104,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     },
   });
   if (!values.version || !values.out) throw new Error("Required: --version --out");
-  const client =
-    values.client ?? (channelOfVersion(values.version) === "stable" ? "classic" : "frogg-next");
-  if (client === "classic" && !values.assets)
+  const client = values.client ?? defaultClientForVersion(values.version);
+  if ((client === "classic" || client === "classic-beta") && !values.assets)
     throw new Error("Required for the classic client: --assets");
   const brand = values.brand ? JSON.parse(await readFile(values.brand, "utf8")) : null;
   const platformVersions = {};

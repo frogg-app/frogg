@@ -9,6 +9,7 @@ import {
   MoreHorizontal,
   RefreshCw,
   Search,
+  X,
 } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
@@ -22,12 +23,13 @@ import {
   renameEntry,
   setRoot,
   toggleDir,
+  useBrowseRoot,
   useFiles,
   type Entry,
 } from "../daemon/files";
 import { discard, useScm } from "../daemon/scm";
 import { useDaemon } from "../daemon/store";
-import { anim, color, ease, frames, web } from "../theme/tokens";
+import { alpha, anim, color, ease, font, frames, web } from "../theme/tokens";
 import { useUi } from "../ui-store";
 
 import { PanelHead } from "./PanelHead";
@@ -45,10 +47,20 @@ export { FileViewer } from "./tools/FileViewer";
 
 import { downloadEntry, newEntrySpec } from "./tools/fileActions";
 import { FileSearchField, FileSearchResults } from "./tools/FileSearch";
+import { FilePathField } from "./tools/FilePath";
 import { DOUBLE_MS } from "./tools/FileViewer";
 
 type Ask = (spec: ConfirmSpec) => void;
 type Prompt = (spec: PromptSpec) => void;
+
+/** A typed folder shows its whole path; a checkout shows just its name. */
+function rootLabel(cwd: string | null, browsing: boolean): string {
+  if (!cwd) return "open a session, or click to type a path";
+  if (browsing) return cwd;
+  return cwd.split(/[\\/]/).pop() || cwd;
+}
+
+const NO_MARKS: Record<string, { letter: string; tint: string }> = {};
 
 /** Change letters for files in the checkout's diff, keyed by path. */
 function useChangeMarks(): Record<string, { letter: string; tint: string }> {
@@ -64,16 +76,36 @@ function useChangeMarks(): Record<string, { letter: string; tint: string }> {
   }, [files]);
 }
 
+/** The tree's root: a folder typed into the path field, else the open session's checkout. */
+function useFilesRoot(): { cwd: string | null; browsing: string | null } {
+  const checkout = useActiveCwd();
+  const browsing = useBrowseRoot((s) => s.path);
+  // Opening another session goes back to its checkout.
+  const last = useRef(checkout);
+  useEffect(() => {
+    if (last.current !== checkout) useBrowseRoot.setState({ path: null });
+    last.current = checkout;
+  }, [checkout]);
+  return { cwd: browsing ?? checkout, browsing };
+}
+
 export function FilesPanel() {
-  const cwd = useActiveCwd();
+  const { cwd, browsing } = useFilesRoot();
   const conn = useDaemon((s) => s.conn);
-  const branch = useScm((st) => (st.status?.isGit ? st.status.currentBranch : null));
+  const scmBranch = useScm((st) => (st.status?.isGit ? st.status.currentBranch : null));
+  const branch = browsing ? null : scmBranch;
   const confirm = useConfirm();
   const prompt = usePrompt();
   useEffect(() => {
     if (cwd && conn === "online") void setRoot(cwd);
   }, [cwd, conn]);
-  const marks = useChangeMarks();
+  const [goTo, setGoTo] = useState(false);
+  const openGoTo = useCallback(() => setGoTo(true), []);
+  const closeGoTo = useCallback(() => setGoTo(false), []);
+  const backToCheckout = useCallback(() => useBrowseRoot.setState({ path: null }), []);
+  const checkoutMarks = useChangeMarks();
+  // Change letters are relative to the checkout; a typed folder elsewhere has none.
+  const marks = browsing ? NO_MARKS : checkoutMarks;
   const [searching, setSearching] = useState(false);
   const [query, setQuery] = useState("");
   const toggleSearch = useCallback(() => {
@@ -117,16 +149,41 @@ export function FilesPanel() {
           <RefreshCw size={14} color={color.faint} />
         </Pressable>
       </PanelHead>
-      <View style={st.rootRow}>
-        <T numberOfLines={1} style={st.rootName}>
-          {cwd ? cwd.split("/").pop() : "open a session to browse its checkout"}
-        </T>
-        {branch && (
-          <T v="mono" numberOfLines={1} style={st.rootBranch}>
-            ⎇ {branch}
-          </T>
-        )}
-      </View>
+      {goTo ? (
+        <FilePathField initial={cwd ?? "~"} onClose={closeGoTo} />
+      ) : (
+        <View style={st.rootRow}>
+          <Pressable
+            onPress={openGoTo}
+            accessibilityLabel="Go to folder"
+            accessibilityHint="Type a path to browse"
+            style={st.rootPress}
+          >
+            {({ hovered }) => (
+              <T
+                numberOfLines={1}
+                style={[st.rootName, browsing ? st.rootPath : null, hovered && st.rootHover]}
+              >
+                {rootLabel(cwd, !!browsing)}
+              </T>
+            )}
+          </Pressable>
+          {branch && (
+            <T v="mono" numberOfLines={1} style={st.rootBranch}>
+              ⎇ {branch}
+            </T>
+          )}
+          {browsing && (
+            <Pressable
+              onPress={backToCheckout}
+              accessibilityLabel="Back to the session's checkout"
+              hitSlop={6}
+            >
+              {({ hovered }) => <X size={12} color={hovered ? color.text : color.faint} />}
+            </Pressable>
+          )}
+        </View>
+      )}
       {searching && <FileSearchField query={query} onChange={setQuery} onClose={closeSearch} />}
       {searching && query.trim() ? (
         <FileSearchResults query={query} />
@@ -368,12 +425,19 @@ const st = StyleSheet.create({
   flex: { flex: 1 },
   rootRow: {
     flexDirection: "row",
-    alignItems: "baseline",
+    alignItems: "center",
     gap: 8,
     paddingHorizontal: 16,
     paddingBottom: 8,
   },
-  rootName: { fontSize: 13, color: color.text, flexShrink: 1 },
+  rootPress: { flexShrink: 1, ...web({ cursor: "text" }) },
+  rootName: {
+    fontSize: 13,
+    color: color.text,
+    ...web({ transition: "color 120ms ease-out" }),
+  },
+  rootPath: { fontFamily: font.mono, fontSize: 12 },
+  rootHover: { color: color.cyan2 },
   rootBranch: { fontSize: 11, color: color.faint, flexShrink: 1 },
   scrollPad: { paddingBottom: 16 },
   emptyRow: { paddingVertical: 5, color: color.faint },
@@ -391,7 +455,7 @@ const st = StyleSheet.create({
     paddingRight: 8,
   },
   hovered: { backgroundColor: color.wash },
-  nodeOn: { backgroundColor: "rgba(127,217,230,0.05)" },
+  nodeOn: { backgroundColor: alpha(color.cyan2, 0.05) },
   chevSpacer: { width: 12 },
   nodeName: { flex: 1, fontSize: 13, color: color.text },
   nodeNameOn: { color: color.cyan2 },

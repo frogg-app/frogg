@@ -14,6 +14,7 @@ import {
   startService,
   type ServiceRegistration,
 } from "./service/state.js";
+import { upgradeWindowsRunKey } from "./service/windows-run-key.js";
 
 export type { DaemonStartOptions as StartOptions } from "./local-daemon.js";
 
@@ -82,6 +83,8 @@ export interface StartRuntime {
   prepareHome?(options: { home?: string }): void;
   detectService?(): ServiceRegistration | null;
   startService?(registration: ServiceRegistration): void;
+  /** Rewrites a pre-headless Windows Run key so the next login opens no console. */
+  upgradeRunKey?(): void;
   log(message: string): void;
   error(message: string): void;
   exit(code: number): never;
@@ -96,6 +99,9 @@ const defaultRuntime: StartRuntime = {
   },
   detectService: detectServiceRegistration,
   startService,
+  upgradeRunKey: () => {
+    upgradeWindowsRunKey();
+  },
   log: console.log,
   error: console.error,
   exit: process.exit,
@@ -111,6 +117,7 @@ export async function runStart(
   }
 
   runtime.prepareHome?.({ home: options.home });
+  runtime.upgradeRunKey?.();
   if (reportAlreadyRunning(options, runtime)) return;
 
   if (startThroughService(options, runtime)) return;

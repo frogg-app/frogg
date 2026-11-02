@@ -1,7 +1,7 @@
 name: Frogg Next Android
 
 # Arm64 APK of Frogg Next (apps/ui-next; package id from the brand's `next` identity). On every
-# main push that touches the client this uploads a workflow artifact; the Release workflow also
+# frogg-next push that touches the client this uploads a workflow artifact; the Release workflow also
 # calls it with `release-tag` on prerelease tags to attach
 # <prefix>-<version>-android-arm64-v8a[-unsigned].apk to that tag's GitHub release. Release
 # APKs are signed with the classic app's keystore (FROGG_ANDROID_*), so once Frogg Next is
@@ -10,7 +10,8 @@ name: Frogg Next Android
 # named -unsigned (release-process.mdx).
 on:
   push:
-    branches: [main]
+    # Frogg Next lives on frogg-next (frogg.json streams.next); main ships the classic beta.
+    branches: [frogg-next]
     paths:
       - "apps/ui-next/**"
       - "packages/client/**"
@@ -54,7 +55,7 @@ on:
 permissions:
   contents: read
 
-# Main pushes cancel superseded builds; a release call gets its own group and is never cancelled.
+# frogg-next pushes cancel superseded builds; a release call gets its own group and is never cancelled.
 concurrency:
   group: ui-next-android-${{ inputs.release-tag || github.ref }}
   cancel-in-progress: ${{ !inputs.release-tag }}
@@ -125,7 +126,7 @@ jobs:
         run: |
           keystore="$RUNNER_TEMP/frogg-next-release.keystore"
           if [ "$RELEASE" != "true" ]; then
-            echo "Main push: the APK is debug-signed and named -unsigned."
+            echo "frogg-next push: the APK is debug-signed and named -unsigned."
           elif [ -n "$NEXT_KEYSTORE_BASE64" ] && [ -n "$NEXT_KEYSTORE_PASSWORD" ]; then
             echo "Signing with the Frogg Next keystore (FROGG_NEXT_ANDROID_*)."
             echo "$NEXT_KEYSTORE_BASE64" | base64 -d > "$keystore"

@@ -16,11 +16,14 @@ import type { HostProviders } from "./create";
 import {
   accountChoices,
   accountIdFor,
+  accountLaunchArgs,
+  mergeFlags,
+  withoutAccountFlags,
   FLAG_PROVIDERS,
   flagsText,
   parseFlags,
+  plainFlags,
   saveProjectAgentDefaults,
-  tokenize,
   useDraftFeatures,
   useProjectAgentDefaults,
   type ExtraArgs,
@@ -81,11 +84,13 @@ export function useLaunch(f: {
   const all = useProjectAgentDefaults(client, root, reload);
   const defaults = provider ? all?.[provider] : undefined;
   const flagsOn = flagsSupported && !!provider && FLAG_PROVIDERS.has(provider);
-  const seedFlags = flagsText(defaults?.args);
-  const [flags, setFlags] = useState("");
+  const accountArgs = useMemo(() => accountLaunchArgs(entry, account), [entry, account]);
+  const seedFlags = flagsText(mergeFlags(accountArgs, defaults?.args ?? []));
+  const [flags, setFlagsRaw] = useState("");
+  const setFlags = useCallback((v: string) => setFlagsRaw(plainFlags(v)), []);
   const [edits, setEdits] = useState<Record<string, unknown>>({});
   useEffect(() => {
-    setFlags(seedFlags);
+    setFlagsRaw(seedFlags);
     setEdits({});
   }, [seedFlags, provider, root]);
   const features = useDraftFeatures(client, provider, root, defaults?.featureValues);
@@ -127,7 +132,7 @@ export function useLaunch(f: {
     setSaving(true);
     setSaveError(null);
     saveProjectAgentDefaults(client, root, provider, {
-      args: flagsOn ? tokenize(flags) : (defaults?.args ?? []),
+      args: flagsOn ? withoutAccountFlags(flags, accountArgs) : (defaults?.args ?? []),
       featureValues,
     })
       .then(() => {
@@ -137,7 +142,7 @@ export function useLaunch(f: {
       })
       .catch((e: unknown) => setSaveError(e instanceof Error ? e.message : String(e)))
       .finally(() => setSaving(false));
-  }, [client, root, provider, error, flagsOn, flags, defaults?.args, featureValues]);
+  }, [client, root, provider, error, flagsOn, flags, accountArgs, defaults?.args, featureValues]);
 
   return {
     input,
@@ -208,10 +213,15 @@ export function LaunchFields({
               placeholderTextColor={color.faint}
               autoCapitalize="none"
               autoCorrect={false}
+              autoComplete="off"
+              spellCheck={false}
               style={[s.flags, phone && s.flagsInputPhone]}
               accessibilityLabel="Extra launch flags"
             />
-            <SaveDefaults {...p} />
+            {/* A fixed slot: the field must not slide while the link comes and goes under typing. */}
+            <View style={phone ? s.saveSlotPhone : s.saveSlot}>
+              <SaveDefaults {...p} />
+            </View>
           </View>
         </Field>
       )}
@@ -300,6 +310,8 @@ const s = StyleSheet.create({
     ...web({ outlineStyle: "none" }),
   },
   flagsInputPhone: { width: "100%", paddingVertical: 10 },
+  saveSlot: { width: 104, alignItems: "flex-start" },
+  saveSlotPhone: { minHeight: 18, alignItems: "flex-end" },
   saveOnly: { alignItems: "flex-end" },
   link: { fontSize: 12, color: color.muted },
   linkOn: { color: color.text },

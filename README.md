@@ -33,8 +33,8 @@ Then open `http://<that-machine>:9999/`, or install a client:
 
 Windows daemons, Docker and Nix: see [Install](https://frogg.app/docs/getting-started/install/).
 
-Betas ship **Frogg Next**, the next client, which installs beside frogg, and prerelease
-daemons on the same install: see [release streams](docs/release-streams.md).
+Betas ship **frogg beta** from `main` and **Frogg Next**, the next client, from `frogg-next`;
+both install beside frogg and use the same daemon. See [release streams](docs/release-streams.md).
 
 ## Features
 

@@ -63,3 +63,21 @@ export function channelOfVersion(value) {
   if (!parsed) throw new Error(`Not a release version: ${value}`);
   return parsed.upstream ? "beta" : "stable";
 }
+
+/**
+ * Which release line a version belongs to. Prereleases split by their first channel identifier:
+ * `next` is the Frogg Next line (the `frogg-next` branch), any other channel name the classic
+ * beta line (`main`). Stable rebuilds (`1.8.0-acme.2`) are stable.
+ *
+ *   1.8.0-next.2  1.8.0-next.2.acme.1     next
+ *   1.8.0-beta.3  1.8.0-rc.1.acme.1       beta
+ *   1.8.0         1.8.0-acme.1            stable
+ *
+ * @returns {"stable" | "beta" | "next"}
+ */
+export function releaseLineOfVersion(value) {
+  const parsed = parseChannelVersion(value);
+  if (!parsed) throw new Error(`Not a release version: ${value}`);
+  if (!parsed.upstream) return "stable";
+  return parsed.upstream.split(".")[0].toLowerCase() === "next" ? "next" : "beta";
+}

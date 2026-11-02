@@ -21,6 +21,7 @@ import {
 } from "react";
 import {
   AccessibilityInfo,
+  Linking,
   Platform,
   StyleSheet,
   Text,
@@ -29,10 +30,20 @@ import {
   type TextStyle,
 } from "react-native";
 import { usePrefs } from "../../prefs";
-import { anim, color, ease, font, web } from "../../theme/tokens";
+import { alpha, anim, color, rgbOf, ease, font, web } from "../../theme/tokens";
 import { HostImage } from "../markdown/HostImage";
 import { MdTable } from "../markdown/MdTable";
-import { parseTable, splitImages, type Cell, type Table } from "../markdown/syntax";
+import {
+  classifyLine,
+  INLINE,
+  inlineToken,
+  parseTable,
+  safeHref,
+  splitImages,
+  type Cell,
+  type Table,
+} from "../markdown/syntax";
+import { ListMarker, listIndent } from "../Markdown";
 import { reducedMotion } from "../presence";
 import { T } from "../Text";
 
@@ -126,12 +137,12 @@ const kf = {
   blur: { "0%": { opacity: 0, filter: "blur(6px)" } },
   slide: { "0%": { opacity: 0, left: "-4px" } },
   typeFade: { "0%": { opacity: 0 } },
-  glow: { "0%": { color: color.cyan2, textShadow: "0 0 10px rgba(37,181,200,0.95)" } },
+  glow: { "0%": { color: color.cyan2, textShadow: `0 0 10px ${alpha(color.cyan, 0.95)}` } },
   wipe: {
     "0%": {
       maskPosition: "100% 0",
       WebkitMaskPosition: "100% 0",
-      textShadow: "0 0 10px rgba(127,217,230,0.9)",
+      textShadow: `0 0 10px ${alpha(color.cyan2, 0.9)}`,
     },
     "100%": { maskPosition: "0% 0", WebkitMaskPosition: "0% 0", textShadow: "0 0 0 transparent" },
   },
@@ -147,7 +158,7 @@ const kf = {
     "0%": {
       maskPosition: "100% 0",
       WebkitMaskPosition: "100% 0",
-      textShadow: "0 0 14px rgba(127,217,230,0.9)",
+      textShadow: `0 0 14px ${alpha(color.cyan2, 0.9)}`,
     },
     "100%": { maskPosition: "0% 0", WebkitMaskPosition: "0% 0", textShadow: "0 0 0 transparent" },
   },
@@ -335,12 +346,12 @@ type Base = "text" | "cyan" | "muted" | "coral";
 export type Tone = Base;
 const BASES: Base[] = ["text", "cyan", "muted", "coral"];
 const RGB: Record<Base, [number, number, number]> = {
-  text: [242, 246, 247],
-  cyan: [127, 217, 230],
-  muted: [154, 166, 169],
-  coral: [255, 107, 107],
+  text: rgbOf(color.text),
+  cyan: rgbOf(color.cyan2),
+  muted: rgbOf(color.muted),
+  coral: rgbOf(color.coral),
 };
-const COOL: [number, number, number] = [127, 217, 230];
+const COOL = rgbOf(color.cyan2);
 const mix = (a: number[], b: number[], p: number) =>
   a.map((v, i) => Math.round(v + (b[i] - v) * p));
 const rgba = (c: number[], a: number) =>
@@ -524,9 +535,12 @@ interface Seg {
   at: number;
 }
 interface Block {
-  kind: "code" | "h" | "li" | "p" | "table" | "img";
+  kind: "code" | "h" | "li" | "p" | "table" | "img" | "quote" | "hr";
   parts: Seg[];
   level?: number;
+  /** List items: nesting depth and marker (see Markdown.tsx). */
+  depth?: number;
+  marker?: string;
   /** Tables: the parsed cells, and the offset of each of its rows' lines (header first). */
   table?: Table;
   rowAt?: number[];
@@ -549,6 +563,7 @@ function parse(text: string): Block[] {
     const line = lines[i];
     const key = `${starts[i]}`;
     const table = parseTable(lines, i);
+    const kind = table ? null : classifyLine(line);
     if (table) {
       const rowAt = [starts[i], ...starts.slice(i + 2, table.end)];
       const parts = [table.head, ...table.rows].flatMap((r, n) =>
@@ -556,22 +571,33 @@ function parse(text: string): Block[] {
       );
       blocks.push({ kind: "table", parts, table, rowAt, key });
       i = table.end - 1;
-    } else if (line.startsWith("```")) {
+    } else if (kind?.kind === "fence") {
       const code: Seg[] = [];
-      while (++i < lines.length && !lines[i].startsWith("```"))
+      while (++i < lines.length && classifyLine(lines[i])?.kind !== "fence")
         code.push({ text: lines[i], at: starts[i] });
       blocks.push({ kind: "code", parts: code, key });
-    } else if (/^#{1,4}\s/.test(line)) {
-      const cut = line.match(/^#+\s/)?.[0].length ?? 0;
+    } else if (kind?.kind === "hr") {
+      blocks.push({ kind: "hr", parts: [], key });
+    } else if (kind?.kind === "h") {
       blocks.push({
         kind: "h",
-        parts: [{ text: line.slice(cut), at: starts[i] + cut }],
-        level: line.indexOf(" "),
+        parts: [{ text: line.slice(kind.cut), at: starts[i] + kind.cut }],
+        level: kind.level,
         key,
       });
-    } else if (/^\s*([-*]|\d+\.)\s/.test(line)) {
-      const cut = line.match(/^\s*([-*]|\d+\.)\s/)?.[0].length ?? 0;
-      blocks.push({ kind: "li", parts: [{ text: line.slice(cut), at: starts[i] + cut }], key });
+    } else if (kind?.kind === "li") {
+      blocks.push({
+        kind: "li",
+        parts: [{ text: line.slice(kind.cut), at: starts[i] + kind.cut }],
+        depth: kind.depth,
+        marker: kind.marker,
+        key,
+      });
+    } else if (kind?.kind === "quote") {
+      const seg = { text: line.slice(kind.cut), at: starts[i] + kind.cut };
+      const prev = blocks[blocks.length - 1];
+      if (prev?.kind === "quote") prev.parts.push(seg);
+      else blocks.push({ kind: "quote", parts: [seg], key });
     } else if (line.trim()) {
       splitImages(line).forEach((piece, n) => {
         const from = starts[i] + piece.off;
@@ -588,8 +614,6 @@ function parse(text: string): Block[] {
   }
   return blocks;
 }
-
-const INLINE = /(`[^`]+`|\*\*[^*]+\*\*|(?<![\w*])[_*][^_*\s][^_*]*[_*](?![\w*]))/g;
 
 interface Ctx {
   mode: RevealMode;
@@ -763,6 +787,10 @@ function Scramble({
   );
 }
 
+const openLink = (href: string) => () => {
+  void Linking.openURL(href).catch(() => undefined);
+};
+
 function Inline({ seg }: { seg: Seg }) {
   let pos = seg.at;
   return seg.text
@@ -772,28 +800,39 @@ function Inline({ seg }: { seg: Seg }) {
       const at = pos;
       pos += part.length;
       const key = `${at}`;
-      if (part.startsWith("`") && part.endsWith("`") && part.length > 1)
+      const tok = inlineToken(part);
+      const run = <Run text={tok.text} at={at + tok.off} />;
+      if (tok.kind === "code")
         return (
           <T key={key} style={st.inlineCode}>
-            <BaseCtx.Provider value="cyan">
-              <Run text={part.slice(1, -1)} at={at + 1} />
-            </BaseCtx.Provider>
+            <BaseCtx.Provider value="cyan">{run}</BaseCtx.Provider>
           </T>
         );
-      if (part.startsWith("**") && part.endsWith("**") && part.length > 4)
+      if (tok.kind === "bold")
         return (
           <T key={key} style={st.bold}>
-            <Run text={part.slice(2, -2)} at={at + 2} />
+            {run}
           </T>
         );
-      if (/^[_*].+[_*]$/.test(part))
+      if (tok.kind === "italic" || tok.kind === "strike")
         return (
-          <T key={key} style={st.italic}>
-            <BaseCtx.Provider value="muted">
-              <Run text={part.slice(1, -1)} at={at + 1} />
-            </BaseCtx.Provider>
+          <T key={key} style={tok.kind === "italic" ? st.italic : st.strike}>
+            <BaseCtx.Provider value="muted">{run}</BaseCtx.Provider>
           </T>
         );
+      if (tok.kind === "link") {
+        const href = safeHref(tok.href);
+        return (
+          <T
+            key={key}
+            style={href ? st.link : undefined}
+            onPress={href ? openLink(href) : undefined}
+            accessibilityRole={href ? "link" : undefined}
+          >
+            <BaseCtx.Provider value="cyan">{run}</BaseCtx.Provider>
+          </T>
+        );
+      }
       return <Run key={key} text={part} at={at} />;
     });
 }
@@ -871,15 +910,27 @@ function BlockViewImpl({ b, pieces, mode, rate, caret }: BlockProps) {
     );
   else if (b.kind === "h")
     body = (
-      <T v="display" style={[st.h, b.level === 1 && st.h1]}>
+      <T v="display" style={[st.h, b.level === 1 && st.h1, (b.level ?? 0) >= 4 && st.h4]}>
         <Parts parts={b.parts} />
         {c}
       </T>
     );
+  else if (b.kind === "hr") body = <View style={st.hr} />;
+  else if (b.kind === "quote")
+    body = (
+      <View style={st.quote}>
+        <T style={st.quoteText}>
+          <BaseCtx.Provider value="muted">
+            <Parts parts={b.parts} />
+          </BaseCtx.Provider>
+          {c}
+        </T>
+      </View>
+    );
   else if (b.kind === "li")
     body = (
-      <View style={st.li}>
-        <View style={st.bullet} />
+      <View style={[st.li, listIndent(b.depth)]}>
+        <ListMarker marker={b.marker} />
         <T style={st.liText}>
           <Parts parts={b.parts} />
           {c}
@@ -899,6 +950,7 @@ function BlockViewImpl({ b, pieces, mode, rate, caret }: BlockProps) {
 function sameBlock(a: BlockProps, b: BlockProps) {
   if (a.mode !== b.mode || a.rate !== b.rate || a.caret !== b.caret) return false;
   if (a.b.key !== b.b.key || a.b.kind !== b.b.kind || a.b.level !== b.b.level) return false;
+  if (a.b.depth !== b.b.depth || a.b.marker !== b.b.marker) return false;
   if (a.b.src !== b.b.src || a.b.alt !== b.b.alt) return false;
   if (a.b.parts.length !== b.b.parts.length || a.pieces.length !== b.pieces.length) return false;
   if (a.b.parts.some((p, i) => p.text !== b.b.parts[i].text || p.at !== b.b.parts[i].at))
@@ -1158,8 +1210,14 @@ const st = StyleSheet.create({
     fontFamily: font.mono,
     fontSize: 12.5,
     color: color.cyan2,
-    backgroundColor: "rgba(127,217,230,0.08)",
+    backgroundColor: alpha(color.cyan2, 0.08),
   },
   bold: { fontWeight: "600" },
   italic: { fontStyle: "italic", color: color.muted },
+  strike: { textDecorationLine: "line-through", color: color.muted },
+  link: { color: color.cyan2, textDecorationLine: "underline" },
+  h4: { fontSize: 14 },
+  hr: { height: 1, backgroundColor: color.line2, marginVertical: 6 },
+  quote: { borderLeftWidth: 2, borderLeftColor: color.line2, paddingLeft: 12 },
+  quoteText: { fontSize: 14.5, lineHeight: 22, color: color.muted },
 });

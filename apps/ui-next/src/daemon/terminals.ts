@@ -1,9 +1,11 @@
 import { create } from "zustand";
-import { getClient, onHostSwitch } from "./store";
+import { connect, getClient, getHostClient, onHostSwitch } from "./store";
+import { useHosts } from "./hosts";
 
 export interface TerminalInfo {
   id: string;
   name: string;
+  cwd?: string;
   title?: string;
   activity?: unknown;
 }
@@ -38,6 +40,11 @@ onHostSwitch(() => {
 
 const setGroup = (cwd: string, list: TerminalInfo[]) =>
   useTerminals.setState((s) => ({ groups: { ...s.groups, [cwd]: list } }));
+
+/** Re-reads the active host's whole terminal list. */
+export async function refreshHostTerminals(): Promise<void> {
+  return refreshAll();
+}
 
 async function refreshAll(): Promise<void> {
   const c = getClient();
@@ -102,5 +109,45 @@ export async function killTerminal(id: string): Promise<void> {
       Object.entries(s.groups).map(([cwd, list]) => [cwd, list.filter((t) => t.id !== id)]),
     ),
     all: s.all?.filter((t) => t.id !== id) ?? null,
+  }));
+}
+
+// ---- Other hosts -----------------------------------------------------------------------------
+
+/** Terminals on each connected host other than the active one, keyed by host id. */
+export const useFleetTerminals = create<Record<string, TerminalInfo[]>>(() => ({}));
+
+/** Lists the terminals of every other connected host; a host that can't answer drops out. */
+export async function refreshFleetTerminals(): Promise<void> {
+  const { hosts, activeId } = useHosts.getState();
+  const next: Record<string, TerminalInfo[]> = {};
+  await Promise.all(
+    hosts
+      .filter((h) => h.id !== activeId)
+      .map(async (h) => {
+        const c = getHostClient(h.id);
+        if (!c || c === getClient()) return;
+        try {
+          next[h.id] = (await c.listTerminals()).terminals;
+        } catch {
+          // Offline or mid-reconnect: leave it out until the next refresh.
+        }
+      }),
+  );
+  if (useHosts.getState().activeId === activeId) useFleetTerminals.setState(next, true);
+}
+
+/** Opens a terminal on another host: that host becomes the active one, then the terminal opens. */
+export async function openTerminalOnHost(hostId: string, open: () => void): Promise<void> {
+  const host = useHosts.getState().hosts.find((h) => h.id === hostId);
+  if (host && host.id !== useHosts.getState().activeId) await connect(host);
+  open();
+}
+
+export async function killTerminalOnHost(hostId: string, id: string): Promise<void> {
+  await getHostClient(hostId)?.killTerminal(id);
+  useFleetTerminals.setState((s) => ({
+    ...s,
+    [hostId]: (s[hostId] ?? []).filter((t) => t.id !== id),
   }));
 }

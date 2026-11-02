@@ -157,11 +157,41 @@ frogg terminal capture <terminal-id> --scrollback
 A terminal shows the other devices watching or typing in it; see
 [shared sessions](/docs/using-frogg/shared-sessions/).
 
+In Frogg Next the Terminals panel lists the active host's terminals first, then those on every
+other connected host, one group per host. Opening one switches to its host. To list only the
+active host's terminals, turn off **Settings > Files, editor & terminal > List terminals from
+every host**.
+
+To keep sessions and terminals in one list, turn on **Show terminals in the Sessions list** in
+the same settings page (off by default). The Sessions list then groups by host: each host's
+sessions, then its terminals. The Terminals tool leaves the rail, and a terminal opens in the
+main pane in place of the chat; picking a session goes back to its chat. The chats and history
+views are unchanged, and a single project's view lists only the active host's terminals.
+
 A full-screen program (Claude Code's fullscreen mode, `htop`, `less`) keeps its own history, so
 the wheel goes to the program and scrolls it there, including on a device that opens the
 terminal after the program started. Otherwise the wheel scrolls the terminal's scrollback. In
 Frogg Next that also holds when a program left mouse reporting on (hold Shift to send the wheel
 to it), and Shift+PageUp / Shift+PageDown page the scrollback, or the full-screen program's view.
+
+In Frogg Next on desktop and web, drop files on a terminal to upload them to its host; once
+they arrive, their paths are typed at the prompt, quoted where needed, the way a local terminal
+pastes a dropped file. Claude Code running in the terminal picks a dropped picture up from its
+path. Each upload shows its progress in the corner and can be cancelled.
+
+## Files, review and uploads (Frogg Next)
+
+- **Files** browses the open session's checkout. Click the folder name to type a path:
+  `~/projects`, `/etc`, `C:/Users/Desktop`, or a path relative to the current folder. A file
+  path opens the file. The × beside the path, or opening another session, returns to the
+  checkout. In the editor, Ctrl+S (Cmd+S on macOS) saves.
+- **Source control** shows uncommitted changes. When there are none and the branch has commits
+  its base lacks, as when an agent committed its work, it compares against the base instead
+  until you pick a comparison.
+- **Attachments** that are not small images upload to the host in chunks, so large files do
+  not need to fit in memory. The chip shows progress, × cancels and the host deletes the
+  partial file, and a message waits until its uploads finish. Files over 4 GB are refused;
+  hosts on this release enforce the same limit.
 
 ## Organize the sidebar
 
@@ -189,6 +219,18 @@ The display menu at the top of the sidebar controls how sessions are arranged.
 
 Grouping and sort are saved on the device. The sidebar starts on **Recent activity**, including
 after updating from a version without sorting; your saved drag order is kept for **Manual**.
+
+In Frogg Next, grouping by status gives five sections, each with a one-line caption saying what
+it holds: **Needs you** (waiting for your approval or answer), **Failed** (stopped with an
+error), **Ready to review** (finished a turn you have not opened yet), **Working** (running a
+turn now) and **Idle** (waiting for your next message).
+
+A [subagent](/docs/using-frogg/agents/#subagents) session is listed under the session that
+started it, never as a session of its own and never in another project's or host's section. It
+shows in its parent's sub-work list, and the parent sits in the most urgent section of the two,
+so a subagent waiting on an approval puts its parent under **Needs you**. Searching for a
+subagent's title shows its parent. A subagent whose parent is archived, and one that has been
+detached, is listed on its own.
 
 ## Hide projects and sessions
 
@@ -223,6 +265,10 @@ else.
   look-alike letters. Use **Copy session ID** in a session's menu, or copy it from the hover
   card. Subagents have their own session IDs, which you can copy from their rows.
 - **Copy branch name** appears only for sessions that are on a git branch.
+- In the Frogg Next desktop app, **Open in new window** in the chat header's ⋯ menu pops the
+  session out into its own window, showing just that chat. It uses the same saved hosts and
+  pairing as the main window and keeps its own connection, so both stay in step. Opening the
+  same session again focuses its window.
 - Hold <kbd>Ctrl</kbd> to turn the menu button on the selected and hovered
   sessions into icon buttons: rename, pin to top, labels, copy session ID, hide and archive. They
   sit at the right edge of the row, in the same place on every row, and cover the row's diff

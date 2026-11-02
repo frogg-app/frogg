@@ -159,6 +159,7 @@ function answer(id: string, requestId: string, allow: boolean): void {
 
 const features = {
   agentCleanCut: true,
+  agentShellEscape: true,
   providerAccounts: true,
   providerUsageAccountScoped: true,
   agentProviderAccountTransfer: true,
@@ -224,8 +225,14 @@ const known: Record<string, (...args: never[]) => unknown> = {
     entries: useDaemon.getState().timelines[id] ?? [],
   }),
   setAgentTimelineSubscription: async () => ({}),
-  sendMessage: async (id: string, text: string) => {
-    push(id, { type: "user_message", text, messageId: `u-${Date.now()}` } as TimelineItem);
+  sendMessage: async (id: string, text: string, opts?: { messageId?: string }) => {
+    // Like the daemon, the client's message id comes back as the user message's clientMessageId.
+    push(id, {
+      type: "user_message",
+      text,
+      messageId: `u-${Date.now()}`,
+      ...(opts?.messageId ? { clientMessageId: opts.messageId } : {}),
+    } as TimelineItem);
     void playTurn(id);
     return {};
   },
@@ -282,6 +289,10 @@ const known: Record<string, (...args: never[]) => unknown> = {
   },
   setAgentModel: async (id: string, model: string) => patchAgent(id, { model }),
   setAgentMode: async (id: string, currentModeId: string) => patchAgent(id, { currentModeId }),
+  setAgentThinkingOption: async (id: string, thinkingOptionId: string | null) => {
+    patchAgent(id, { thinkingOptionId });
+    return null;
+  },
   clearAgentAttention: async (ids: string[]) => {
     for (const id of ids) patchAgent(id, { requiresAttention: false, attentionReason: null });
     return {};

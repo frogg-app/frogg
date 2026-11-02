@@ -4314,6 +4314,9 @@
                     "autoResumeOnUsageLimit": {
                       "type": "boolean"
                     },
+                    "usageStats": {
+                      "type": "boolean"
+                    },
                     "companionModel": {
                       "anyOf": [
                         {
@@ -5641,6 +5644,22 @@
               "properties": {
                 "type": {
                   "type": "string",
+                  "const": "provider.claude_plugins.list.request"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
                   "const": "provider.account.list.request"
                 },
                 "provider": {
@@ -5886,6 +5905,15 @@
                                   "defaultThinkingOptionId": {
                                     "type": "string",
                                     "minLength": 1
+                                  },
+                                  "launchArgs": {
+                                    "maxItems": 50,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 500
+                                    }
                                   }
                                 }
                               }
@@ -6006,6 +6034,15 @@
                         "defaultThinkingOptionId": {
                           "type": "string",
                           "minLength": 1
+                        },
+                        "launchArgs": {
+                          "maxItems": 50,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 500
+                          }
                         }
                       }
                     },

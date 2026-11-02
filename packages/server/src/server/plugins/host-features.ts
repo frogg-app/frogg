@@ -10,4 +10,5 @@ export const PLUGIN_HOST_FEATURES: readonly string[] = [
   "workspaces",
   "todos",
   "audit",
+  "agent.tools",
 ];

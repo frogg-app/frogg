@@ -18,6 +18,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Beam, isNative, NativeEnter, NativePulse, type Pose, Sweep } from "./nativeMotion";
 import {
+  alpha,
   anim,
   color,
   ease,
@@ -32,6 +33,7 @@ import { Clamp } from "./chat/Clamp";
 import { Collapse } from "./subwork/Collapse";
 import { CodeBlock } from "./Code";
 import { Markdown } from "./Markdown";
+import { HostImage } from "./markdown/HostImage";
 import { StatusGlyph } from "./StatusGlyph";
 import { SpawnedElapsed, SpawnedLink } from "./subwork/Link";
 import { T } from "./Text";
@@ -132,11 +134,15 @@ function summary(
   }
 }
 
+const IMAGE_FILE = /\.(png|jpe?g|gif|webp|bmp|svg)$/i;
+
 function Body({ d }: { d: Detail }) {
   switch (d.type) {
     case "shell":
       return d.output ? <Pre text={d.output} /> : null;
     case "read":
+      // A screenshot or other picture the agent looked at shows as the picture, not its bytes.
+      if (d.filePath && IMAGE_FILE.test(d.filePath)) return <HostImage src={d.filePath} alt="" />;
       return d.content ? <CodeBlock code={d.content} filename={d.filePath} /> : null;
     case "write":
       return d.content ? <CodeBlock code={d.content} filename={d.filePath} /> : null;
@@ -353,15 +359,15 @@ const s = StyleSheet.create({
   edgeBox: { position: "absolute", top: 0, bottom: 0, left: 0, width: 2, overflow: "hidden" },
   bgMint: { backgroundColor: color.mint },
   bgCoral: { backgroundColor: color.coral },
-  nSweepDone: { backgroundColor: "rgba(63,207,142,0.10)", position: "absolute", top: 0, bottom: 0 },
+  nSweepDone: { backgroundColor: alpha(color.mint, 0.1), position: "absolute", top: 0, bottom: 0 },
   nSweepFail: {
-    backgroundColor: "rgba(255,107,107,0.08)",
+    backgroundColor: alpha(color.coral, 0.08),
     position: "absolute",
     top: 0,
     bottom: 0,
   },
   failed: {
-    borderColor: "rgba(255,107,107,0.35)",
+    borderColor: alpha(color.coral, 0.35),
     borderLeftWidth: 2,
     borderLeftColor: color.coral,
   },
@@ -378,7 +384,7 @@ const s = StyleSheet.create({
     height: 1,
     backgroundColor: color.cyan2,
     ...web({
-      backgroundImage: "linear-gradient(90deg, transparent, #7fd9e6, transparent)",
+      backgroundImage: `linear-gradient(90deg, transparent, ${color.cyan2}, transparent)`,
     }),
     ...anim(frames.beam, "1.4s", "cubic-bezier(0.77,0,0.175,1)", "infinite", "none"),
   },
@@ -386,13 +392,13 @@ const s = StyleSheet.create({
   sweep: { position: "absolute", top: 0, bottom: 0, left: 0, width: "40%", opacity: 0 },
   sweepDone: {
     ...web({
-      backgroundImage: "linear-gradient(90deg, transparent, rgba(63,207,142,0.10), transparent)",
+      backgroundImage: `linear-gradient(90deg, transparent, ${alpha(color.mint, 0.1)}, transparent)`,
     }),
     ...toolDoneMotion.sweep,
   },
   sweepFail: {
     ...web({
-      backgroundImage: "linear-gradient(90deg, transparent, rgba(255,107,107,0.08), transparent)",
+      backgroundImage: `linear-gradient(90deg, transparent, ${alpha(color.coral, 0.08)}, transparent)`,
     }),
     ...toolDoneMotion.sweep,
   },
@@ -449,6 +455,6 @@ const s = StyleSheet.create({
   chev: { transform: [{ rotate: "0deg" }], ...web({ transition: `transform 200ms ${ease}` }) },
   chevOpen: { transform: [{ rotate: "90deg" }], ...web({ transition: `transform 200ms ${ease}` }) },
   error: { color: color.coral, padding: 10 },
-  add: { backgroundColor: "rgba(63,207,142,0.09)", color: "#a6ecc8" },
-  del: { backgroundColor: "rgba(255,107,107,0.10)", color: "#ffb3b3" },
+  add: { backgroundColor: alpha(color.mint, 0.09), color: color.addText },
+  del: { backgroundColor: alpha(color.coral, 0.1), color: color.delText },
 });

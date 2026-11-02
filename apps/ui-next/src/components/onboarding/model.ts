@@ -1,6 +1,8 @@
 // First-run onboarding: the steps, the two profile questions and how the answers tailor the flow.
 // Pure data and functions, so the tailoring is testable without rendering anything.
 
+import { kbd } from "../../kbd";
+
 /** How technical the user says they are: decides how much each step explains. */
 export type Level = "new" | "some" | "expert";
 /** What they mostly work on (several allowed): decides which tools and settings get pointed at. */
@@ -119,7 +121,7 @@ const CORE: Concept[] = [
     id: "tools",
     title: "Tools",
     body: "The rail holds the tools around a session: files, source control, terminals, PRs and CI, tasks.",
-    deep: "Each tool opens beside the session it relates to. ⌘K (Ctrl+K) opens the command palette when you know what you want.",
+    deep: `Each tool opens beside the session it relates to. ${kbd("⌘K")} opens the command palette when you know what you want.`,
     tool: "files",
   },
   {

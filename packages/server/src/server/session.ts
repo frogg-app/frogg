@@ -3026,6 +3026,8 @@ export class Session {
         return this.providerCatalogSession.handleProviderUsageListRequest(msg);
       case "provider.account.list.request":
         return this.providerAccountSession.handleProviderAccountListRequest(msg);
+      case "provider.claude_plugins.list.request":
+        return this.providerAccountSession.handleProviderClaudePluginsListRequest(msg);
       case "provider.account.create.request":
         return this.providerAccountSession.handleProviderAccountCreateRequest(msg);
       case "provider.account.delete.request":

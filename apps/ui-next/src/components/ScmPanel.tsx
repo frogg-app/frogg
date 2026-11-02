@@ -33,7 +33,7 @@ import { useFormFactor } from "../theme/layout";
 import { BranchMenu } from "./tools/BranchMenu";
 import { useConfirm, type ConfirmSpec } from "./tools/Confirm";
 import { Menu, useAnchor, type MenuEntry } from "./tools/Menu";
-import { color, font, web } from "../theme/tokens";
+import { alpha, color, font, web } from "../theme/tokens";
 import { useUi } from "../ui-store";
 import { Button } from "./Button";
 import { Cut } from "./Cut";
@@ -59,7 +59,7 @@ export function ScmPanel() {
   const cwd = useActiveCwd();
   const conn = useDaemon((s) => s.conn);
   const ff = useFormFactor();
-  const { status, files, busy, error } = useScm();
+  const { status, files, busy, error, compare } = useScm();
   const { commits, stashes } = useScmExtra();
   const diffPath = useUi((s) => s.diffPath);
   const openDiff = useUi((s) => s.openDiff);
@@ -78,6 +78,8 @@ export function ScmPanel() {
     if (cwd) void watchCheckout(cwd).then(() => loadExtras().catch(() => {}));
   }, [cwd]);
   const git = status && status.isGit ? status : null;
+  // Against the base the list is the branch's changes; only a dirty tree has anything to commit.
+  const dirty = compare === "base" && !git?.isDirty ? 0 : (files?.length ?? 0);
   const showStashes = usePrefs((p) => p.scmStashes);
   return (
     <View style={s.fill}>
@@ -94,15 +96,7 @@ export function ScmPanel() {
           </View>
         )}
       </PanelHead>
-      {git && (
-        <MoreMenu
-          rect={more.rect}
-          onClose={more.close}
-          git={git}
-          dirty={files?.length ?? 0}
-          ask={ask}
-        />
-      )}
+      {git && <MoreMenu rect={more.rect} onClose={more.close} git={git} dirty={dirty} ask={ask} />}
       {!cwd && (
         <T v="label" style={s.noCwd}>
           open a session to see its checkout
@@ -113,11 +107,16 @@ export function ScmPanel() {
           this checkout is not a git repository
         </T>
       )}
-      {git && <BranchCard git={git} busy={busy} dirty={files?.length ?? 0} />}
-      {git && <CommitBox count={files?.length ?? 0} busy={busy} error={error} />}
+      {git && <BranchCard git={git} busy={busy} dirty={dirty} />}
+      {git && <CommitBox count={dirty} busy={busy} error={error} />}
       <BracketScope>
         <ScrollView style={s.flex} contentContainerStyle={s.scrollPad}>
-          {files && <GroupHead label="Changes" count={files.length} />}
+          {files && (
+            <GroupHead
+              label={compare === "base" && git?.baseRef ? `Changes vs ${git.baseRef}` : "Changes"}
+              count={files.length}
+            />
+          )}
           {files?.length === 0 && (
             <T v="label" style={s.clean}>
               working tree clean
@@ -511,7 +510,7 @@ const s = StyleSheet.create({
   },
   error: { color: color.coral },
   fileHover: { backgroundColor: color.wash },
-  fileOn: { backgroundColor: "rgba(127,217,230,0.05)" },
+  fileOn: { backgroundColor: alpha(color.cyan2, 0.05) },
   letter: { width: 14, fontSize: 10.5 },
   fileName: { fontSize: 13 },
   dir: { fontSize: 10.5, color: color.faint },

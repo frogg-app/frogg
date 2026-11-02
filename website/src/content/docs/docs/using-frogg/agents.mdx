@@ -35,7 +35,31 @@ In a session, type in the composer and pick:
 
 Mention files with `@`, use `/` for provider commands and skills, and attach images or
 files with **+** or drag and drop. Each file can be at most 50 MB; larger files are
-rejected with an error before Frogg reads them.
+rejected with an error before Frogg reads them. On desktop and web you can also paste a picture
+(a screenshot, or an image copied from a browser or file manager) straight into the composer.
+A copy from a document that carries its text along with a picture of it pastes the text.
+
+In Frogg Next the **+** opens the file chooser straight away: small pictures go to the model,
+anything else uploads to the host. Change the **thinking** level of a running agent from the
+picker beside **Model**; providers that can't switch mid-turn apply it from the next turn.
+
+### Composer shortcuts (Frogg Next)
+
+- **Ctrl+S** stashes what you've typed, as in Claude Code: the composer clears, and the draft
+  comes back after your next message is sent. Press Ctrl+S again with an empty composer to
+  bring it back sooner, or with something typed to swap the two. Files still uploading stay in
+  the composer.
+- **`!command`** runs a shell command on the host in the session's folder, as Claude Code's
+  bash mode does. It shows in the timeline as a shell tool call, without starting a turn, and its
+  output goes to the agent along with your next message. Commands are stopped after two
+  minutes; the last 30,000 characters of output are kept. This works with every provider and
+  needs a daemon that supports it.
+- Sending from the expanded composer folds it back to its small size.
+
+In Frogg Next, what you attached shows on your message in the conversation: pictures inline,
+other files as named chips. Pictures stay visible while the app runs; after a reload, and on
+other devices, Frogg Next shows a named chip instead, because the host keeps only the message's
+text.
 
 Returning to a Claude or Codex conversation that has been sitting for more than an hour outlines the
 composer in amber and notes, in its corner, how many input tokens the next message re-sends.
@@ -64,7 +88,12 @@ It stays usable; see [shared sessions](/docs/using-frogg/shared-sessions/).
 ## The timeline
 
 The timeline shows messages, tool calls (reads, edits, shell commands), diffs, permission
-requests and results. Per message you can copy it, **rewind** to it, or **fork chat from
+requests and results. Replies render Markdown: headings, bulleted, numbered, nested and task
+lists, quotes, rules, tables, fenced code, links, and inline code, bold, italics and
+strikethrough. Images in a reply, or a picture the agent read with a tool, show inline; host
+paths are read through the daemon, relative ones from the session's folder. In Frogg Next,
+hover a picture (or tap it on a phone) and select the enlarge button to see it full size; Esc,
+the close button or a click outside closes it. Per message you can copy it, **rewind** to it, or **fork chat from
 here** to start a new agent with the conversation up to that point.
 
 Read it from a terminal:
@@ -108,8 +137,13 @@ the same rows from history.
 A [clean cut](/docs/using-frogg/clean-cut/#subagents) of a parent also cuts its idle Frogg
 subagents, each from its own timeline.
 
+In Frogg Next a subagent's chat header reads **Subagent of *parent***; select it to go back to the
+parent. Subagents are [listed under their parent](/docs/using-frogg/projects-and-sessions/#organize-the-sidebar)
+in the sessions list.
+
 Make a subagent independent without stopping it. Detaching is not confirmed: nothing is lost,
-the agent keeps its history, and the app opens it and confirms with a toast.
+the agent keeps its history, and the app opens it and confirms with a toast. In Frogg Next, use
+**Detach from parent** in the subagent's session menu (⋯).
 
 ```sh
 frogg agent detach <child-id>

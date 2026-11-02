@@ -120,9 +120,10 @@ class ElectronAppUpdateRuntime implements AppUpdateRuntime {
     // Electron's built-in handler would install an older download without checking
     // whether a newer release has superseded it.
     autoUpdater.autoInstallOnAppQuit = false;
-    // The classic app only follows stable releases.
-    autoUpdater.allowPrerelease = false;
-    autoUpdater.channel = "electron-latest";
+    // The build's identity picks the channel: frogg beta follows `-beta.N` prereleases, the
+    // stable app stable releases. Nothing in the renderer can switch it.
+    autoUpdater.allowPrerelease = brand.channel === "beta";
+    autoUpdater.channel = brand.channel === "beta" ? "electron-beta" : "electron-latest";
     autoUpdater.allowDowngrade = false;
     autoUpdater.isUserWithinRollout = async (info) => {
       try {
@@ -175,6 +176,7 @@ class ElectronAppUpdateRuntime implements AppUpdateRuntime {
       const feed = await resolveElectronUpdateFeed({
         override: process.env.FROGG_ELECTRON_UPDATE_URL,
         releaseBase: brand.distribution.releaseBase,
+        releaseChannel: brand.channel,
         currentVersion: app.getVersion(),
       });
       if (feed) {

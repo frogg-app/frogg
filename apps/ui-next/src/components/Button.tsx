@@ -1,10 +1,11 @@
 import type { LucideIcon } from "lucide-react-native";
 import { Pressable, StyleSheet, View } from "react-native";
 import { usePrefs, type ButtonStyle } from "../prefs";
-import { color, web } from "../theme/tokens";
+import { alpha, color, web } from "../theme/tokens";
 import { Brackets } from "./Brackets";
 import { ShapeFace, useShape, type ShapeLang } from "./Shape";
 import { T } from "./Text";
+import { kbd as formatKbd } from "../kbd";
 
 type Kind = "primary" | "ghost" | "danger";
 export type PrimaryStyle = ButtonStyle;
@@ -88,7 +89,7 @@ function ButtonFace({
       </T>
       {kbd && (
         <T v="mono" style={[s.k, primary && FILLED.has(alt) && s.kPrimary]}>
-          {kbd}
+          {formatKbd(kbd)}
         </T>
       )}
     </ShapeFace>
@@ -167,19 +168,19 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: color.line2,
   },
-  kPrimary: { color: color.onAccent, borderColor: "rgba(4,22,26,0.35)" },
+  kPrimary: { color: color.onAccent, borderColor: alpha(color.onAccent, 0.35) },
 
-  ghost: { backgroundColor: "rgba(255,255,255,0.05)" },
-  ghostH: { backgroundColor: "rgba(255,255,255,0.1)" },
-  ghostP: { backgroundColor: "rgba(255,255,255,0.14)" },
-  danger: { backgroundColor: "rgba(255,107,107,0.08)" },
-  dangerH: { backgroundColor: "rgba(255,107,107,0.16)" },
-  dangerP: { backgroundColor: "rgba(255,107,107,0.22)" },
+  ghost: { backgroundColor: alpha(color.ink, 0.05) },
+  ghostH: { backgroundColor: alpha(color.ink, 0.1) },
+  ghostP: { backgroundColor: alpha(color.ink, 0.14) },
+  danger: { backgroundColor: alpha(color.coral, 0.08) },
+  dangerH: { backgroundColor: alpha(color.coral, 0.16) },
+  dangerP: { backgroundColor: alpha(color.coral, 0.22) },
 
   gradient: {
     backgroundColor: color.cyan,
     ...web({
-      backgroundImage: "linear-gradient(135deg, #7fd9e6, #25b5c8 55%, #045b9d)",
+      backgroundImage: `linear-gradient(135deg, ${color.cyan2}, ${color.cyan} 55%, ${color.deep})`,
     }),
   },
   gradientH: { ...web({ filter: "brightness(1.1)" }) },

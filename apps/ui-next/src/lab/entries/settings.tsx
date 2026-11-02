@@ -15,6 +15,7 @@ import {
   Toggle,
 } from "../../components/settings/controls";
 import { DesignOptions } from "../../components/settings/pages/DesignOptions";
+import { Privacy } from "../../components/settings/pages/Privacy";
 import { Acts, Block, Field, Item, Value } from "../../components/settings/pages/kit";
 import { color } from "../../theme/tokens";
 import { Case, Cases, Cell, W, Wrap, type Entry } from "../kit";
@@ -213,7 +214,28 @@ function KitRows() {
   );
 }
 
+function PrivacyCase() {
+  return (
+    <Cases>
+      <Case name="Privacy & feedback" note="Desktop page column." w={640} plain>
+        <Privacy />
+      </Case>
+    </Cases>
+  );
+}
+
 export const settings: Entry[] = [
+  {
+    id: "privacy",
+    name: "Privacy & feedback",
+    category: "Settings controls",
+    path: "components/settings/pages/Privacy.tsx · pages/BugReport.tsx · usage-stats/",
+    purpose:
+      "Opt-in usage statistics (this device and the connected host), the full event allowlist with every batch sent, and Report a bug: a redacted preview the user edits before sending or saving it. Without a collector in brand.json the toggles are off and the report saves as a file.",
+    usedBy: 1,
+    polish: "Same Section/Row/Toggle kit as every settings page; no motion of its own",
+    variants: [{ id: "page", label: "Page", C: PrivacyCase }],
+  },
   {
     id: "design-options",
     name: "Design options",

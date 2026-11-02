@@ -12,6 +12,7 @@ import { Block, ErrorLine, Value, useAction } from "./kit";
 
 const providers = () => useUi.getState().openSettings("providers");
 const gettingStarted = () => openOnboarding();
+const reportBug = () => useUi.getState().openSettings("privacy");
 export function About() {
   const host = useDaemon((s) => s.serverName);
   const conn = useDaemon((s) => s.conn);
@@ -51,8 +52,11 @@ export function About() {
             disabled={conn !== "online" || !!act.pending}
           />
         </Row>
-        <Row label="Provider diagnostics" last>
+        <Row label="Provider diagnostics">
           <Button label="Open Providers" onPress={providers} />
+        </Row>
+        <Row label="Report a bug" hint="Redacted, previewed and editable before it is sent" last>
+          <Button label="Report…" onPress={reportBug} />
         </Row>
       </Section>
       <ErrorLine text={act.error} />

@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "apiVersion": 1,
   "scope": "daemon",
-  "description": "",
+  "description": "{{name}}: describe what this plugin does.",
   "author": "",
   "entry": { "daemon": "dist/daemon.js" },
   "capabilities": ["rpc", "ui.contribute"],

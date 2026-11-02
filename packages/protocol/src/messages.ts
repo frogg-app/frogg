@@ -15,6 +15,7 @@ import {
   ProjectImportReadResponseSchema,
 } from "./project-import/messages.js";
 import { z } from "zod";
+import { TailscaleNodeStatusSchema } from "./tailscale.js";
 import {
   AuthDeviceListRequestSchema,
   AuthDeviceRenameRequestSchema,
@@ -453,6 +454,8 @@ export const MutableDaemonConfigSchema = z
     autoArchiveAfterMerge: z.boolean().default(false),
     // COMPAT(autoResumeOnUsageLimit): added in v1.5.38; absent means an older daemon without the feature.
     autoResumeOnUsageLimit: z.boolean().optional(),
+    // COMPAT(usageStats): added in v1.6.14; absent means an older daemon that never sends statistics.
+    usageStats: z.boolean().optional(),
     // COMPAT(companionModel): added in v1.5.43; absent means an older daemon without the picker.
     // null is "the backend's default model".
     companionModel: z.string().nullable().optional(),
@@ -484,6 +487,7 @@ export const MutableDaemonConfigPatchSchema = z
     metadataGeneration: MutableMetadataGenerationConfigSchema.partial().optional(),
     autoArchiveAfterMerge: z.boolean().optional(),
     autoResumeOnUsageLimit: z.boolean().optional(),
+    usageStats: z.boolean().optional(),
     companionModel: z.string().trim().min(1).max(200).nullable().optional(),
     cleanCut: MutableCleanCutConfigPatchSchema.optional(),
     enableTerminalAgentHooks: z.boolean().optional(),
@@ -2175,6 +2179,12 @@ export const ProviderUpdateSetPreferencesRequestMessageSchema = z.object({
   requestId: z.string(),
 });
 
+/** Installed Claude Code plugins and whether their marketplace has a newer version. Read-only. */
+export const ProviderClaudePluginsListRequestMessageSchema = z.object({
+  type: z.literal("provider.claude_plugins.list.request"),
+  requestId: z.string(),
+});
+
 export const ProviderAccountListRequestMessageSchema = z.object({
   type: z.literal("provider.account.list.request"),
   provider: AgentProviderSchema.optional(),
@@ -3435,6 +3445,12 @@ export const FileDownloadTokenRequestSchema = z.object({
   requestId: z.string(),
 });
 
+/**
+ * Largest file a client may upload to a host in one transfer. Uploads stream to disk in chunks,
+ * so this bounds disk use and transfer time rather than memory.
+ */
+export const FILE_UPLOAD_MAX_BYTES = 4 * 1024 * 1024 * 1024;
+
 export const FileUploadRequestSchema = z.object({
   type: z.literal("file.upload.request"),
   fileName: z.string().min(1),
@@ -3874,6 +3890,7 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   ProviderUpdateCheckRequestMessageSchema,
   ProviderUpdateInstallRequestMessageSchema,
   ProviderUpdateSetPreferencesRequestMessageSchema,
+  ProviderClaudePluginsListRequestMessageSchema,
   ProviderAccountListRequestMessageSchema,
   ProviderAccountCreateRequestMessageSchema,
   ProviderAccountDeleteRequestMessageSchema,
@@ -4411,6 +4428,9 @@ export const ServerInfoStatusPayloadSchema = z
         providerAccountPreferences: z.boolean().optional(),
         // COMPAT(providerUpdates): added in v1.5.26, remove after 2027-09-23.
         providerUpdates: z.boolean().optional(),
+        // COMPAT(claudePluginUpdates): added in v1.6.14, remove after 2027-11-02.
+        // provider.claude_plugins.list is available.
+        claudePluginUpdates: z.boolean().optional(),
         // COMPAT(agentProviderAccountTransfer): added in v1.5.7, remove after 2027-09-19.
         // agent.provider_account.transfer is available and this daemon's build of
         // the agent's provider can relocate a session between config directories.
@@ -4421,6 +4441,10 @@ export const ServerInfoStatusPayloadSchema = z
         // COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27.
         // agent.clean_cut is available.
         agentCleanCut: z.boolean().optional(),
+        // COMPAT(agentShellEscape): added in v1.6.14, remove after 2027-11-02.
+        // A `!cmd` prompt runs on the daemon in the agent's folder and its output
+        // goes to the model with the next turn.
+        agentShellEscape: z.boolean().optional(),
         // COMPAT(spokenNotifications): added in v0.1.14, remove gate after 2027-09-03.
         spokenNotifications: z.boolean().optional(),
         // COMPAT(checkoutForgeSetAutoMerge): added in v0.2.0-beta.1. Remove the
@@ -4574,6 +4598,9 @@ export const ServerInfoStatusPayloadSchema = z
         // COMPAT(claudeExtraArgs): added in v1.6.14, remove gate after 2027-10-15.
         // Claude providerOptions.extraArgs (extra Claude Code CLI flags, e.g. --chrome).
         claudeExtraArgs: z.boolean().optional(),
+        // COMPAT(providerAccountLaunchArgs): added in v1.6.14, remove gate after 2027-11-01.
+        // Provider account preferences keep launchArgs (per-account default CLI flags).
+        providerAccountLaunchArgs: z.boolean().optional(),
         // COMPAT(deviceAccess): added in v1.6.0, remove gate after 2027-09-22.
         // auth.device.*, auth.pairing_code.create, auth.pairing_request.*,
         // auth.settings.*, auth.password.set and the /api/setup + /api/auth/login
@@ -4613,6 +4640,9 @@ export const ServerInfoStatusPayloadSchema = z
     // COMPAT(securityPosture): added in v1.6.0. Present for owner connections
     // only; the findings a notification dot should reflect.
     security: SecurityPostureSchema.optional(),
+    // COMPAT(tailscaleStatus): added in v1.6.14. The daemon machine's Tailscale node, when
+    // Tailscale is installed there; the app warns before its key expires.
+    tailscale: TailscaleNodeStatusSchema.optional(),
     // COMPAT(deviceAccess): added in v1.6.0. The paired device this connection
     // authenticated as; absent for credential-less (loopback / trusted LAN) connections.
     device: z
@@ -7737,6 +7767,52 @@ const ProviderAccountResponsePayloadSchema = z.object({
   error: z.string().nullable(),
 });
 
+export const ClaudePluginStatusSchema = z.object({
+  /** `<name>@<marketplace>`, as Claude Code keys it. */
+  id: z.string(),
+  name: z.string(),
+  marketplace: z.string(),
+  /** "user" | "project" | "local" */
+  scope: z.string(),
+  projectPath: z.string().nullable(),
+  description: z.string().nullable(),
+  installedVersion: z.string().nullable(),
+  /** Newest version the local marketplace copy declares; null when it declares none. */
+  latestVersion: z.string().nullable(),
+  updateDue: z.boolean(),
+  /** Claude Code updates this marketplace's plugins itself when it starts. */
+  autoUpdate: z.boolean(),
+  lastUpdated: z.string().nullable(),
+});
+export type ClaudePluginStatus = z.infer<typeof ClaudePluginStatusSchema>;
+
+export const ClaudePluginMarketplaceStatusSchema = z.object({
+  name: z.string(),
+  autoUpdate: z.boolean(),
+  /** When Claude Code last refreshed its local copy of the marketplace. */
+  lastUpdated: z.string().nullable(),
+});
+
+/** One Claude plugins folder and the accounts that share it (linked folders share one). */
+export const ClaudePluginSourceSchema = z.object({
+  configDir: z.string(),
+  /** Ids of the Claude accounts using this folder, including the implicit default account. */
+  accountIds: z.array(z.string()),
+  accountNames: z.array(z.string()),
+  plugins: z.array(ClaudePluginStatusSchema),
+  marketplaces: z.array(ClaudePluginMarketplaceStatusSchema),
+});
+export type ClaudePluginSource = z.infer<typeof ClaudePluginSourceSchema>;
+
+export const ProviderClaudePluginsListResponseMessageSchema = z.object({
+  type: z.literal("provider.claude_plugins.list.response"),
+  payload: z.object({
+    requestId: z.string(),
+    sources: z.array(ClaudePluginSourceSchema),
+    error: z.string().nullable(),
+  }),
+});
+
 export const ProviderAccountListResponseMessageSchema = z.object({
   type: z.literal("provider.account.list.response"),
   payload: ProviderAccountResponsePayloadSchema,
@@ -8313,6 +8389,7 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   ProviderUpdateCheckResponseMessageSchema,
   ProviderUpdateInstallResponseMessageSchema,
   ProviderUpdateSetPreferencesResponseMessageSchema,
+  ProviderClaudePluginsListResponseMessageSchema,
   ProviderAccountListResponseMessageSchema,
   ProviderAccountCreateResponseMessageSchema,
   ProviderAccountDeleteResponseMessageSchema,
@@ -8596,6 +8673,12 @@ export type ProviderAccountDeleteRequestMessage = z.infer<
 >;
 export type ProviderAccountSetActiveRequestMessage = z.infer<
   typeof ProviderAccountSetActiveRequestMessageSchema
+>;
+export type ProviderClaudePluginsListRequestMessage = z.infer<
+  typeof ProviderClaudePluginsListRequestMessageSchema
+>;
+export type ProviderClaudePluginsListResponseMessage = z.infer<
+  typeof ProviderClaudePluginsListResponseMessageSchema
 >;
 export type ProviderAccountListResponseMessage = z.infer<
   typeof ProviderAccountListResponseMessageSchema

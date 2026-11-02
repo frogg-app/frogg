@@ -1,7 +1,8 @@
 import { useEffect, type RefObject } from "react";
 import type { TextInput } from "react-native";
 import { toastError } from "../toast/store";
-import { prepareAttachment, type Attachment } from "./actions";
+import { attachPicked, type Attachment } from "./actions";
+import { picturesToAttach } from "./pasteRules";
 import { readFile } from "./pickFiles.web";
 
 let pasted = 0;
@@ -10,6 +11,7 @@ let pasted = 0;
 export function usePasteImages(
   input: RefObject<TextInput | null>,
   onAdd: (a: Attachment[]) => void,
+  onRemove: (id: string) => void,
   enabled: boolean,
 ): void {
   useEffect(() => {
@@ -18,9 +20,15 @@ export function usePasteImages(
     if (!enabled || !el?.addEventListener) return;
     const onPaste = (e: ClipboardEvent) => {
       const data = e.clipboardData;
-      const images = Array.from(data?.files ?? []).filter((f) => f.type.startsWith("image/"));
-      // Copying from a document puts its text plus a rendered picture of it: paste the text.
-      if (!images.length || data?.getData("text/plain")) return;
+      // Some browsers expose a pasted picture only as an item, not in `files`.
+      const files = Array.from(data?.files ?? []);
+      if (!files.length)
+        for (const item of Array.from(data?.items ?? [])) {
+          const f = item.kind === "file" ? item.getAsFile() : null;
+          if (f) files.push(f);
+        }
+      const images = picturesToAttach(files, data?.getData("text/plain") ?? "");
+      if (!images.length) return;
       e.preventDefault();
       const named = images.map((f) => {
         if (f.name && f.name !== "image.png") return f;
@@ -28,11 +36,12 @@ export function usePasteImages(
         const ext = f.type.split("/")[1] ?? "png";
         return new File([f], `Pasted image ${pasted}.${ext}`, { type: f.type });
       });
-      Promise.all(named.map(readFile))
-        .then((picked) => Promise.all(picked.map(prepareAttachment)))
-        .then(onAdd, (err: unknown) => toastError("Could not attach the pasted image", err));
+      Promise.all(named.map((f) => readFile(f))).then(
+        (picked) => attachPicked(picked, onAdd, onRemove),
+        (err: unknown) => toastError("Could not attach the pasted image", err),
+      );
     };
     el.addEventListener("paste", onPaste);
     return () => el.removeEventListener("paste", onPaste);
-  }, [input, onAdd, enabled]);
+  }, [input, onAdd, onRemove, enabled]);
 }
