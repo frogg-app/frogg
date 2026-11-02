@@ -1,7 +1,8 @@
 import { ChartColumn } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { patchConfig, useConfig } from "../../../daemon/config";
-import { useDaemon } from "../../../daemon/store";
+import { getClient, useDaemon } from "../../../daemon/store";
+import { optInToUsageStats, type HostOptIn } from "../../../usage-stats/opt-in";
 import {
   setUsageStatsConsent,
   usageStatsAvailable,
@@ -13,8 +14,18 @@ import { Note, Row, Section, Toggle } from "../controls";
 import { BugReport } from "./BugReport";
 import { Banner, Block, ErrorLine, useAction } from "./kit";
 
-const optIn = () => setUsageStatsConsent(true);
 const optOut = () => setUsageStatsConsent(false);
+
+/** The line under the toggles after an opt-in, saying what happened to the connected host. */
+function hostOptInNote(outcome: HostOptIn | null, host: string): string | null {
+  if (outcome === "enabled")
+    return `Also turned on for ${host}, because you own it. Its own switch above turns it off again.`;
+  if (outcome === "not_owner")
+    return `${host} sends its own statistics only if its owner turns them on.`;
+  if (outcome === "failed")
+    return `Couldn't turn statistics on for ${host}. Try its own switch above.`;
+  return null;
+}
 
 /** What each event carries, as shown to the user before and after opting in. */
 const EVENTS: Array<[string, string]> = [
@@ -35,7 +46,27 @@ export function Privacy() {
   const sent = useUsageStats((st) => st.sent);
   const host = useDaemon((st) => st.serverName);
   const hostStats = useConfig((st) => st.config?.usageStats);
+  const conn = useDaemon((st) => st.conn);
+  const role =
+    conn === "online"
+      ? ((getClient()?.getLastServerInfoMessage() as { callerRole?: string } | null)?.callerRole ??
+        null)
+      : null;
+  const owner = role === "owner";
   const act = useAction();
+  const [hostOutcome, setHostOutcome] = useState<HostOptIn | null>(null);
+  const optIn = useCallback(() => {
+    void act.run("optin", async () => setHostOutcome(await optInToUsageStats()));
+  }, [act]);
+  const setApp = useCallback(
+    (on: boolean) => {
+      setHostOutcome(null);
+      if (on) optIn();
+      // Off only ever affects this device; the host keeps its own setting.
+      else optOut();
+    },
+    [optIn],
+  );
   const [showSent, setShowSent] = useState(false);
   const toggleSent = useCallback(() => setShowSent((v) => !v), []);
   const setHost = useCallback(
@@ -59,14 +90,14 @@ export function Privacy() {
           label="Send usage statistics"
           hint={
             available
-              ? "App interactions from this device only. Turning it off deletes this device's statistics id."
+              ? "App interactions from this device only. If you own the connected host, turning it on turns on that host's statistics too. Turning it off deletes this device's statistics id and leaves hosts as they are."
               : "This build has no statistics collector, so nothing is ever sent."
           }
         >
           <Toggle
             value={consent === "on"}
-            onChange={setUsageStatsConsent}
-            disabled={!available}
+            onChange={setApp}
+            disabled={!available || act.pending === "optin"}
             label="Send usage statistics"
           />
         </Row>
@@ -75,18 +106,21 @@ export function Privacy() {
           hint={
             hostStats === undefined
               ? "Needs a newer daemon on this host"
-              : "The daemon's version, OS and provider count, once a day. Each batch is logged to usage-stats.log in the host's Frogg home."
+              : `The daemon's version, OS and provider count, once a day. Each batch is logged to usage-stats.log in the host's Frogg home.${owner ? "" : " Only the host's owner can change this."}`
           }
           last
         >
           <Toggle
             value={hostStats === true}
             onChange={setHost}
-            disabled={!available || hostStats === undefined || act.pending === "host"}
+            disabled={!available || !owner || hostStats === undefined || act.pending === "host"}
             label="Send usage statistics from this host"
           />
         </Row>
       </Section>
+      {hostOptInNote(hostOutcome, host ?? "this host") && (
+        <Note>{hostOptInNote(hostOutcome, host ?? "this host")}</Note>
+      )}
       <ErrorLine text={act.error} />
       <Section title="What is sent">
         {EVENTS.map(([name, what]) => (
