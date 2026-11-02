@@ -11,6 +11,7 @@ import { Button } from "../../Button";
 import { T } from "../../Text";
 import { Row, Section, Toggle } from "../controls";
 import { need } from "./hostkit";
+import { ClaudePlugins } from "./ClaudePlugins";
 import { Banner, Block, ErrorLine, Field, Status, useFeature } from "./kit";
 
 type Settings = Awaited<ReturnType<DaemonClient["pluginsSettingsGet"]>>;
@@ -56,6 +57,7 @@ function PageBody() {
           ))}
         </Status>
       )}
+      <ClaudePlugins />
     </>
   );
 }
