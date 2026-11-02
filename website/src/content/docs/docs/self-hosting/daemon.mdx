@@ -16,7 +16,7 @@ This page covers operating a daemon once it is there.
 | -------- | ------- | ---- |
 | Linux    | systemd user unit `frogg-daemon.service` | `journalctl --user -u frogg-daemon -f`, and `~/.frogg/daemon.log` |
 | macOS    | launchd agent `app.frogg.frogg-daemon` | `~/Library/Logs/app.frogg.frogg-daemon.log`, and `~/.frogg/daemon.log` |
-| Windows  | Run key `HKCU\…\CurrentVersion\Run\frogg-daemon`, running `%USERPROFILE%\.frogg\service\frogg-daemon.cmd` in a headless console, so no window opens. If an older install still opens a console window at login, run `frogg install-service` again | `%USERPROFILE%\.frogg\daemon.log` |
+| Windows  | Run key `HKCU\…\CurrentVersion\Run\frogg-daemon`, running `%USERPROFILE%\.frogg\service\frogg-daemon.cmd` in a headless console, so no window opens. An older install whose Run key still opens a console window is upgraded the next time `frogg daemon start` or a self-update runs | `%USERPROFILE%\.frogg\daemon.log` |
 
 ```sh
 frogg status
