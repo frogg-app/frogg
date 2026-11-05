@@ -53,3 +53,14 @@ web-sys = { version = "0.3", features = [
   "EventTarget",
   "Event",
 ] }
+
+# views/panels (terminal drops, downloads). Own table so feature edits never conflict; features unify.
+[target.'cfg(any(unix, not(unix)))'.dependencies]
+web-sys = { version = "0.3", features = [
+  "DragEvent",
+  "DataTransfer",
+  "Url",
+  "BlobPropertyBag",
+  "HtmlAnchorElement",
+  "HtmlTextAreaElement",
+] }

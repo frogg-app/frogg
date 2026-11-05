@@ -2,11 +2,15 @@
 //! that `state::get()` (or `use_context::<AppState>()`) hands out the same `Copy` handle.
 
 pub mod agents;
+pub mod checkout;
 pub mod connection;
+pub mod files;
 pub mod hosts;
 pub mod kbd;
 pub mod prefs;
+pub mod scm;
 pub mod storage;
+pub mod terminals;
 pub mod ui;
 
 use std::cell::Cell;
