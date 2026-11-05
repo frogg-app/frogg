@@ -585,6 +585,38 @@
           "type": "string",
           "maxLength": 48,
           "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+        },
+        "daemonPort": {
+          "type": "integer",
+          "minimum": 1024,
+          "maximum": 65535
+        },
+        "webPort": {
+          "type": "integer",
+          "minimum": 1024,
+          "maximum": 65535
+        },
+        "cliName": {
+          "type": "string",
+          "maxLength": 48,
+          "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+        },
+        "homeDir": {
+          "type": "string",
+          "pattern": "^\\.[a-z][a-z0-9-]*$"
+        },
+        "envPrefix": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "serviceName": {
+          "type": "string",
+          "maxLength": 48,
+          "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+        },
+        "launchdLabel": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9.-]*$"
         }
       },
       "additionalProperties": false

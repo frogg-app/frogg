@@ -95,7 +95,9 @@ mod tests {
     fn peeks_request_id_from_the_payload() {
         let f = parse(r#"{"type":"session","message":{"type":"x_response","payload":{"requestId":"r1","n":1}}}"#)
             .unwrap();
-        let IncomingFrame::Session(s) = f else { panic!() };
+        let IncomingFrame::Session(s) = f else {
+            panic!()
+        };
         assert_eq!(s.kind, "x_response");
         assert_eq!(s.request_id.as_deref(), Some("r1"));
     }
@@ -103,7 +105,9 @@ mod tests {
     #[test]
     fn peeks_a_top_level_request_id() {
         let f = parse(r#"{"type":"session","message":{"type":"y","requestId":"r2"}}"#).unwrap();
-        let IncomingFrame::Session(s) = f else { panic!() };
+        let IncomingFrame::Session(s) = f else {
+            panic!()
+        };
         assert_eq!(s.request_id.as_deref(), Some("r2"));
     }
 
@@ -111,14 +115,22 @@ mod tests {
     fn a_null_request_id_is_no_request_id() {
         let f = parse(r#"{"type":"session","message":{"type":"y","payload":{"requestId":null}}}"#)
             .unwrap();
-        let IncomingFrame::Session(s) = f else { panic!() };
+        let IncomingFrame::Session(s) = f else {
+            panic!()
+        };
         assert_eq!(s.request_id, None);
     }
 
     #[test]
     fn pong_and_unknown_envelopes() {
-        assert!(matches!(parse(r#"{"type":"pong"}"#), Some(IncomingFrame::Pong)));
-        assert!(matches!(parse(r#"{"type":"later"}"#), Some(IncomingFrame::Other(_))));
+        assert!(matches!(
+            parse(r#"{"type":"pong"}"#),
+            Some(IncomingFrame::Pong)
+        ));
+        assert!(matches!(
+            parse(r#"{"type":"later"}"#),
+            Some(IncomingFrame::Other(_))
+        ));
         assert!(parse("nope").is_none());
     }
 }

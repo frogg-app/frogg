@@ -10,6 +10,7 @@ import { Button } from "../Button";
 import { T } from "../Text";
 import { Dialog } from "../tools/Dialog";
 import { closeSheet, openSheet, useHostView } from "./state";
+import { NEXT_CLI } from "../../daemon/next-daemon";
 
 type Method = "pair" | "direct";
 
@@ -171,7 +172,7 @@ function PairForm() {
       <T style={s.hint}>
         On the host: Hosts › Pair a device, or run{" "}
         <T v="mono" style={s.cmd}>
-          frogg pair
+          {`${NEXT_CLI} pair`}
         </T>
         .
       </T>

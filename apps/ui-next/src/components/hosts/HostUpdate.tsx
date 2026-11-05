@@ -10,7 +10,7 @@ import { Select } from "../Select";
 import { Seg } from "../settings/controls";
 import { ErrorLine, Field, fmtBytes, useAction, useFeature } from "../settings/pages/kit";
 import { T } from "../Text";
-import { daemonVersions, useReleases } from "./daemonVersions";
+import { daemonVersions, prefixesFor, useReleases } from "./daemonVersions";
 
 type Check = Awaited<ReturnType<DaemonClient["checkDaemonUpdate"]>>;
 type Status = Awaited<ReturnType<DaemonClient["getDaemonUpdateStatus"]>>;
@@ -51,7 +51,7 @@ function useVersionOptions(channel: DaemonUpdateChannel, current: string | null)
   const options = useMemo(
     () => [
       { value: LATEST, label: `Latest ${channel}` },
-      ...daemonVersions(releases ?? [], channel).map((v) => ({
+      ...daemonVersions(releases ?? [], channel, prefixesFor(current)).map((v) => ({
         value: v.version,
         label: v.version,
         hint: versionHint(v, current),

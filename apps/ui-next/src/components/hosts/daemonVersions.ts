@@ -9,6 +9,20 @@ const PREFIXES = {
   brand: process.env.EXPO_PUBLIC_FROGG_BRAND_ARTIFACT_PREFIX?.trim() || "frogg",
   daemon: process.env.EXPO_PUBLIC_FROGG_DAEMON_ARTIFACT_PREFIX?.trim() || "frogg-daemon",
 };
+/** Frogg Next's own daemon ships one bundle name only: `frogg-next-daemon-<v>-<os>-<arch>`. */
+const NEXT_DAEMON =
+  process.env.EXPO_PUBLIC_FROGG_NEXT_DAEMON_ARTIFACT_PREFIX?.trim() || "frogg-next-daemon";
+const NEXT_PREFIXES = { brand: NEXT_DAEMON, daemon: NEXT_DAEMON };
+
+/** A `-next.N` daemon is Frogg Next's own (port 9969): it installs only Frogg Next bundles. */
+export function isNextDaemonVersion(version: string | null): boolean {
+  return !!version && /-next(\.|$)/i.test(version);
+}
+
+/** The bundle names a host running `version` can install. */
+export function prefixesFor(version: string | null): typeof PREFIXES {
+  return isNextDaemonVersion(version) ? NEXT_PREFIXES : PREFIXES;
+}
 
 /**
  * Whether a release asset is this brand's daemon bundle for `version`: `frogg-1.6.11-linux-x86_64-
@@ -48,21 +62,26 @@ export function daemonVersions(
   channel: DaemonUpdateChannel,
   prefixes = PREFIXES,
 ): DaemonVersion[] {
-  return releases
-    .filter((r) => !r.draft && (channel === "beta" || !r.prerelease))
-    .map((r) => ({
-      version: r.tag_name.replace(/^v/, ""),
-      prerelease: r.prerelease === true,
-      publishedAt: r.published_at ?? null,
-      assets: r.assets ?? [],
-    }))
-    .filter(
-      (v) =>
-        /^\d+\.\d+\.\d+/.test(v.version) &&
-        v.assets.some((a) => isDaemonBundle(a.name, v.version, prefixes)),
-    )
-    .map(({ assets: _assets, ...v }) => v)
-    .sort((a, b) => compareVersions(b.version, a.version));
+  return (
+    releases
+      // Frogg Next bundles ship only on `-next.N` prereleases, whichever channel the host follows.
+      .filter(
+        (r) => !r.draft && (channel === "beta" || !r.prerelease || prefixes === NEXT_PREFIXES),
+      )
+      .map((r) => ({
+        version: r.tag_name.replace(/^v/, ""),
+        prerelease: r.prerelease === true,
+        publishedAt: r.published_at ?? null,
+        assets: r.assets ?? [],
+      }))
+      .filter(
+        (v) =>
+          /^\d+\.\d+\.\d+/.test(v.version) &&
+          v.assets.some((a) => isDaemonBundle(a.name, v.version, prefixes)),
+      )
+      .map(({ assets: _assets, ...v }) => v)
+      .sort((a, b) => compareVersions(b.version, a.version))
+  );
 }
 
 /** Semver order, a prerelease below its release; numeric prerelease parts compare as numbers. */

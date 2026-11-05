@@ -151,6 +151,9 @@ function releaseVersion(release: GitHubRelease): string | null {
 
 function matchesChannel(release: GitHubRelease, channel: UpdateChannel): boolean {
   if (release.draft) return false;
+  // Frogg Next's own daemon (port 9969, its own home) ships only on `-next.N` releases and
+  // follows them on either channel; stable and beta releases carry no bundle for it.
+  if (brand.daemonLine === "next") return isFroggNextVersion(release.tag_name);
   if (channel === "stable") {
     // A downstream rebuild (`v1.3.5-acme.2`) is a rebuild of a stable release, not
     // a prerelease of one, so it belongs to the stable channel too.

@@ -19,7 +19,9 @@
 #                     (default: the newest release on FROGG_CHANNEL)
 #   FROGG_CHANNEL       stable (default: the Latest release) or beta (the newest release of
 #                     either kind, prereleases vX.Y.Z-beta.N included). Both install the same
-#                     daemon into the same home.
+#                     daemon into the same home. next: the newest vX.Y.Z-next.N, and the
+#                     default for the Frogg Next daemon's install script (frogg-next, port 9969,
+#                     ~/.frogg-next), which installs beside the stable daemon.
 #   FROGG_INSTALL_DIR   install root (default: ~/.local/share/frogg)
 #   FROGG_BIN_DIR       where frogg/frogg are linked (default: ~/.local/bin)
 #   FROGG_RELEASE_BASE  release download base (default: GitHub releases)
@@ -54,6 +56,7 @@ BRAND_BIND_HOST='0.0.0.0'
 BRAND_RELEASE_BASE='https://github.com/frogg-app/frogg/releases'
 BRAND_DOCKER_IMAGE='froggapp/frogg'
 BRAND_LEGACY='true'
+BRAND_DAEMON_LINE='stable'
 BRAND_COMMANDS=(frogg frogg)
 # END BRAND DEFAULTS
 
@@ -72,7 +75,12 @@ FROGG_RELEASE_BASE="${FROGG_RELEASE_BASE:-${BRAND_RELEASE_BASE}}"
 FROGG_LISTEN="${FROGG_LISTEN:-${BRAND_BIND_HOST}:${BRAND_PORT}}"
 FROGG_VERSION="${FROGG_VERSION:-}"
 FROGG_VERSION="${FROGG_VERSION#v}"
-FROGG_CHANNEL="${FROGG_CHANNEL:-stable}"
+# A Frogg Next daemon (BRAND_DAEMON_LINE=next) only ships on vX.Y.Z-next.N releases.
+if [ "${BRAND_DAEMON_LINE}" = "next" ]; then
+  FROGG_CHANNEL="${FROGG_CHANNEL:-next}"
+else
+  FROGG_CHANNEL="${FROGG_CHANNEL:-stable}"
+fi
 FROGG_BUNDLE_FILE="${FROGG_BUNDLE_FILE:-}"
 FROGG_BUNDLE_URL="${FROGG_BUNDLE_URL:-}"
 FROGG_NO_SERVICE="${FROGG_NO_SERVICE:-0}"
@@ -160,7 +168,18 @@ CHANNEL_SUFFIX='-(alpha|beta|rc|pre|preview|next|canary|dev|nightly|snapshot)(\.
 # with FROGG_VERSION. GitHub has no "latest prerelease" alias. Prerelease daemon bundles carry the normal
 # identity, so they install into the same home, service and port as a stable one.
 resolve_newest_beta_version() {
-  local api body tag
+  resolve_newest_prerelease_version '-next(\.|$)' -v beta
+}
+
+# Frogg Next's daemon: the newest vX.Y.Z-next.N.
+resolve_newest_next_version() {
+  resolve_newest_prerelease_version '-next(\.|$)' '' next
+}
+
+# Newest tag by semver; $1 is an extended regex and $2 `-v` to drop the tags it matches (else
+# keep only those), $3 names the channel for the error.
+resolve_newest_prerelease_version() {
+  local api body tag pattern="$1" invert="$2" channel="$3"
   api="$(printf '%s' "${FROGG_RELEASE_BASE}" |
     sed -n 's#^https://github.com/\([^/]*\)/\([^/]*\)/releases/*$#https://api.github.com/repos/\1/\2/releases?per_page=30#p')"
   [ -n "${api}" ] || die "set ${BRAND_ENV_PREFIX}_VERSION: ${FROGG_RELEASE_BASE} is not a GitHub releases URL"
@@ -169,10 +188,10 @@ resolve_newest_beta_version() {
   # prerelease below its release, as semver does.
   tag="$(printf '%s\n' "${body}" | tr ',{' '\n\n' |
     sed -nE 's/^ *"tag_name" *: *"v([0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?)" *$/\1/p' |
-    grep -Ev -- '-next(\.|$)' |
-    sed 's/-/~/' | sort -V | tail -n1 | sed 's/~/-/')"
+    grep -E ${invert} -- "${pattern}" |
+    sed 's/-/~/' | sort -V | tail -n1 | sed 's/~/-/')" || true
   FROGG_VERSION="${tag}"
-  [ -n "${FROGG_VERSION}" ] || die "no beta release found at ${api}"
+  [ -n "${FROGG_VERSION}" ] || die "no ${channel} release found at ${api}"
 }
 
 resolve_latest_version() {
@@ -184,7 +203,11 @@ resolve_latest_version() {
       resolve_newest_beta_version
       return
       ;;
-    *) die "${BRAND_ENV_PREFIX}_CHANNEL must be stable or beta (got ${FROGG_CHANNEL})" ;;
+    next)
+      resolve_newest_next_version
+      return
+      ;;
+    *) die "${BRAND_ENV_PREFIX}_CHANNEL must be stable, beta or next (got ${FROGG_CHANNEL})" ;;
   esac
   local effective candidate
   effective="$(curl -fsSL -o /dev/null -w '%{url_effective}' "${FROGG_RELEASE_BASE}/latest")" ||

@@ -13,8 +13,9 @@ import { outputRoot, root, uiOutput, resolveBrand } from "./resolve.mjs";
 export async function prepareBrand(
   directory?: string,
   channel?: string,
+  daemon?: string,
 ): Promise<ReturnType<typeof resolveBrand>> {
-  const build = resolveBrand(directory, channel);
+  const build = resolveBrand(directory, channel, daemon);
   await assertBuildAvailable(build);
   const release = await acquireLock("prepare", build);
   try {
@@ -27,9 +28,10 @@ export async function prepareBrand(
       await generateAssets(build);
     }
     await generateConfig(build);
-    // The install scripts and deployment files install the daemon, which has one identity: a
-    // frogg beta client build still generates them from the stable brand.
-    const daemonBuild = build.channel === "beta" ? resolveBrand(build.selected, "stable") : build;
+    // The install scripts and deployment files install the daemon: a frogg beta client build
+    // generates them from the stable brand, a Frogg Next daemon build (`--daemon next`) from its own.
+    const daemonBuild =
+      build.channel === "beta" ? resolveBrand(build.selected, "stable", build.daemon) : build;
     await generateInstallers(daemonBuild);
     await generateWindowsInstaller(build);
     await generateDeployment(daemonBuild);

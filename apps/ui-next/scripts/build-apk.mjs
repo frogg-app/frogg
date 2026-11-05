@@ -29,6 +29,8 @@ Object.assign(process.env, {
   EXPO_PUBLIC_FROGG_RELEASE_REPO: identity.repository,
   EXPO_PUBLIC_FROGG_BRAND_ARTIFACT_PREFIX: loadBrand().artifactPrefix,
   EXPO_PUBLIC_FROGG_DAEMON_ARTIFACT_PREFIX: loadBrand().daemonArtifactPrefix,
+  EXPO_PUBLIC_FROGG_NEXT_DAEMON_ARTIFACT_PREFIX:
+    loadBrand().next?.daemon?.daemonArtifactPrefix ?? "frogg-next-daemon",
   EXPO_PUBLIC_FROGG_COLLECTOR_URL: loadBrand().services.collectorUrl ?? "",
 });
 const { values, positionals } = parseArgs({

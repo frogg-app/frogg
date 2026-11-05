@@ -63,11 +63,11 @@ export function authRefusal(error: DaemonClientErrorInfo | null): AuthRefusal | 
     return {
       kind: "unclaimed",
       title: "This host isn't claimed yet",
-      body: "No device owns this daemon, and it only admits registered devices. Run `frogg daemon pair` on the host and paste the link or code here to claim it as owner.",
+      body: "No device owns this daemon, and it only admits registered devices. Run `frogg-next daemon pair` (`frogg daemon pair` on a stable daemon) on the host and paste the link or code here to claim it as owner.",
       action: "Pair this app…",
       toast: (host) => ({
         title: `${host} isn't claimed yet`,
-        detail: "Pair this app with `frogg daemon pair` on the host to claim it as owner.",
+        detail: "Pair this app with `frogg-next daemon pair` on the host to claim it as owner.",
       }),
     };
   return {

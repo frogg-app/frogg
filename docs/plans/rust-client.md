@@ -10,13 +10,13 @@ Rust client passes the parity and performance gates below; `apps/ui` (stable) is
 
 ## Architecture
 
-| Layer          | Crate / path                  | Replaces                                       | Runs on                         |
-| -------------- | ----------------------------- | ---------------------------------------------- | ------------------------------- |
-| Wire types     | `crates/frogg-protocol`       | `@frogg/protocol` (types only)                 | everywhere (generated from zod) |
-| Client core    | `apps/client/core`            | `@frogg/client` (`DaemonClient`), relay E2EE   | wasm32 (all targets), native    |
-| UI             | `apps/client/ui` (Leptos CSR) | `apps/ui-next/src` (React Native + Expo)       | WebView / browser, as WASM      |
-| Shell + bridge | `apps/client/src-tauri`       | `apps/ui-next/desktop/*.cjs` (Electron), Expo  | Win/mac/Linux, Android          |
-| Web            | Trunk `dist/`                 | react-native-web export                        | served by the daemon            |
+| Layer          | Crate / path                  | Replaces                                      | Runs on                         |
+| -------------- | ----------------------------- | --------------------------------------------- | ------------------------------- |
+| Wire types     | `crates/frogg-protocol`       | `@frogg/protocol` (types only)                | everywhere (generated from zod) |
+| Client core    | `apps/client/core`            | `@frogg/client` (`DaemonClient`), relay E2EE  | wasm32 (all targets), native    |
+| UI             | `apps/client/ui` (Leptos CSR) | `apps/ui-next/src` (React Native + Expo)      | WebView / browser, as WASM      |
+| Shell + bridge | `apps/client/src-tauri`       | `apps/ui-next/desktop/*.cjs` (Electron), Expo | Win/mac/Linux, Android          |
+| Web            | Trunk `dist/`                 | react-native-web export                       | served by the daemon            |
 
 Decisions:
 
@@ -39,16 +39,16 @@ Decisions:
 
 ## Parity scope (ui-next, non-test lines)
 
-| Area                                                            | Size  | Phase |
-| --------------------------------------------------------------- | ----- | ----- |
-| Client core (`DaemonClient`, transports, relay E2EE, identity)  | ~9.7k | 1     |
-| Stores (`src/daemon/*`, `ui-store`, `prefs`)                    | ~3.6k | 1     |
-| Shell: Rail, Brackets, StatusBar, PhoneTabs, Palette, kbd, Home | ~3k   | 2     |
-| Sessions, Chat, Composer, ToolCall, tools/, markdown, perms     | ~14k  | 3     |
-| Panels: Files, SCM/Diff, PRs, CI, Terminals, Tasks, Search, …   | ~8k   | 4     |
-| NewSession, onboarding, sign-in/pairing, hosts, settings        | ~15k  | 5     |
+| Area                                                             | Size  | Phase |
+| ---------------------------------------------------------------- | ----- | ----- |
+| Client core (`DaemonClient`, transports, relay E2EE, identity)   | ~9.7k | 1     |
+| Stores (`src/daemon/*`, `ui-store`, `prefs`)                     | ~3.6k | 1     |
+| Shell: Rail, Brackets, StatusBar, PhoneTabs, Palette, kbd, Home  | ~3k   | 2     |
+| Sessions, Chat, Composer, ToolCall, tools/, markdown, perms      | ~14k  | 3     |
+| Panels: Files, SCM/Diff, PRs, CI, Terminals, Tasks, Search, …    | ~8k   | 4     |
+| NewSession, onboarding, sign-in/pairing, hosts, settings         | ~15k  | 5     |
 | Native: window chrome, updater, splash, session windows, Android | ~1.1k | 6     |
-| Lab (fixtures, sim) for parity screenshots                      | ~13k  | 7     |
+| Lab (fixtures, sim) for parity screenshots                       | ~13k  | 7     |
 
 ## Phases
 
@@ -81,15 +81,15 @@ the shipping Frogg Next install until phase 8.
 Measured with `scripts/bench/measure-ui-next-web.mjs` (ported to the Rust web build) and the
 desktop smoke scripts, on the same machine as the ui-next baseline.
 
-| Metric                                | ui-next today    | Rust client must reach |
-| ------------------------------------- | ---------------- | ---------------------- |
-| Web bundle (wasm + js, gzip)          | 6.54 MB js (raw) | ≤ 2 MB gzip            |
-| Navigation → chat timeline rendered   | 733 ms           | ≤ 350 ms               |
-| Main-thread long tasks during load    | 578 ms           | ≤ 150 ms               |
-| JS/WASM heap after settling           | 55.9 MB          | ≤ 30 MB                |
-| Desktop cold start, RSS vs Electron   | to measure       | ≥ 2× better on both    |
-| Android cold start vs Expo APK        | to measure       | no worse               |
-| Lab screenshot parity                 | n/a              | every entry signed off |
+| Metric                              | ui-next today    | Rust client must reach |
+| ----------------------------------- | ---------------- | ---------------------- |
+| Web bundle (wasm + js, gzip)        | 6.54 MB js (raw) | ≤ 2 MB gzip            |
+| Navigation → chat timeline rendered | 733 ms           | ≤ 350 ms               |
+| Main-thread long tasks during load  | 578 ms           | ≤ 150 ms               |
+| JS/WASM heap after settling         | 55.9 MB          | ≤ 30 MB                |
+| Desktop cold start, RSS vs Electron | to measure       | ≥ 2× better on both    |
+| Android cold start vs Expo APK      | to measure       | no worse               |
+| Lab screenshot parity               | n/a              | every entry signed off |
 
 ## Risks
 

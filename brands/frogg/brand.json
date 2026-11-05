@@ -75,6 +75,7 @@
     "userDataDir": "Frogg Next",
     "artifactPrefix": "Frogg-Next",
     "desktopBinaryName": "frogg-next",
-    "feedPrefix": "frogg-next"
+    "feedPrefix": "frogg-next",
+    "daemonPort": 9969
   }
 }

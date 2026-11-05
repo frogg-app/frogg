@@ -2,6 +2,7 @@
 import { Link2, QrCode, Smartphone } from "lucide-react-native";
 import { StyleSheet, View } from "react-native";
 import { useHosts } from "../../daemon/hosts";
+import { NEXT_CLI, NEXT_INSTALL_COMMAND } from "../../daemon/next-daemon";
 import { useDaemon } from "../../daemon/store";
 import { useFormFactor } from "../../theme/layout";
 import { color } from "../../theme/tokens";
@@ -62,14 +63,15 @@ export function HostStep() {
       </Status>
       {level === "expert" ? (
         <Para>
-          Run <Inline>frogg pair</Inline> on the host and enter the code, or connect to its address.
+          Run <Inline>{`${NEXT_CLI} pair`}</Inline> on the host and enter the code, or connect to
+          its address.
         </Para>
       ) : (
         <>
           <Para>No daemon yet? Install it on the machine that has your code:</Para>
-          <Cmd>curl -fsSL https://frogg.app/install.sh | bash</Cmd>
+          <Cmd>{NEXT_INSTALL_COMMAND}</Cmd>
           <Para>Then run this there and enter the code it prints here:</Para>
-          <Cmd>frogg pair</Cmd>
+          <Cmd>{`${NEXT_CLI} pair`}</Cmd>
         </>
       )}
       <View style={s.actions}>

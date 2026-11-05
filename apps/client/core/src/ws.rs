@@ -14,7 +14,9 @@ struct WsTransport {
 
 impl Transport for WsTransport {
     fn send(&self, text: String) -> Result<(), String> {
-        self.socket.send_with_str(&text).map_err(|e| format!("{e:?}"))
+        self.socket
+            .send_with_str(&text)
+            .map_err(|e| format!("{e:?}"))
     }
 
     fn close(&self) {

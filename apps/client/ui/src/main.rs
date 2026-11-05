@@ -24,10 +24,13 @@ fn store(key: &str, value: &str) {
     }
 }
 
-/// Served by a daemon (web build): its own origin. In the shell: the default local daemon.
+/// Served by a daemon (web build): its own origin. In the shell: the local Frogg Next daemon.
 fn default_url() -> String {
     let location = web_sys::window().map(|w| w.location());
-    let protocol = location.as_ref().and_then(|l| l.protocol().ok()).unwrap_or_default();
+    let protocol = location
+        .as_ref()
+        .and_then(|l| l.protocol().ok())
+        .unwrap_or_default();
     if protocol == "http:" || protocol == "https:" {
         if let Some(host) = location.and_then(|l| l.host().ok()) {
             if !host.starts_with("localhost:1420") && !host.starts_with("tauri.localhost") {
@@ -36,12 +39,15 @@ fn default_url() -> String {
             }
         }
     }
-    "ws://127.0.0.1:10099/ws".to_owned()
+    "ws://127.0.0.1:9969/ws".to_owned()
 }
 
 fn client_id() -> String {
     stored(CLIENT_ID_KEY).unwrap_or_else(|| {
-        let id = format!("rs-{:012x}", (js_sys::Math::random() * 2f64.powi(48)) as u64);
+        let id = format!(
+            "rs-{:012x}",
+            (js_sys::Math::random() * 2f64.powi(48)) as u64
+        );
         store(CLIENT_ID_KEY, &id);
         id
     })

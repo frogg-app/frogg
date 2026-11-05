@@ -13,6 +13,9 @@ process.env.EXPO_PUBLIC_FROGG_RELEASE_REPO = identity.repository;
 // Daemon bundle names, so the host update picker lists only versions the daemon can install.
 process.env.EXPO_PUBLIC_FROGG_BRAND_ARTIFACT_PREFIX = brand.artifactPrefix;
 process.env.EXPO_PUBLIC_FROGG_DAEMON_ARTIFACT_PREFIX = brand.daemonArtifactPrefix;
+// Frogg Next's own daemon (port 9969, ~/.frogg-next), which `-next.N` releases ship.
+process.env.EXPO_PUBLIC_FROGG_NEXT_DAEMON_ARTIFACT_PREFIX =
+  brand.next?.daemon?.daemonArtifactPrefix ?? "frogg-next-daemon";
 // Opt-in usage statistics and bug reports; unset means the app never sends either. An explicit
 // EXPO_PUBLIC_FROGG_COLLECTOR_URL wins, so a dev build can point at a local test collector.
 process.env.EXPO_PUBLIC_FROGG_COLLECTOR_URL ??= brand.services.collectorUrl ?? "";

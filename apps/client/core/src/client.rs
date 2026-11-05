@@ -2,8 +2,8 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use futures::channel::oneshot;
 use frogg_protocol::{inbound, outbound};
+use futures::channel::oneshot;
 use serde::Serialize;
 
 use crate::frame::{self, IncomingFrame, SessionFrame};
@@ -153,10 +153,17 @@ impl DaemonClient {
     }
 
     /// Sends a session message and waits for the frame carrying the same `requestId`.
-    pub async fn request(&self, request_id: &str, message: &inbound::SessionMessage) -> Result<SessionFrame> {
+    pub async fn request(
+        &self,
+        request_id: &str,
+        message: &inbound::SessionMessage,
+    ) -> Result<SessionFrame> {
         let rx = {
             let (tx, rx) = oneshot::channel();
-            self.inner.borrow_mut().pending.insert(request_id.to_owned(), tx);
+            self.inner
+                .borrow_mut()
+                .pending
+                .insert(request_id.to_owned(), tx);
             rx
         };
         if let Err(e) = self.send_envelope("session", Some(message)) {
@@ -182,7 +189,10 @@ impl DaemonClient {
         });
         let frame = self.request(&request_id, &message).await?;
         if frame.kind != "fetch_agents_response" {
-            return Err(Error::Decode(format!("expected fetch_agents_response, got {}", frame.kind)));
+            return Err(Error::Decode(format!(
+                "expected fetch_agents_response, got {}",
+                frame.kind
+            )));
         }
         frame.payload().map_err(|e| Error::Decode(e.to_string()))
     }
@@ -228,7 +238,10 @@ impl DaemonClient {
 
     fn send_text(&self, text: String) -> Result<()> {
         let transport = self.inner.borrow().transport.clone();
-        transport.ok_or(Error::NotConnected)?.send(text).map_err(Error::Send)
+        transport
+            .ok_or(Error::NotConnected)?
+            .send(text)
+            .map_err(Error::Send)
     }
 
     fn set_state(&self, state: ConnectionState) {
@@ -245,8 +258,13 @@ impl DaemonClient {
 
     fn emit(&self, event: &Event) {
         // Snapshot so a listener can (un)subscribe while being called.
-        let listeners: Vec<Listener> =
-            self.inner.borrow().listeners.iter().map(|(_, l)| l.clone()).collect();
+        let listeners: Vec<Listener> = self
+            .inner
+            .borrow()
+            .listeners
+            .iter()
+            .map(|(_, l)| l.clone())
+            .collect();
         for l in listeners {
             l(event);
         }
@@ -353,7 +371,10 @@ mod tests {
         pool.run_until_stalled();
         c.handle_close();
         pool.run_until_stalled();
-        assert_eq!(result.borrow_mut().take().unwrap().unwrap_err(), Error::Closed);
+        assert_eq!(
+            result.borrow_mut().take().unwrap().unwrap_err(),
+            Error::Closed
+        );
         assert_eq!(c.state(), ConnectionState::Disconnected);
     }
 }

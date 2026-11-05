@@ -20,11 +20,20 @@ desktop and Android follow stable only), 2164f316 (side-by-side beta daemon reti
 
 | Branch       | Tag            | Client                                          | Daemon       | Cut by                            |
 | ------------ | -------------- | ----------------------------------------------- | ------------ | --------------------------------- |
-| `frogg-next` | `X.Y.Z-next.N` | Frogg Next (`app.frogg.next`)                   | normal, 9999 | `frogg-next.yml` after green push |
+| `frogg-next` | `X.Y.Z-next.N` | Frogg Next (`app.frogg.next`)                   | own, 9969    | `frogg-next.yml` after green push |
 | `main`       | `X.Y.Z-beta.N` | frogg beta: classic app, `app.frogg.frogg.beta` | normal, 9999 | `ci.yml` after green push         |
 | `stable`     | `X.Y.Z`        | frogg: classic app, `app.frogg.frogg`           | normal, 9999 | unchanged (Rule 1)                |
 
-- **One daemon.** Every release carries the normal daemon bundles (port 9999, `~/.frogg`, `frogg`
+- **Frogg Next's own daemon (owner, 2026-11-05).** `-next.N` releases ship a separate daemon
+  so Frogg Next develops in parallel with frogg and frogg beta and runs beside them on one host:
+  port 9969 (web 9968), `~/.frogg-next`, the `frogg-next` CLI, `FROGG_NEXT_` env prefix,
+  `frogg-next-daemon` service, `frogg-next-daemon-<v>-<os>-<arch>` bundles. It comes from the
+  brand's `next` daemon keys (`brand prepare --daemon next`, `FROGG_BRAND_DAEMON=next`, set by
+  `release.yml` on every `-next.N` job except the web UI export). Its install script defaults to
+  the `next` channel and its self-update follows `-next.N` only. Frogg Next looks for
+  `127.0.0.1:9969` by default. `-next.1` to `-next.3` daemons carry the stable identity. This
+  replaces "one daemon" below for the `next` line.
+- **One daemon (stable and beta lines).** Every release carries the normal daemon bundles (port 9999, `~/.frogg`, `frogg`
   CLI). The beta daemon (`frogg-beta`, 9989, `~/.frogg-beta`) stays retired.
 - **frogg beta is a client identity only.** It installs beside the stable app like it did before
   beta.2 (own app id, name, scheme, binary name, artifact prefix, icon ribbon, `electron-beta`

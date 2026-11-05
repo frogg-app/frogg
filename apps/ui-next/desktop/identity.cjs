@@ -13,8 +13,8 @@ const DEFAULT_IDENTITY = Object.freeze({
   feedPrefix: "frogg-next",
   /** GitHub `owner/name` whose releases carry the installers and update feeds. */
   repository: "frogg-app/frogg",
-  /** The daemon a fresh install looks for: the normal `frogg` daemon on this machine. */
-  defaultDaemon: "127.0.0.1:9999",
+  /** The daemon a fresh install looks for: Frogg Next's own daemon on this machine. */
+  defaultDaemon: "127.0.0.1:9969",
 });
 
 const text = (value) => (typeof value === "string" && value.trim() ? value.trim() : null);
@@ -29,8 +29,10 @@ function resolveIdentity(brand) {
   }
   const repository = text(brand?.distribution?.repository);
   if (repository && !text(next.repository)) identity.repository = repository;
-  if (Number.isInteger(brand?.daemonPort) && !text(next.defaultDaemon))
-    identity.defaultDaemon = `127.0.0.1:${brand.daemonPort}`;
+  // Frogg Next's own daemon (brand.next.daemon, port 9969 for frogg) runs beside the stable one.
+  const port = next.daemon?.daemonPort;
+  if (Number.isInteger(port) && !text(next.defaultDaemon))
+    identity.defaultDaemon = `127.0.0.1:${port}`;
   return identity;
 }
 

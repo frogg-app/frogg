@@ -305,7 +305,7 @@ test("the installer resolves a prerelease daemon by channel or exact version", a
     await run({ FROGG_VERSION: "v1.6.14-beta.2" }),
     /download failed: .*\/download\/v1\.6\.14-beta\.2\/frogg-1\.6\.14-beta\.2-/i,
   );
-  assert.match(await run({ FROGG_CHANNEL: "nightly" }), /CHANNEL must be stable or beta/);
+  assert.match(await run({ FROGG_CHANNEL: "nightly" }), /CHANNEL must be stable, beta or next/);
   // A stable release newer than every prerelease is the beta channel's newest too.
   releases = JSON.stringify([
     { tag_name: "v1.6.14-beta.10", prerelease: true },

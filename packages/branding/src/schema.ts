@@ -141,6 +141,26 @@ const nextClient = z.strictObject({
   desktopBinaryName: slug.optional(),
   /** Stem of the electron-updater feed files: `<feedPrefix>-latest.yml`. */
   feedPrefix: slug.optional(),
+  // Frogg Next's own daemon, which `-next.N` releases ship so it runs beside the stable one.
+  // Defaults derive from the stable identity: port 30 below, `<cliName>-next`, `.<id>-next`,
+  // `<PREFIX>_NEXT`, `<id>-next-daemon`, `<applicationId>.next-daemon`.
+  daemonPort: daemonPort.optional(),
+  /** Port of the Frogg Next daemon's web client server. Default: one below its `daemonPort`. */
+  webPort: daemonPort.optional(),
+  cliName: slug.optional(),
+  homeDir: z
+    .string()
+    .regex(/^\.[a-z][a-z0-9-]*$/)
+    .optional(),
+  envPrefix: z
+    .string()
+    .regex(/^[A-Z][A-Z0-9_]*$/)
+    .optional(),
+  serviceName: slug.optional(),
+  launchdLabel: z
+    .string()
+    .regex(/^[a-z][a-z0-9.-]*$/)
+    .optional(),
 });
 
 export const BrandManifestSchema = z.strictObject({
@@ -310,14 +330,28 @@ export const BrandManifestSchema = z.strictObject({
 });
 export type BrandManifest = z.infer<typeof BrandManifestSchema>;
 
+/** Which daemon identity a build installs and talks to. */
+export const DAEMON_LINES = ["stable", "next"] as const;
+export type DaemonLine = (typeof DAEMON_LINES)[number];
+
 export interface ResolveBrandOptions {
   /** Which classic client build to resolve. Default "stable". */
   channel?: ReleaseChannel;
+  /**
+   * Which daemon identity to resolve. "next" is Frogg Next's own daemon (`next.daemonPort`,
+   * `next.homeDir`, ...), built into `-next.N` daemon bundles and install scripts so it runs
+   * beside the stable daemon. Default "stable".
+   */
+  daemon?: DaemonLine;
 }
 
 export function resolveBrandManifest(input: unknown, options: ResolveBrandOptions = {}) {
   const base = BrandManifestSchema.parse(input);
   const channel = options.channel ?? "stable";
+  const daemonLine = options.daemon ?? "stable";
+  if (daemonLine === "next" && channel !== "stable") {
+    throw new Error("The Frogg Next daemon is built from the stable client channel only");
+  }
   // Behaviour follows the product, client identity follows the channel: frogg beta keeps
   // upstream frogg's open defaults, theme and daemon, but installs under its own app names.
   const stock = base.id === "frogg";
@@ -345,7 +379,7 @@ export function resolveBrandManifest(input: unknown, options: ResolveBrandOption
     }
   }
   return {
-    ...(channel === "beta" ? betaIdentity(base, manifest) : resolveIdentity(manifest)),
+    ...clientIdentity(base, manifest, channel, daemonLine),
     colors: {
       light: { ...light, accentBright: light.accentBright ?? light.accent },
       dark: { ...dark, accentBright: dark.accentBright ?? dark.accent },
@@ -364,6 +398,8 @@ export function resolveBrandManifest(input: unknown, options: ResolveBrandOption
     mobile: { enabled: manifest.mobile?.enabled ?? true },
     plugins: resolvePlugins(manifest),
     channel,
+    /** The daemon identity this build carries: the stable one, or Frogg Next's own. */
+    daemonLine,
     /** Built from the upstream frogg brand, whichever channel. Selects frogg's own theme. */
     stockFrogg: stock,
     /** Overlay the BETA ribbon on generated icons. */
@@ -424,11 +460,74 @@ function betaManifest(base: BrandManifest): BrandManifest {
   return parsed.data;
 }
 
+/** The build's identity: frogg beta's client, Frogg Next's daemon, or the stable one. */
+function clientIdentity(
+  base: BrandManifest,
+  manifest: BrandManifest,
+  channel: ReleaseChannel,
+  daemonLine: DaemonLine,
+) {
+  if (channel === "beta") return betaIdentity(base, manifest);
+  if (daemonLine === "next") return nextDaemonIdentity(base);
+  return resolveIdentity(manifest);
+}
+
 /** The beta client's identity; the daemon bundle prefix (derived from the id) stays stable. */
 function betaIdentity(base: BrandManifest, manifest: BrandManifest) {
   return {
     ...resolveIdentity(manifest),
     daemonArtifactPrefix: resolveIdentity(base).daemonArtifactPrefix,
+  };
+}
+
+/** Frogg Next's daemon keys, derived from the stable identity unless `next` sets them. */
+function resolveNextDaemon(manifest: BrandManifest) {
+  const stable = resolveIdentity(manifest);
+  const input = manifest.next ?? {};
+  const port = input.daemonPort ?? stable.daemonPort - 30;
+  const daemon = {
+    daemonPort: port,
+    webPort: input.webPort ?? (port > 1024 ? port - 1 : 1025),
+    cliName: input.cliName ?? `${stable.cliName}-next`,
+    homeDir: input.homeDir ?? `.${stable.id}-next`,
+    envPrefix: (input.envPrefix ?? `${stable.envPrefix}_NEXT`).replace(/_+$/, ""),
+    serviceName: input.serviceName ?? `${stable.id}-next-daemon`,
+    launchdLabel: input.launchdLabel ?? `${stable.applicationId}.next-daemon`,
+    daemonArtifactPrefix: `${stable.id}-next-daemon`,
+  };
+  const clashes = (
+    [
+      "daemonPort",
+      "webPort",
+      "cliName",
+      "homeDir",
+      "envPrefix",
+      "serviceName",
+      "launchdLabel",
+    ] as const
+  ).filter((key) => String(daemon[key]).toLowerCase() === String(stable[key]).toLowerCase());
+  if ([stable.daemonPort, stable.webPort].includes(daemon.daemonPort)) clashes.push("daemonPort");
+  if ([stable.daemonPort, stable.webPort].includes(daemon.webPort)) clashes.push("webPort");
+  if (daemon.daemonPort === daemon.webPort) clashes.push("webPort");
+  if (clashes.length > 0) {
+    throw new Error(
+      `next.${[...new Set(clashes)].join(", next.")} must differ from the stable daemon`,
+    );
+  }
+  return daemon;
+}
+
+/**
+ * The identity of a Frogg Next daemon build: the stable client keys (id, application id,
+ * names) with every daemon key moved aside, so it installs and runs beside the stable daemon.
+ */
+function nextDaemonIdentity(base: BrandManifest) {
+  return {
+    ...resolveIdentity(base),
+    ...resolveNextDaemon(base),
+    // The legacy Frogg aliases (a second `frogg` launcher, `Frogg-*-daemon` bundle names, the
+    // FDE home migration) belong to the stable daemon: a Frogg Next install must not shadow them.
+    legacyFrogg: false,
   };
 }
 
@@ -451,6 +550,8 @@ function resolveNext(manifest: BrandManifest, stock: boolean) {
     artifactPrefix: input.artifactPrefix ?? `${identity.artifactPrefix}-next`,
     desktopBinaryName: input.desktopBinaryName ?? `${identity.cliName}-next`,
     feedPrefix: input.feedPrefix ?? `${identity.id}-next`,
+    /** Frogg Next's own daemon, which a fresh install looks for. */
+    daemon: resolveNextDaemon(manifest),
   };
   const clashes = (
     [

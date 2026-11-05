@@ -448,6 +448,16 @@ test("the Frogg Next identity is derived for forks and overridable", () => {
     artifactPrefix: "acme-next",
     desktopBinaryName: "acme-next",
     feedPrefix: "acme-next",
+    daemon: {
+      daemonPort: 10069,
+      webPort: 10068,
+      cliName: "acme-next",
+      homeDir: ".acme-next",
+      envPrefix: "ACME_NEXT",
+      serviceName: "acme-next-daemon",
+      launchdLabel: "com.acme.studio.next-daemon",
+      daemonArtifactPrefix: "acme-next-daemon",
+    },
   });
   assert.equal(resolveBrandManifest({ ...minimal, id: "frogg" }).next.enabled, true);
   const custom = resolveBrandManifest({
@@ -476,6 +486,69 @@ test("the Frogg Next identity is derived for forks and overridable", () => {
     /next\.applicationId must differ/,
   );
   assert.throws(() => resolveBrandManifest({ ...minimal, next: { channel: "beta" } }));
+});
+
+test("a Frogg Next daemon build moves every daemon key aside and keeps the client", () => {
+  const stable = resolveBrandManifest({
+    ...minimal,
+    id: "frogg",
+    applicationId: "app.frogg.frogg",
+    daemonPort: 9999,
+  });
+  const next = resolveBrandManifest(
+    { ...minimal, id: "frogg", applicationId: "app.frogg.frogg", daemonPort: 9999 },
+    { daemon: "next" },
+  );
+  assert.equal(stable.daemonLine, "stable");
+  assert.equal(next.daemonLine, "next");
+  assert.deepEqual(
+    {
+      daemonPort: next.daemonPort,
+      webPort: next.webPort,
+      cliName: next.cliName,
+      homeDir: next.homeDir,
+      envPrefix: next.envPrefix,
+      serviceName: next.serviceName,
+      launchdLabel: next.launchdLabel,
+      daemonArtifactPrefix: next.daemonArtifactPrefix,
+      legacyFrogg: next.legacyFrogg,
+    },
+    {
+      daemonPort: 9969,
+      webPort: 9968,
+      cliName: "frogg-next",
+      homeDir: ".frogg-next",
+      envPrefix: "FROGG_NEXT",
+      serviceName: "frogg-next-daemon",
+      launchdLabel: "app.frogg.frogg.next-daemon",
+      daemonArtifactPrefix: "frogg-next-daemon",
+      // No second `frogg` launcher or Frogg-*-daemon bundle names to shadow the stable daemon's.
+      legacyFrogg: false,
+    },
+  );
+  // The client identity and the Frogg Next client block are the stable build's.
+  assert.equal(next.id, stable.id);
+  assert.equal(next.applicationId, stable.applicationId);
+  assert.deepEqual(next.next, stable.next);
+  assert.equal(
+    daemonArtifactName(next, "1.6.14-next.4", "linux", "x64"),
+    "frogg-next-daemon-1.6.14-next.4-linux-x64.tar.gz",
+  );
+  // The daemon keys never land on the stable daemon's.
+  assert.throws(
+    () => resolveBrandManifest({ ...minimal, next: { daemonPort: minimal.daemonPort } }),
+    /next\.daemonPort\b.*must differ/,
+  );
+  assert.throws(
+    () => resolveBrandManifest({ ...minimal, next: { daemonPort: 10098 } }),
+    /next\.daemonPort\b.*must differ/,
+  );
+  assert.throws(
+    () => resolveBrandManifest({ ...minimal, next: { homeDir: ".acme" } }),
+    /next\.homeDir must differ/,
+  );
+  // A Frogg Next daemon is built from the stable client channel only.
+  assert.throws(() => resolveBrandManifest(minimal, { channel: "beta", daemon: "next" }));
 });
 
 test("plugins block defaults and overrides", () => {

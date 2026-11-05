@@ -4,8 +4,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   BrandManifestSchema,
+  DAEMON_LINES,
   RELEASE_CHANNELS,
   resolveBrandManifest,
+  type DaemonLine,
   type ReleaseChannel,
 } from "../../../packages/branding/src/schema.js";
 
@@ -28,23 +30,43 @@ export function resolveChannel(value?: string): ReleaseChannel {
   return selected as ReleaseChannel;
 }
 
-export function resolveBrand(directory?: string, channelOption?: string) {
+/**
+ * The daemon identity to build: `--daemon`, else FROGG_BRAND_DAEMON (the release workflow sets
+ * `next` on every job of a `-next.N` tag), else stable. `next` is Frogg Next's own daemon.
+ */
+export function resolveDaemonLine(value?: string): DaemonLine {
+  const selected = value ?? (process.env.FROGG_BRAND_DAEMON?.trim() || "stable");
+  if (!(DAEMON_LINES as readonly string[]).includes(selected)) {
+    throw new Error(`Unknown daemon line "${selected}"; expected ${DAEMON_LINES.join(" or ")}`);
+  }
+  return selected as DaemonLine;
+}
+
+export function resolveBrand(directory?: string, channelOption?: string, daemonOption?: string) {
   const selected = path.resolve(root, directory ?? process.env.FROGG_BRAND_DIR ?? "brands/frogg");
   const manifest = BrandManifestSchema.parse(
     JSON.parse(readFileSync(path.join(selected, "brand.json"), "utf8")),
   );
   const official = realpathSync(selected) === realpathSync(path.join(root, "brands/frogg"));
   const channel = resolveChannel(channelOption);
-  const brand = resolveBrandManifest(manifest, { channel });
+  const daemon = resolveDaemonLine(daemonOption);
+  const brand = resolveBrandManifest(manifest, { channel, daemon });
   if (
     !official &&
     (manifest.id === "frogg" ||
       [brand.cliName, brand.desktopBinaryName, brand.scheme].some((name) =>
         ["frogg"].includes(name),
       ) ||
-      [brand.next.scheme, brand.next.desktopBinaryName, brand.next.feedPrefix].some((name) =>
-        ["frogg", "frogg-next"].includes(name),
-      ) ||
+      [
+        brand.next.scheme,
+        brand.next.desktopBinaryName,
+        brand.next.feedPrefix,
+        brand.next.daemon.cliName,
+        brand.next.daemon.serviceName,
+      ].some((name) => ["frogg", "frogg-next", "frogg-next-daemon"].includes(name)) ||
+      [".frogg", ".frogg-next"].includes(brand.next.daemon.homeDir) ||
+      brand.next.daemon.envPrefix.startsWith("FROGG") ||
+      brand.next.daemon.launchdLabel.startsWith("app.frogg.") ||
       brand.next.artifactPrefix.toLowerCase() === "frogg-next" ||
       brand.next.applicationId.startsWith("app.frogg.") ||
       [".frogg"].includes(brand.homeDir) ||
@@ -72,6 +94,7 @@ export function resolveBrand(directory?: string, channelOption?: string) {
   };
   hash.update("frogg-brand-generator-v1\0");
   hash.update(`channel:${channel}\0`);
+  hash.update(`daemon:${daemon}\0`);
   hash.update(JSON.stringify({ ...manifest, assets: Object.keys(manifest.assets).sort() }));
   const assetFiles: Record<string, string> = {};
   for (const [key, value] of Object.entries(manifest.assets)) {
@@ -123,6 +146,7 @@ export function resolveBrand(directory?: string, channelOption?: string) {
     selected,
     official,
     channel,
+    daemon,
     version,
     fingerprint: hash.digest("hex"),
   };
