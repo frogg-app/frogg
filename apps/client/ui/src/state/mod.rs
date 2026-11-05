@@ -3,6 +3,7 @@
 
 pub mod agents;
 pub mod checkout;
+pub mod ci;
 pub mod connection;
 pub mod files;
 pub mod hosts;

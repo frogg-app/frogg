@@ -980,3 +980,265 @@
     transition: none;
   }
 }
+
+/* ---- PRs & CI ---- */
+.pn-ci-glyph {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  transform: rotate(45deg);
+  background: var(--faint);
+}
+.pn-ci-glyph.ok {
+  background: var(--mint);
+}
+.pn-ci-glyph.fail {
+  background: var(--coral);
+}
+.pn-ci-glyph.run {
+  background: transparent;
+  border: 1.5px solid var(--cyan2);
+  animation: pn-spin 1.4s linear infinite;
+}
+.pn-ci-glyph.wait {
+  background: transparent;
+  border: 1.5px solid var(--faint);
+}
+.pn-ci-glyph.skip {
+  height: 2px;
+  transform: none;
+}
+.pn-ci-glyph.cancel {
+  background: var(--muted);
+}
+@keyframes pn-spin {
+  to {
+    transform: rotate(405deg);
+  }
+}
+.pn-pr {
+  margin: 0 12px 6px;
+  padding: 14px;
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pn-pr-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.pn-pr-title {
+  flex: 1;
+  font-size: 13.5px;
+  line-height: 19px;
+}
+.pn-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  letter-spacing: 0.06em;
+}
+.pn-badge.open {
+  color: var(--mint);
+  background: color-mix(in srgb, var(--mint) 12%, transparent);
+}
+.pn-badge.merged {
+  color: var(--violet);
+  background: color-mix(in srgb, var(--violet) 12%, transparent);
+}
+.pn-badge.draft {
+  color: var(--faint);
+  background: var(--wash2);
+}
+.pn-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 8px;
+  padding: 7px 8px;
+}
+.pn-tally {
+  display: flex;
+  gap: 12px;
+  padding: 0 16px 6px;
+  font-size: 11px;
+}
+.pn-run {
+  align-items: flex-start;
+}
+.pn-run .pn-ci-glyph {
+  margin-top: 5px;
+}
+.pn-run-cap {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.pn-run-cap.fail {
+  color: var(--coral);
+}
+.pn-progress {
+  display: block;
+  height: 2px;
+  margin-top: 4px;
+  background: var(--wash3);
+}
+.pn-progress span {
+  display: block;
+  height: 100%;
+  background: var(--cyan2);
+  transition: width 400ms var(--ease);
+}
+.pn-run-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.pn-run-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: auto;
+}
+.pn-jobs {
+  flex: 0 0 300px;
+  border-right: 1px solid var(--line);
+  overflow: auto;
+}
+.pn-steps {
+  flex: 1;
+  overflow: auto;
+}
+.pn-step-n {
+  width: 18px;
+  text-align: right;
+}
+@media (max-width: 699px) {
+  .pn-run-body {
+    flex-direction: column;
+  }
+  .pn-jobs {
+    flex: none;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+}
+
+/* ---- Plugins ---- */
+.pn-search-pad {
+  margin: 0 12px 8px;
+  flex: none;
+}
+.pn-grow {
+  flex: 1;
+}
+.pn-flush {
+  padding-left: 0;
+}
+.pn-pill-mint {
+  color: var(--mint);
+  background: color-mix(in srgb, var(--mint) 12%, transparent);
+}
+.pn-toggle {
+  position: relative;
+  width: 30px;
+  height: 16px;
+  flex: none;
+  background: var(--wash3);
+  transition: background-color 160ms var(--ease);
+}
+.pn-toggle span {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 10px;
+  height: 10px;
+  background: var(--muted);
+  transition: transform 160ms var(--ease), background-color 160ms var(--ease);
+}
+.pn-toggle.on {
+  background: var(--cyan-wash3);
+}
+.pn-toggle.on span {
+  transform: translateX(14px);
+  background: var(--cyan2);
+}
+
+/* ---- Companion ---- */
+.pn-lh {
+  line-height: 19px;
+  font-size: 12.5px;
+}
+.pn-wrap {
+  white-space: normal;
+}
+.pn-entry {
+  display: flex;
+  gap: 10px;
+  margin: 0 8px;
+  padding: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.pn-entry-glyph {
+  padding-top: 5px;
+}
+.pn-entry-text {
+  flex: 1;
+  font-size: 13px;
+}
+.pn-entry-text.done {
+  color: var(--muted);
+}
+.pn-bubble {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0 12px 8px;
+  padding: 10px;
+  background: var(--panel);
+  animation: pn-enter 220ms var(--ease) both;
+}
+.pn-bubble.you {
+  background: var(--raise);
+}
+.pn-who {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pn-line-body {
+  font-size: 13px;
+  line-height: 20px;
+  white-space: pre-wrap;
+}
+.pn-companion-composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  padding: 10px;
+  flex: none;
+}
+.pn-companion-composer .pn-msg {
+  flex: 1;
+  min-height: 40px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  resize: none;
+}
+.pn-send {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cyan);
+  color: var(--on-accent);
+}
+.pn-send:disabled {
+  opacity: 0.4;
+}
+.pn-views,
+.pn-search-pad {
+  max-width: 520px;
+}
