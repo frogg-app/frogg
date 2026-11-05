@@ -28,7 +28,10 @@ pub fn Sheet(
     on_cleanup(move || handle.remove());
     let children = StoredValue::new(children);
     let title = StoredValue::new(title);
+    // Always portalled to <body>: a transformed ancestor (panels, the rail) would otherwise
+    // trap the fixed overlay, and stacking stays one global scale (see components.css).
     view! {
+        <leptos::portal::Portal>
         <Show when=move || p.mounted.get()>
             <div class="layer" class:closing=move || p.closing.get()>
                 <div
@@ -70,6 +73,7 @@ pub fn Sheet(
                 </div>
             </div>
         </Show>
+        </leptos::portal::Portal>
     }
 }
 

@@ -476,10 +476,12 @@
 }
 
 /* ---- Overlays: layer, scrim, sheet, floating, menu, select ---- */
+/* Stacking scale (one for the app): title bar 50, new-session overlay 60, sheets 70 (portalled
+   to <body>), popovers 79/80, toasts 90. */
 .layer {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: 70;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -544,11 +546,11 @@
 .floating-catch {
   position: fixed;
   inset: 0;
-  z-index: 59;
+  z-index: 79;
 }
 .floating {
   position: absolute;
-  z-index: 60;
+  z-index: 80;
   min-width: 180px;
   max-height: 300px;
   overflow: auto;

@@ -3,7 +3,7 @@
 use leptos::prelude::*;
 use wasm_bindgen::JsCast;
 
-use crate::components::{Button, ButtonKind, Sheet as BaseSheet, TextInput};
+use crate::components::{Button, ButtonKind, TextInput};
 
 /// What a confirm dialog asks.
 #[derive(Clone)]
@@ -288,37 +288,8 @@ mod tests {
     }
 }
 
-/// The shared sheet, portalled to `<body>`: a panel's transformed ancestors would otherwise trap
-/// its fixed overlay inside the panel.
-#[component]
-pub fn Sheet(
-    #[prop(into)] open: Signal<bool>,
-    on_close: Callback<()>,
-    #[prop(optional, into)] title: Option<String>,
-    #[prop(default = 460.0)] width: f64,
-    children: ChildrenFn,
-) -> impl IntoView {
-    let children = StoredValue::new(children);
-    let title = StoredValue::new(title);
-    view! {
-        <leptos::portal::Portal>
-            {move || match title.get_value() {
-                Some(t) => view! {
-                    <BaseSheet open=open on_close=on_close title=t width=width>
-                        {move || children.with_value(|c| c())}
-                    </BaseSheet>
-                }
-                .into_any(),
-                None => view! {
-                    <BaseSheet open=open on_close=on_close width=width>
-                        {move || children.with_value(|c| c())}
-                    </BaseSheet>
-                }
-                .into_any(),
-            }}
-        </leptos::portal::Portal>
-    }
-}
+/// The shared sheet (it portals itself to `<body>`).
+pub use crate::components::Sheet;
 
 /// "3m", "2h", "5d" since an ISO time (ui-next `util.ts` `ago`).
 pub fn ago(iso: &str) -> String {
