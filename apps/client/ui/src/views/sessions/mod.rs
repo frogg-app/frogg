@@ -283,7 +283,7 @@ fn model(needle: &str) -> Model {
                 ),
             }
         }
-        groups.sort_by(|a, b| a.label.to_lowercase().cmp(&b.label.to_lowercase()));
+        groups.sort_by_key(|a| a.label.to_lowercase());
     } else if prefs.group == "labels" {
         for (_, x) in &visible {
             let ls = labels_of(&x.s);
@@ -294,7 +294,7 @@ fn model(needle: &str) -> Model {
                 push(format!("l:{l}"), l.clone(), None, x.clone());
             }
         }
-        groups.sort_by(|a, b| a.label.to_lowercase().cmp(&b.label.to_lowercase()));
+        groups.sort_by_key(|a| a.label.to_lowercase());
     } else {
         for (b, label, hint) in ORDER {
             for (r, x) in &visible {

@@ -192,8 +192,8 @@ async fn send(agent_id: &str, text: &str, atts: &[Att]) -> Result<(), String> {
             agent_id,
             text,
             SendMessageOptions {
-                images: (!images.is_empty()).then(|| Value::Array(images)),
-                attachments: (!files.is_empty()).then(|| Value::Array(files)),
+                images: (!images.is_empty()).then_some(Value::Array(images)),
+                attachments: (!files.is_empty()).then_some(Value::Array(files)),
                 ..Default::default()
             },
         )

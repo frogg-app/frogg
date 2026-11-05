@@ -12,21 +12,6 @@ pub mod settings;
 use leptos::prelude::*;
 
 use crate::components::{Ico, Icon};
-use crate::shell::panel_head::PanelHead;
-
-/// A stub side panel: the tool's heading and a line saying what comes here.
-#[component]
-pub fn PanelStub(#[prop(into)] title: String, #[prop(into)] note: String) -> impl IntoView {
-    view! {
-        <div class="panel">
-            <PanelHead title=title />
-            <div class="stub-note">
-                <span class="t-label">"coming"</span>
-                <span class="stub-text">{note}</span>
-            </div>
-        </div>
-    }
-}
 
 /// A stub main pane: centred icon and text, with a back button on phones.
 #[component]

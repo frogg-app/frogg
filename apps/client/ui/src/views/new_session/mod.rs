@@ -922,9 +922,8 @@ fn Fields(f: Form, phone: bool) -> impl IntoView {
         spawn_local(async move {
             match native::pick_files(true).await {
                 Ok(files) => f.drafts.update(|d| {
-                    let mut next = d.iter().map(|x| x.id).max().unwrap_or(0);
-                    for file in files {
-                        next += 1;
+                    let base = d.iter().map(|x| x.id).max().unwrap_or(0);
+                    for (next, file) in (base + 1..).zip(files) {
                         d.push(Draft { id: next, file });
                     }
                 }),

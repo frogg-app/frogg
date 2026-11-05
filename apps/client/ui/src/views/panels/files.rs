@@ -544,7 +544,7 @@ pub fn FileViewer(
                                     let i = ts.iter().position(|x| *x == t3);
                                     i.and_then(|i| ts.get(i + 1).or_else(|| i.checked_sub(1).and_then(|j| ts.get(j))).cloned())
                                 });
-                                f.close_tabs(&[t3.clone()]);
+                                f.close_tabs(std::slice::from_ref(&t3));
                                 if on {
                                     app.ui.open_file(next);
                                 }

@@ -79,12 +79,15 @@ pub struct PromptSpec {
     pub title: String,
     pub initial: String,
     pub action: String,
-    pub run: std::sync::Arc<
-        dyn Fn(String) -> std::pin::Pin<Box<dyn std::future::Future<Output = Option<String>>>>
-            + Send
-            + Sync,
-    >,
+    pub run: PromptRun,
 }
+
+/// The async action behind a [`PromptSpec`].
+pub type PromptRun = std::sync::Arc<
+    dyn Fn(String) -> std::pin::Pin<Box<dyn std::future::Future<Output = Option<String>>>>
+        + Send
+        + Sync,
+>;
 
 impl PromptSpec {
     pub fn new<F, Fut>(
