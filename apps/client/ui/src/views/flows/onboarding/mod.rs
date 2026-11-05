@@ -82,7 +82,11 @@ pub fn Onboarding() -> impl IntoView {
                 }
             }}
         </Show>
-        <ResumeChip />
+        // Desktop and tablet dock the chip in the status bar (`shell::status_bar`) so it never
+        // covers the chat or composer; phones float it here.
+        <Show when=move || crate::state::get().viewport.phone()>
+            <ResumeChip />
+        </Show>
     }
 }
 
@@ -298,7 +302,7 @@ fn ObCard(phone: bool) -> impl IntoView {
 /// Bottom-right while minimised: progress, resume, dismiss. Turns mint when the step it left
 /// for is done.
 #[component]
-fn ResumeChip() -> impl IntoView {
+pub fn ResumeChip(#[prop(optional)] docked: bool) -> impl IntoView {
     let app = crate::state::get();
     let ob = onboarding::get();
     let minimised = Memo::new(move |_| ob.state.with(|s| s.status == Status::Minimised));
@@ -316,7 +320,7 @@ fn ResumeChip() -> impl IntoView {
         }
     };
     view! {
-        <Show when=move || minimised.get()>
+        <Show when=move || minimised.get() && !(docked && app.viewport.phone())>
             {move || {
                 let away = ob.away.get();
                 let finished_away = away.is_some_and(|a| done.get().contains(&a));
@@ -327,8 +331,8 @@ fn ResumeChip() -> impl IntoView {
                 }
                 let phone = app.viewport.phone();
                 view! {
-                    <div class="ob-chip-place" class:phone=phone>
-                        <div class="ob-chip cut m-rise" class:ok=finished_away style="--c:10px">
+                    <div class="ob-chip-place" class:phone=phone class:docked=docked>
+                        <div class="ob-chip m-rise" class:cut=!docked class:ok=finished_away style="--c:10px">
                             <button class="ob-chip-main" on:click=resume>
                                 {if finished_away {
                                     view! { <span class="ob-chip-done m-snap"><Icon ico=Ico::Check size=11.0 stroke=3.0 /></span> }.into_any()

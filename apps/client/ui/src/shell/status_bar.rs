@@ -75,6 +75,7 @@ pub fn StatusBar() -> impl IntoView {
                         }
                     })
             }}
+            <crate::views::flows::onboarding::ResumeChip docked=true />
             <button class="sb-seg" on:click=move |_| app.ui.palette_open.set(true)>
                 <span class="sb-t t-mono">{kbd("⌘K")}</span>
             </button>

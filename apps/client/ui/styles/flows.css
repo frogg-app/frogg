@@ -1492,6 +1492,31 @@
   bottom: calc(76px + env(safe-area-inset-bottom));
   right: 12px;
 }
+.ob-chip-place.docked {
+  position: static;
+  display: flex;
+  align-items: stretch;
+  align-self: stretch;
+}
+.ob-chip-place.docked .ob-chip {
+  border-left: 1px solid var(--line);
+  background: var(--cyan-wash, color-mix(in srgb, var(--cyan) 8%, transparent));
+  filter: none;
+}
+.ob-chip-place.docked .ob-chip-main {
+  gap: 6px;
+  padding: 0 6px 0 10px;
+  align-self: stretch;
+}
+.ob-chip-place.docked .ob-chip-t {
+  font-size: 11.5px;
+}
+.ob-chip-place.docked .ob-chip-x {
+  padding: 0 8px;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+}
 .ob-chip {
   --cut-bg: var(--panel);
   display: flex;
