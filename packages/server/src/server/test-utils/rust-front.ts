@@ -62,6 +62,7 @@ export async function startRustFront(input: {
   const child = spawn(input.binary, [], {
     env: {
       PATH: process.env.PATH,
+      HOME: process.env.HOME,
       FROGG_HOME: input.froggHome,
       FROGG_LISTEN: `127.0.0.1:${port}`,
       FROGG_RS_UPSTREAM: `ws://127.0.0.1:${input.upstreamPort}/ws`,
