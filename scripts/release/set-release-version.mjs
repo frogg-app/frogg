@@ -91,12 +91,9 @@ function assertStreamBranch(version, mode) {
   const beta = channelOfVersion(version) === "beta";
   const required = branchForVersion(streams, version);
   if (branch !== required) {
-    const hint =
-      required === streams.next
-        ? " Use `npm run release:next`."
-        : beta
-          ? " Use `npm run release:beta`."
-          : " Use `npm run release:patch` or `npm run release:promote` there.";
+    let hint = " Use `npm run release:patch` or `npm run release:promote` there.";
+    if (required === streams.next) hint = " Use `npm run release:next`.";
+    else if (beta) hint = " Use `npm run release:beta`.";
     throw new Error(
       `${version} is a ${beta ? "prerelease" : "stable release"}, cut from ${required}; you are on ${branch || "(detached)"}.${hint}`,
     );
