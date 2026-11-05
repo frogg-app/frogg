@@ -555,13 +555,19 @@
 
 /* Appearance: theme cards (Appearance.tsx) */
 .theme-cards {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 220px);
   gap: 12px;
   padding: 14px;
 }
+/* Two to a row on phones. */
+@media (max-width: 600px) {
+  .theme-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 .theme-card {
-  width: 220px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -1491,6 +1497,14 @@
 .ob-chip-place.phone {
   bottom: calc(76px + env(safe-area-inset-bottom));
   right: 12px;
+}
+/* The phone "All tools" menu covers the screen; the chip steps aside. */
+body:has(.tool-menu) .ob-chip-place.phone {
+  display: none;
+}
+/* A phone detail view has no tab bar but a composer at the bottom: clear it. */
+.ob-chip-place.phone.detail {
+  bottom: calc(104px + env(safe-area-inset-bottom));
 }
 .ob-chip-place.docked {
   position: static;

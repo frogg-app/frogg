@@ -116,7 +116,7 @@ fn has_detail(app: AppState) -> bool {
 }
 
 /// Phone only: whether the main pane shows a view (otherwise the tab's panel does).
-fn has_phone_detail(app: AppState) -> bool {
+pub(crate) fn has_phone_detail(app: AppState) -> bool {
     if app.ui.tool.get() == Tool::Tasks {
         return false;
     }

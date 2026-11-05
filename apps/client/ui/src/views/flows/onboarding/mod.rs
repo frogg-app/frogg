@@ -331,7 +331,7 @@ pub fn ResumeChip(#[prop(optional)] docked: bool) -> impl IntoView {
                 }
                 let phone = app.viewport.phone();
                 view! {
-                    <div class="ob-chip-place" class:phone=phone class:docked=docked>
+                    <div class="ob-chip-place" class:phone=phone class:docked=docked class:detail=move || phone && crate::shell::layout::has_phone_detail(app)>
                         <div class="ob-chip m-rise" class:cut=!docked class:ok=finished_away style="--c:10px">
                             <button class="ob-chip-main" on:click=resume>
                                 {if finished_away {
