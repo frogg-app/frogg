@@ -7,6 +7,8 @@ pub mod hosts;
 pub mod kbd;
 pub mod pairing;
 pub mod prefs;
+pub mod projects;
+pub mod sessions;
 pub mod storage;
 pub mod timeline;
 pub mod ui;
