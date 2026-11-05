@@ -551,11 +551,28 @@ async fn enforce_host_allowlist(
         .get(axum::http::header::HOST)
         .and_then(|value| value.to_str().ok())
         .map(str::to_owned);
-    if !hostnames::is_hostname_allowed(
+    let allowed = hostnames::is_hostname_allowed(
         host.as_deref(),
         &state.hostnames,
         state.allow_pairing_hostname,
-    ) {
+    );
+    // Workspace services are `<label>.localhost` (and any public base host) on this port,
+    // routed by Host inside Node. Those, and hosts the front would refuse, are Node's to
+    // decide when it is up: it applies the same allowlist and owns the service routes.
+    if !allowed
+        || host
+            .as_deref()
+            .is_some_and(hostnames::is_localhost_subdomain)
+    {
+        let upstream = state.upstream.borrow().clone();
+        if let (Some(url), Some(_)) = (upstream, host.as_deref()) {
+            return state
+                .http_proxy
+                .forward_host(&url, request, &peer.ip().to_string())
+                .await;
+        }
+    }
+    if !allowed {
         tracing::warn!(?host, %peer, "rejected request with a disallowed Host header");
         return (
             StatusCode::FORBIDDEN,
@@ -1078,6 +1095,66 @@ mod tests {
             status_for(Some("evil.com"), hostnames::Hostnames::Any).await,
             StatusCode::OK
         );
+    }
+
+    /// A stand-in Node daemon that answers every request with the Host it was sent.
+    async fn host_echo_upstream() -> (String, watch::Sender<Option<String>>) {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let app = Router::new().fallback(|headers: HeaderMap| async move {
+            header(&headers, "host").unwrap_or("").to_string()
+        });
+        tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+        let url = format!("ws://{addr}/ws");
+        let (tx, _) = watch::channel(Some(url.clone()));
+        (url, tx)
+    }
+
+    async fn via_front(
+        host: &str,
+        upstream: Option<watch::Receiver<Option<String>>>,
+    ) -> (StatusCode, String) {
+        let mut state = test_state(hostnames::Hostnames::default());
+        if let Some(upstream) = upstream {
+            let state = Arc::get_mut(&mut state).unwrap();
+            state.upstream = upstream;
+            state.expects_upstream = true;
+        }
+        let request = axum::http::Request::builder()
+            .uri("/anything")
+            .header("host", host)
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let response = build_router(state)
+            .into_make_service_with_connect_info::<SocketAddr>()
+            .oneshot(SocketAddr::from(([127, 0, 0, 1], 40000)))
+            .await
+            .unwrap()
+            .oneshot(request)
+            .await
+            .unwrap();
+        let status = response.status();
+        let body = http_body_util::BodyExt::collect(response.into_body())
+            .await
+            .unwrap()
+            .to_bytes();
+        (status, String::from_utf8_lossy(&body).into_owned())
+    }
+
+    #[tokio::test]
+    async fn service_hosts_and_unknown_hosts_go_to_node_with_their_host() {
+        let (_url, tx) = host_echo_upstream().await;
+        for host in ["web--app.localhost:9999", "evil.com"] {
+            let (status, body) = via_front(host, Some(tx.subscribe())).await;
+            assert_eq!(status, StatusCode::OK, "{host}");
+            assert_eq!(body, host, "Node must see the original Host");
+        }
+    }
+
+    #[tokio::test]
+    async fn without_a_node_daemon_unknown_hosts_are_still_refused() {
+        let (status, _) = via_front("evil.com", None).await;
+        assert_eq!(status, StatusCode::FORBIDDEN);
     }
 
     #[test]

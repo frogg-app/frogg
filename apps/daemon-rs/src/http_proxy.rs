@@ -43,8 +43,33 @@ impl HttpProxy {
     pub async fn forward(
         &self,
         upstream_ws_url: &str,
+        request: Request<Body>,
+        client_ip: &str,
+    ) -> Response<Body> {
+        self.forward_with(upstream_ws_url, request, client_ip, false)
+            .await
+    }
+
+    /// Forwards a request addressed to a host the front does not serve itself: a workspace
+    /// service (`<script>.<project>.localhost:<daemon port>`, routed by Host inside Node) or
+    /// anything Node's own Host allowlist decides on. The Host header is kept, and upgrades
+    /// (a dev server's HMR socket) are spliced through.
+    pub async fn forward_host(
+        &self,
+        upstream_ws_url: &str,
+        request: Request<Body>,
+        client_ip: &str,
+    ) -> Response<Body> {
+        self.forward_with(upstream_ws_url, request, client_ip, true)
+            .await
+    }
+
+    async fn forward_with(
+        &self,
+        upstream_ws_url: &str,
         mut request: Request<Body>,
         client_ip: &str,
+        keep_host: bool,
     ) -> Response<Body> {
         let Some(base) = http_base_from_ws(upstream_ws_url) else {
             return status(StatusCode::BAD_GATEWAY);
@@ -58,8 +83,10 @@ impl HttpProxy {
             return status(StatusCode::BAD_GATEWAY);
         };
         *request.uri_mut() = uri;
-        // Host must match the upstream, or its origin checks reject us.
-        request.headers_mut().remove(axum::http::header::HOST);
+        if !keep_host {
+            // Host must match the upstream, or its origin checks reject us.
+            request.headers_mut().remove(axum::http::header::HOST);
+        }
         request.headers_mut().remove("x-forwarded-for");
         // See `proxy::Upstream::connect`: a loopback client goes as a plain loopback request.
         if crate::netclass::classify(Some(client_ip)) != crate::netclass::Locality::Loopback {
@@ -68,8 +95,18 @@ impl HttpProxy {
             }
         }
 
+        let client_upgrade = request
+            .headers()
+            .contains_key(axum::http::header::UPGRADE)
+            .then(|| hyper::upgrade::on(&mut request));
         match self.client.request(request).await {
-            Ok(response) => {
+            Ok(mut response) => {
+                if response.status() == StatusCode::SWITCHING_PROTOCOLS {
+                    if let Some(client_upgrade) = client_upgrade {
+                        let upstream_upgrade = hyper::upgrade::on(&mut response);
+                        tokio::spawn(splice(client_upgrade, upstream_upgrade));
+                    }
+                }
                 let (parts, body) = response.into_parts();
                 Response::from_parts(parts, Body::new(body.map_err(axum::Error::new)))
             }
@@ -79,6 +116,16 @@ impl HttpProxy {
             }
         }
     }
+}
+
+/// Copies bytes both ways between an upgraded client connection and the upstream's.
+async fn splice(client: hyper::upgrade::OnUpgrade, upstream: hyper::upgrade::OnUpgrade) {
+    let (Ok(client), Ok(upstream)) = (client.await, upstream.await) else {
+        return;
+    };
+    let mut client = hyper_util::rt::TokioIo::new(client);
+    let mut upstream = hyper_util::rt::TokioIo::new(upstream);
+    let _ = tokio::io::copy_bidirectional(&mut client, &mut upstream).await;
 }
 
 fn status(code: StatusCode) -> Response<Body> {
