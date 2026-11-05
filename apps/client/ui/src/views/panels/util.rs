@@ -316,3 +316,23 @@ pub fn Sheet(
         </leptos::portal::Portal>
     }
 }
+
+/// "3m", "2h", "5d" since an ISO time (ui-next `util.ts` `ago`).
+pub fn ago(iso: &str) -> String {
+    let then = js_sys::Date::parse(iso);
+    if !then.is_finite() {
+        return String::new();
+    }
+    let s = ((js_sys::Date::now() - then) / 1000.0).max(0.0) as u64;
+    if s < 60 {
+        "now".into()
+    } else if s < 3600 {
+        format!("{}m", s / 60)
+    } else if s < 86_400 {
+        format!("{}h", s / 3600)
+    } else if s < 2_592_000 {
+        format!("{}d", s / 86_400)
+    } else {
+        format!("{}mo", s / 2_592_000)
+    }
+}

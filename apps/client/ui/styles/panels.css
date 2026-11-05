@@ -814,3 +814,169 @@
   min-height: 140px;
   font-family: var(--font-mono);
 }
+
+/* ---- Search ---- */
+.pn-search-box {
+  margin: 0 12px 6px;
+  background: var(--panel);
+  border: 1px solid var(--line2);
+  flex: none;
+}
+.pn-search-input {
+  width: 100%;
+  padding: 8px 10px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  background: transparent;
+  border: 0;
+  outline: none;
+}
+.pn-search-input::placeholder {
+  color: var(--faint);
+}
+.pn-note-plain {
+  padding: 16px;
+}
+.pn-hit {
+  margin: 0 8px;
+  padding: 9px 8px;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  transition: background-color 120ms ease-out;
+  animation: pn-enter 220ms var(--ease) both;
+}
+.pn-hit:hover {
+  background: var(--wash);
+}
+.pn-hit-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pn-hit-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pn-hit-sub {
+  display: block;
+  margin: 3px 0 0 17px;
+  font-size: 11px;
+  color: var(--faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pn-mark-hit {
+  color: var(--cyan2);
+  background: color-mix(in srgb, var(--cyan2) 12%, transparent);
+}
+
+/* ---- Usage + Meter ---- */
+.pn-usage {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 12px 16px;
+}
+.pn-small {
+  font-size: 11px;
+}
+.pn-usage-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+.pn-ucard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  background: var(--panel);
+  animation: pn-enter 220ms var(--ease) both;
+}
+.pn-ucard-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.pn-ucard-titles {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pn-ucard-name {
+  font-family: var(--font-display);
+  font-size: 14px;
+}
+.pn-pill {
+  font-size: 10.5px;
+  padding: 2px 7px;
+  color: var(--violet);
+  background: color-mix(in srgb, var(--violet) 12%, transparent);
+}
+.pn-meter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pn-meter-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.pn-meter-label {
+  flex: 1;
+  font-size: 12.5px;
+}
+.pn-meter-pct {
+  font-size: 12px;
+  min-width: 32px;
+  text-align: right;
+  color: var(--text);
+}
+.pn-meter-pct.crit {
+  color: var(--coral);
+}
+.pn-meter-bar {
+  display: flex;
+  gap: 2px;
+  height: 6px;
+}
+.pn-cell {
+  flex: 1;
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+  transition: background-color 160ms var(--ease);
+}
+.pn-cell.on {
+  background: var(--tint);
+}
+.pn-meter-detail {
+  font-size: 10.5px;
+  color: var(--faint);
+}
+.pn-balance {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12.5px;
+}
+.pn-source {
+  font-size: 10.5px;
+  color: var(--faint);
+}
+.pn-stale {
+  font-size: 10.5px;
+  color: var(--amber);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pn-cell {
+    transition: none;
+  }
+}

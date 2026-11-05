@@ -13,6 +13,7 @@ pub mod storage;
 pub mod tasks;
 pub mod terminals;
 pub mod ui;
+pub mod usage;
 
 use std::cell::Cell;
 
