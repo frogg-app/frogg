@@ -82,10 +82,12 @@ fn main_detail(app: AppState, phone: bool, docked: bool) -> AnyView {
     if !tool.is_chat_tool() {
         return view! { <ToolEmpty tool=tool /> }.into_any();
     }
-    match app.selected_session() {
-        Some(s) => {
+    // Only the open session's id: an agent_update must not remount the chat.
+    let open = Memo::new(move |_| app.selected_session().map(|s| s.agent.id));
+    match open.get() {
+        Some(id) => {
             let on_back = back(Box::new(move || ui.select(None)));
-            view! { <views::chat::Chat agent_id=s.agent.id on_back=on_back /> }.into_any()
+            view! { <views::chat::Chat agent_id=id on_back=on_back /> }.into_any()
         }
         None if phone => ().into_any(),
         None => view! { <Home /> }.into_any(),

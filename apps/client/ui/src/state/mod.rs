@@ -8,6 +8,7 @@ pub mod kbd;
 pub mod pairing;
 pub mod prefs;
 pub mod storage;
+pub mod timeline;
 pub mod ui;
 
 use std::cell::Cell;
