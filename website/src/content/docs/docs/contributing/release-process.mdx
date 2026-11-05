@@ -100,13 +100,13 @@ merged (`scripts/release/streams-core.mjs`).
 | `ui`               | Exports the web UI once (`npm run build:ui`); on `-beta.N` a second time as frogg beta for its desktop. The daemon always packs the stable export |
 | `desktop`          | Stable and `-beta.N` (as frogg beta, `FROGG_BRAND_CHANNEL=beta`). Matrix: Windows x64, Linux x64 (`ubuntu-22.04`), macOS arm64 and x64. Runs `npm run build:desktop -- --target <target>` and uploads installers. Runs the Electron smoke test on the packaged Linux build |
 | `daemon-build`     | Builds the server stack and bundles the shared web UI into the daemon                            |
-| `daemon-bundle`    | Matrix: `linux-x64`, `linux-arm64`, `darwin-arm64`, `darwin-x64`, `win-x64`, `win-arm64`. Packs each bundle with a `.sha256` sidecar |
+| `daemon-bundle`    | Full builds: `linux-x64`, `linux-arm64`, `darwin-arm64`, `darwin-x64`, `win-x64`, `win-arm64`. Core builds: `linux-x64` only. Packs each bundle with a `.sha256` sidecar |
 | `android`          | Stable and `-beta.N` (as frogg beta). Builds the arm64-v8a APK with `scripts/release/build-android-apk.mjs --serial`       |
-| `next-desktop`     | `-next.N` only. Calls `ui-next-desktop.yml`: Frogg Next for Windows x64, macOS arm64 and x64, and Linux (AppImage, deb), with its update feeds and one checksum list (Windows only with `platforms: default`). Runs a packaged launch smoke test on Linux. See [Frogg Next](#frogg-next) |
+| `next-desktop`     | `-next.N` only. Calls `ui-next-desktop.yml`: Frogg Next for Windows x64, macOS arm64 and x64, and Linux (AppImage, deb), with its update feeds and one checksum list (core builds: Windows x64 and macOS arm64 only). Runs a packaged launch smoke test on Linux. See [Frogg Next](#frogg-next) |
 | `next-android`     | `-next.N` only. Calls `ui-next-android.yml`: the Frogg Next arm64 APK                          |
-| `updater-manifest` | Full builds only. Generates `release.json` with the release's `client`. On stable and `-beta.N` it also generates the classic Electron feeds (`electron-latest*.yml` or `electron-beta*.yml`) and `SHA256SUMS-desktop` from the uploaded binaries; on `-next.N` it names Frogg Next's feeds and checksum list. Then runs `verify-release-assets.mjs` |
+| `updater-manifest` | Skipped on a manual `platforms: default` run. Generates `release.json` with the release's `client`. On stable and `-beta.N` it also generates the classic Electron feeds (`electron-latest*.yml` or `electron-beta*.yml`) and `SHA256SUMS-desktop` from the uploaded binaries; on `-next.N` it names Frogg Next's feeds and checksum list. Then runs `verify-release-assets.mjs` |
 | `docker`           | Only with Docker Hub credentials. Builds `deploy/docker/base/Dockerfile` for `linux/amd64` and pushes it |
-| `publish`          | Clears the draft flag only if `meta`, `daemon-bundle` and `updater-manifest` succeeded, `docker` succeeded or was skipped, the run built all platforms, and the client's jobs succeeded: `desktop` and `android` on stable and `-beta.N`, `next-desktop` and `next-android` on `-next.N` |
+| `publish`          | Clears the draft flag only if `meta`, `daemon-bundle` and `updater-manifest` succeeded, `docker` succeeded or was skipped, the run was not a manual `platforms: default` run, and the client's jobs succeeded: `desktop` and `android` on stable and `-beta.N`, `next-desktop` and `next-android` on `-next.N` |
 
 The version's release line decides what a release carries
 (see [Release streams](/docs/contributing/release-streams/#what-a-release-carries)). A stable
@@ -121,8 +121,19 @@ Manual dispatch inputs:
 - `tag` (required): an existing tag to build.
 - `only`: `all` or `android`. `android` runs only `meta` and the client's APK job (`android` on
   stable and `-beta.N`, `next-android` on `-next.N`).
-- `platforms`: `default` builds the Windows x64 desktop client, `linux-x64` and `win-x64` daemon
-  bundles, and the APK. `all` builds the full matrix. A tag push always builds everything.
+- `platforms`: `default` builds the core set (below) as a draft. `all` builds the full matrix and
+  publishes.
+
+Which platforms a run builds:
+
+| Run                                      | Builds                                                                                                         |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Stable tag, or manual `platforms: all`   | Full matrix: every desktop target, all six daemon bundles, the arm64 APK                                       |
+| `-next.N` tag                            | Core: Frogg Next for Windows x64 and macOS arm64, the `linux-x64` daemon, the arm64 APK                        |
+| `-beta.N` tag                            | Core daemon (`linux-x64`) and the arm64 APK; the frogg beta desktop keeps every target, as its feeds need them |
+| Manual `platforms: default`              | Windows x64 desktop, the `linux-x64` daemon, the APK; stays a draft                                            |
+
+Other daemon platforms and the Linux and Intel Mac clients ship with stable releases.
 
 A manual run with `platforms: default` or `only: android` skips `updater-manifest` and `publish`,
 so its release stays a draft.

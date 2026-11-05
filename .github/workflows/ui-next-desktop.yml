@@ -124,7 +124,8 @@ jobs:
 
   mac-x64:
     name: Mac Intel client
-    if: inputs.release-tag == '' || inputs.mac-x64
+    # Branch pushes build Windows and Mac ARM only; this runs on release calls that ask for it.
+    if: inputs.release-tag != '' && inputs.mac-x64
     # Cross-built on the ARM runner: the shell has no native modules.
     runs-on: macos-15
     timeout-minutes: 45
@@ -200,7 +201,8 @@ jobs:
 
   linux:
     name: Linux x64 client
-    if: inputs.release-tag == '' || inputs.linux
+    # Branch pushes build Windows and Mac ARM only; this runs on release calls that ask for it.
+    if: inputs.release-tag != '' && inputs.linux
     # Older glibc than ubuntu-latest, so the AppImage and deb run on more systems.
     runs-on: ubuntu-22.04
     timeout-minutes: 45
