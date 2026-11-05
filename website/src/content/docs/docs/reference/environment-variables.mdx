@@ -37,6 +37,8 @@ Official Frogg continues to use `FROGG_*`.
 | `FROGG_WEB_UI_DIST_DIR`   | bundled                   | Serve another web build |
 | `FROGG_PAIRING_BASE_URL`  | `https://pair.frogg.app`  | Pairing link base. Legacy alias `FROGG_APP_BASE_URL` |
 | `FROGG_PRIMARY_LAN_IP`    | detected                  | LAN address advertised in pairing offers |
+| `FROGG_RS_FRONT`          | off                       | Frogg Next daemon bundles on Linux and macOS: `1` makes `daemon start` run the Rust front (`bin/frogg-daemond`) in front of the Node daemon. Falls back to the Node daemon, with a warning, when the binary is missing or on Windows. Experimental |
+| `FROGG_RS_FRONT_BIN`      | `bin/frogg-daemond`       | Path to another Rust front binary, with `FROGG_RS_FRONT=1` |
 
 ## Daemon: relay and service proxy
 

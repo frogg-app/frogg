@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **Rust daemon front (Frogg Next, experimental, off by default).** Frogg Next daemon bundles
+  for Linux and macOS carry `bin/frogg-daemond`, the Rust front from `apps/daemon-rs`. With
+  `FROGG_RS_FRONT=1`, `daemon start` runs it in place of the Node supervisor: it listens
+  within tens of milliseconds and answers pings itself, supervises the Node daemon on a
+  private loopback port, and forwards everything else to it. Stable and beta releases are
+  unchanged.
 - **`!command` in the agent view.** A message starting with `!` runs as a shell command on the
   host in the session's folder, shows as a shell tool call, and its output goes to the agent with
   the next message, as in Claude Code's bash mode. Works for every provider; advertised as

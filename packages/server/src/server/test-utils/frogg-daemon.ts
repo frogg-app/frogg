@@ -1,5 +1,6 @@
 import { createLocalTokenFile } from "../local-token.js";
 import { registerTestDaemonLocalToken } from "./daemon-client.js";
+import { RUST_FRONT_ENV, startRustFront, type RustFront } from "./rust-front.js";
 import os from "node:os";
 import path from "node:path";
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
@@ -113,12 +114,16 @@ export async function createTestFroggDaemon(
         throw new Error("Test daemon did not expose a bound TCP listen target");
       }
 
-      const unregisterLocalToken = registerTestDaemonLocalToken(
-        listenTarget.port,
-        createLocalTokenFile(froggHome).ensure(),
-      );
+      const localToken = createLocalTokenFile(froggHome).ensure();
+      const frontBinary = process.env[RUST_FRONT_ENV];
+      const front: RustFront | null = frontBinary
+        ? await startRustFront({ binary: frontBinary, upstreamPort: listenTarget.port, froggHome })
+        : null;
+      const port = front?.port ?? listenTarget.port;
+      const unregisterLocalToken = registerTestDaemonLocalToken(port, localToken);
       const close = async (): Promise<void> => {
         unregisterLocalToken();
+        await front?.close();
         await daemon.stop().catch(() => undefined);
         await daemon.agentManager.flush().catch(() => undefined);
         if (options.cleanup ?? true) {
@@ -133,7 +138,7 @@ export async function createTestFroggDaemon(
       return {
         config,
         daemon,
-        port: listenTarget.port,
+        port,
         froggHome,
         staticDir,
         close,
