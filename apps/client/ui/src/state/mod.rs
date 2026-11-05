@@ -2,9 +2,9 @@
 //! that `state::get()` (or `use_context::<AppState>()`) hands out the same `Copy` handle.
 
 pub mod agents;
-pub mod config;
 pub mod checkout;
 pub mod ci;
+pub mod config;
 pub mod connection;
 pub mod files;
 pub mod hosts;
@@ -15,13 +15,13 @@ pub mod onboarding;
 pub mod pairing;
 pub mod prefs;
 pub mod projects;
+pub mod scm;
 pub mod sessions;
 pub mod signin;
 pub mod storage;
-pub mod timeline;
-pub mod scm;
 pub mod tasks;
 pub mod terminals;
+pub mod timeline;
 pub mod ui;
 pub mod usage;
 
