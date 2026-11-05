@@ -7,6 +7,7 @@ pub mod hosts;
 pub mod kbd;
 pub mod prefs;
 pub mod storage;
+pub mod timeline;
 pub mod ui;
 
 use std::cell::Cell;
