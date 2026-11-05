@@ -255,7 +255,9 @@ jobs:
         with:
           ref: ${{ inputs.release-tag }}
           persist-credentials: false
-          sparse-checkout: apps/ui-next/scripts
+          sparse-checkout: |
+            apps/ui-next/scripts
+            scripts/ci
       - uses: actions/download-artifact@v8
         with:
           pattern: frogg-next-*-${{ github.sha }}

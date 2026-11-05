@@ -162,6 +162,12 @@ jobs:
     permissions:
       contents: write
     steps:
+      # Only for scripts/ci/release-upload.sh, which retries half-completed uploads.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.release-tag }}
+          persist-credentials: false
+          sparse-checkout: scripts/ci
       - uses: actions/download-artifact@v8
         with:
           name: frogg-next-android-arm64-${{ github.sha }}
