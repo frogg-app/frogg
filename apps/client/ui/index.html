@@ -7,6 +7,25 @@
     <link data-trunk rel="css" href="styles/theme.css" />
     <link data-trunk rel="css" href="styles/app.css" />
     <link data-trunk rel="rust" data-wasm-opt="z" data-bin="frogg-ui" />
+    <!-- Splash (native stream): painted before the wasm loads, hidden by CSS alone once the app
+         mounts its first element into <body>. The shell paints the window in the saved theme. -->
+    <style>
+      :root{--fs-bg:#16181b;--fs-faint:#6c757d;--fs-accent:#82aaff}
+      html,body{background:var(--bg,var(--fs-bg));margin:0}
+      .frogg-splash{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+        font:500 12px/1 ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;letter-spacing:.14em;text-transform:uppercase;
+        color:var(--fs-faint);animation:frogg-splash-in .2s cubic-bezier(.22,1,.36,1) both}
+      .frogg-splash i{display:block;width:96px;height:2px;overflow:hidden;position:relative}
+      .frogg-splash i::before{content:"";position:absolute;inset:0;background:var(--fs-accent);opacity:.14}
+      .frogg-splash i::after{content:"";position:absolute;inset:0;width:32px;background:var(--fs-accent);
+        animation:frogg-splash-run 1.1s cubic-bezier(.22,1,.36,1) infinite}
+      body:has(> :not(.frogg-splash):not(script):not(link):not(style)) > .frogg-splash{display:none}
+      @keyframes frogg-splash-in{from{opacity:0}to{opacity:1}}
+      @keyframes frogg-splash-run{from{transform:translateX(-32px)}to{transform:translateX(96px)}}
+      @media (prefers-reduced-motion:reduce){.frogg-splash,.frogg-splash i::after{animation:none}}
+    </style>
   </head>
-  <body></body>
+  <body>
+    <div class="frogg-splash" role="status" aria-label="Starting Frogg Next RS"><span>Frogg Next RS</span><i></i></div>
+  </body>
 </html>

@@ -1,4 +1,4 @@
 /target
 /ui/dist
-/src-tauri/gen
+/src-tauri/gen/schemas
 /render/demo/dist

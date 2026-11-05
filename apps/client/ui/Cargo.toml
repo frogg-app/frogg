@@ -15,3 +15,10 @@ web-sys = { version = "0.3", features = ["Storage", "Window", "Location"] }
 console_error_panic_hook = "0.1"
 js-sys = "0.3"
 serde_json.workspace = true
+
+# native/ (the Tauri bridge and its web fallbacks). A separate table so other streams' feature
+# edits to the main web-sys line never conflict; features unify.
+[target.'cfg(all())'.dependencies]
+wasm-bindgen-futures = "0.4"
+serde = { workspace = true }
+web-sys = { version = "0.3", features = ["Document", "Element", "HtmlElement", "HtmlInputElement", "File", "FileList", "Blob", "Navigator", "Clipboard", "Notification", "NotificationOptions", "NotificationPermission", "UrlSearchParams", "EventTarget", "Event"] }

@@ -1,6 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Frogg Next RS",
+  "mainBinaryName": "frogg-next-rs",
   "identifier": "app.frogg.next.rs",
   "build": {
     "beforeDevCommand": { "script": "trunk serve", "cwd": "../ui" },
@@ -10,16 +11,18 @@
   },
   "app": {
     "withGlobalTauri": false,
-    "windows": [
-      { "title": "Frogg", "width": 1280, "height": 820, "minWidth": 360, "minHeight": 480 }
-    ],
+    "windows": [],
     "security": {
-      "csp": "default-src 'self'; connect-src 'self' ws: wss: http: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'wasm-unsafe-eval'"
+      "csp": "default-src 'self'; connect-src 'self' ipc: http://ipc.localhost ws: wss: http: https:; img-src 'self' data: blob: https: http:; style-src 'self' 'unsafe-inline'; script-src 'self' 'wasm-unsafe-eval'"
     }
   },
   "bundle": {
     "active": true,
     "targets": "all",
+    "publisher": "Frogg",
+    "category": "DeveloperTool",
+    "shortDescription": "Frogg Next RS",
+    "createUpdaterArtifacts": false,
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -27,6 +30,22 @@
       "icons/icon.icns",
       "icons/icon.ico",
       "icons/icon.png"
-    ]
+    ],
+    "android": { "minSdkVersion": 29 },
+    "windows": { "nsis": { "installMode": "currentUser" } },
+    "macOS": { "signingIdentity": "-" }
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": { "schemes": ["frogg-next-rs"] },
+      "mobile": [{ "scheme": ["frogg-next-rs"], "appLink": false }]
+    },
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDkzNzhDMjMyQUZBMjdDMzgKUldRNGZLS3ZNc0o0a3p3MWFBTSswYlpOU0lZOGNCNW83cW1QSnlnZzdSYWcxVEZaVm4ySUlkR2kK",
+      "endpoints": [
+        "https://github.com/frogg-app/frogg/releases/latest/download/frogg-next-rs-latest.json"
+      ],
+      "windows": { "installMode": "passive" }
+    }
   }
 }
