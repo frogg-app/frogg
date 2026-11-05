@@ -119,6 +119,7 @@ const VERSION_OWNED = [
   /^(?:apps|packages)\/[^/]+\/package\.json$/,
   /^package-lock\.json$/,
   /^apps\/daemon-rs\/Cargo\.(?:toml|lock)$/,
+  /^apps\/client\/Cargo\.(?:toml|lock)$/,
   /^deploy\/nix\/npm-deps\.hash$/,
 ];
 

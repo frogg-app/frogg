@@ -4,12 +4,16 @@ name: Rust client
 #
 # - check: the UI compiles for wasm32 and the core/render tests pass.
 # - desktop: Tauri bundles for linux-x64 (deb, AppImage), windows-x64 (nsis) and macos-arm64
-#   (dmg, ad-hoc signed). With FROGG_NEXT_RS_UPDATER_KEY set, the updater artifacts (.sig and
-#   frogg-next-rs-latest.json's inputs) are produced too; the release job that publishes the feed
-#   comes later.
+#   (dmg, ad-hoc signed). With FROGG_NEXT_RS_UPDATER_KEY set, the updater artifacts (signed
+#   AppImage, nsis exe and .app.tar.gz, each with a .sig) are produced too.
 # - android: a universal-ABI release APK, signed with Frogg Next's keystore (or the classic app's)
 #   when the secrets are present, else with the debug key.
 # Every bundle is uploaded as a workflow artifact named frogg-next-rs-<platform>.
+# - release: only when the Release workflow calls this with `release-tag` (every `-next.N` tag).
+#   Attaches Frogg-Next-RS-<version>-<platform>-<arch>.<ext>, their .sig files, one
+#   Frogg-Next-RS-<version>-SHA256SUMS and, when signed, frogg-next-rs-latest.json (Tauri's static
+#   updater feed, scripts/release/rust-client-assets.mjs) to that tag's GitHub release. Without
+#   FROGG_NEXT_RS_UPDATER_KEY everything but the feed and signatures still ships.
 
 on:
   push:
@@ -19,10 +23,49 @@ on:
       - crates/**
       - .github/workflows/rust-client.yml
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      release-tag:
+        description: "Release tag to build and attach the assets to"
+        required: true
+        type: string
+      clobber:
+        description: "'true' when the calling run created the release and may overwrite its assets"
+        required: false
+        default: "false"
+        type: string
+    outputs:
+      signed:
+        description: "'true' when frogg-next-rs-latest.json (and the .sig files) were uploaded"
+        value: ${{ jobs.release.outputs.signed }}
+    # All optional: without them the bundles ship unsigned for the updater and the APK debug-signed.
+    secrets:
+      FROGG_NEXT_RS_UPDATER_KEY:
+        required: false
+      FROGG_NEXT_RS_UPDATER_KEY_PASSWORD:
+        required: false
+      FROGG_NEXT_ANDROID_KEYSTORE_BASE64:
+        required: false
+      FROGG_NEXT_ANDROID_KEYSTORE_PASSWORD:
+        required: false
+      FROGG_NEXT_ANDROID_KEY_ALIAS:
+        required: false
+      FROGG_NEXT_ANDROID_KEY_PASSWORD:
+        required: false
+      FROGG_ANDROID_KEYSTORE_BASE64:
+        required: false
+      FROGG_ANDROID_KEYSTORE_PASSWORD:
+        required: false
+      FROGG_ANDROID_KEY_ALIAS:
+        required: false
+      FROGG_ANDROID_KEY_PASSWORD:
+        required: false
 
+# A release call runs inside the Release workflow's run and must never cancel or be cancelled by
+# a branch push build, so it gets its own group.
 concurrency:
-  group: rust-client-${{ github.ref }}
-  cancel-in-progress: true
+  group: rust-client-${{ inputs.release-tag || github.ref }}
+  cancel-in-progress: ${{ !inputs.release-tag }}
 
 permissions:
   contents: read
@@ -35,6 +78,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.release-tag || github.ref }}
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
@@ -63,10 +108,12 @@ jobs:
             bundles: nsis
           - platform: macos-arm64
             os: macos-latest
-            bundles: dmg
+            bundles: app,dmg
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.release-tag || github.ref }}
       - name: Linux build dependencies
         if: runner.os == 'Linux'
         run: |
@@ -117,6 +164,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.release-tag || github.ref }}
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
@@ -181,3 +230,59 @@ jobs:
           name: frogg-next-rs-android
           if-no-files-found: error
           path: apps/client/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+
+  # The only job with write access, and only on a release call: the builds above stay read-only.
+  release:
+    name: Attach to GitHub release
+    needs: [desktop, android]
+    if: inputs.release-tag != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    outputs:
+      signed: ${{ steps.collect.outputs.signed }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.release-tag }}
+          persist-credentials: false
+          sparse-checkout: |
+            scripts/release
+            scripts/ci
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: frogg-next-rs-*
+          path: bundles
+      - name: Name assets and build the updater feed
+        id: collect
+        env:
+          RELEASE_TAG: ${{ inputs.release-tag }}
+        run: |
+          node scripts/release/rust-client-assets.mjs --in bundles --out frogg-next-rs \
+            --version "${RELEASE_TAG#v}" --tag "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY"
+          if [ -f frogg-next-rs/frogg-next-rs-latest.json ]; then
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Upload to GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ inputs.release-tag }}
+          CLOBBER: ${{ inputs.clobber }}
+        run: |
+          version="${RELEASE_TAG#v}"
+          cd frogg-next-rs
+          shopt -s nullglob
+          existing=$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')
+          # Installers and signatures before the feed: an updater that sees the feed must find them.
+          for f in "Frogg-Next-RS-$version"-* frogg-next-rs-latest.json; do
+            [ -f "$f" ] || continue
+            if [ "$CLOBBER" != "true" ] && grep -qx -- "$f" <<<"$existing"; then
+              echo "::warning::$f already on $RELEASE_TAG; skipping"
+              continue
+            fi
+            bash "$GITHUB_WORKSPACE/scripts/ci/release-upload.sh" "$RELEASE_TAG" "$f" "$CLOBBER"
+          done

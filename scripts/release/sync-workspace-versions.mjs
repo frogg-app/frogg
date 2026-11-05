@@ -1,41 +1,10 @@
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "../..");
 const rootPackagePath = path.join(rootDir, "package.json");
-
-const rootPackage = JSON.parse(readFileSync(rootPackagePath, "utf8"));
-const rootVersion = rootPackage.version;
-const workspaceGlobs = Array.isArray(rootPackage.workspaces) ? rootPackage.workspaces : [];
-// Expand `dir/*` entries; anything else is taken as a literal path.
-const workspacePaths = workspaceGlobs.flatMap((entry) => {
-  if (!entry.endsWith("/*")) {
-    return [entry];
-  }
-  const parent = entry.slice(0, -2);
-  const parentDir = path.join(rootDir, parent);
-  if (!existsSync(parentDir)) {
-    return [];
-  }
-  return readdirSync(parentDir, { withFileTypes: true })
-    .filter((dirent) => dirent.isDirectory())
-    .map((dirent) => path.join(parent, dirent.name));
-});
-
-if (typeof rootVersion !== "string" || rootVersion.length === 0) {
-  throw new Error('Root package.json must contain a valid "version"');
-}
-
-const dependencySections = [
-  "dependencies",
-  "devDependencies",
-  "peerDependencies",
-  "optionalDependencies",
-];
-
-const touched = [];
 
 /** Rewrites `version = "..."` in the `[package]` table only. */
 export function syncCargoPackageVersion(manifest, version) {
@@ -45,81 +14,144 @@ export function syncCargoPackageVersion(manifest, version) {
   );
 }
 
-for (const workspacePath of workspacePaths) {
-  const packagePath = path.join(rootDir, workspacePath, "package.json");
-  if (!existsSync(packagePath)) {
-    continue;
+/** Rewrites `version = "..."` in the `[workspace.package]` table only (apps/client). */
+export function syncCargoWorkspaceVersion(manifest, version) {
+  const workspaceTable = /^\[workspace\.package\][^[]*/m;
+  return manifest.replace(workspaceTable, (table) =>
+    table.replace(/^(version\s*=\s*")[^"]*(")/m, `$1${version}$2`),
+  );
+}
+
+/** Sets the version of each named local crate in a Cargo.lock. */
+export function syncCargoLockVersions(lock, names, version) {
+  let next = lock;
+  for (const name of names) {
+    next = next.replace(
+      new RegExp(`(\\[\\[package\\]\\]\\nname = "${name}"\\nversion = ")[^"]+(")`),
+      `$1${version}$2`,
+    );
+  }
+  return next;
+}
+
+// Rust workspaces keep their version in Cargo.toml, which npm never touches. Root package.json
+// stays the source of truth. `table` says where the version lives; `crates` are the local crates
+// whose Cargo.lock entries carry it.
+export const CARGO_VERSIONED = [
+  { directory: "apps/daemon-rs", table: "package", crates: ["frogg-daemon"] },
+  {
+    directory: "apps/client",
+    table: "workspace",
+    crates: ["frogg-app", "frogg-client-core", "frogg-render", "frogg-render-demo", "frogg-ui"],
+  },
+];
+
+function main() {
+  const rootPackage = JSON.parse(readFileSync(rootPackagePath, "utf8"));
+  const rootVersion = rootPackage.version;
+  const workspaceGlobs = Array.isArray(rootPackage.workspaces) ? rootPackage.workspaces : [];
+  // Expand `dir/*` entries; anything else is taken as a literal path.
+  const workspacePaths = workspaceGlobs.flatMap((entry) => {
+    if (!entry.endsWith("/*")) {
+      return [entry];
+    }
+    const parent = entry.slice(0, -2);
+    const parentDir = path.join(rootDir, parent);
+    if (!existsSync(parentDir)) {
+      return [];
+    }
+    return readdirSync(parentDir, { withFileTypes: true })
+      .filter((dirent) => dirent.isDirectory())
+      .map((dirent) => path.join(parent, dirent.name));
+  });
+
+  if (typeof rootVersion !== "string" || rootVersion.length === 0) {
+    throw new Error('Root package.json must contain a valid "version"');
   }
 
-  const pkg = JSON.parse(readFileSync(packagePath, "utf8"));
-  let changed = false;
+  const dependencySections = [
+    "dependencies",
+    "devDependencies",
+    "peerDependencies",
+    "optionalDependencies",
+  ];
 
-  if (pkg.version !== rootVersion) {
-    pkg.version = rootVersion;
-    changed = true;
-  }
+  const touched = [];
 
-  // Private workspaces (ui) keep "*" for internal deps so npm always
-  // resolves the local sibling, never a registry artifact. Publishable workspaces
-  // get the root version so their published tarballs reference real npm versions.
-  const internalDepRange = pkg.private === true ? "*" : rootVersion;
-
-  for (const section of dependencySections) {
-    const deps = pkg[section];
-    if (!deps || typeof deps !== "object") {
+  for (const workspacePath of workspacePaths) {
+    const packagePath = path.join(rootDir, workspacePath, "package.json");
+    if (!existsSync(packagePath)) {
       continue;
     }
 
-    for (const name of Object.keys(deps)) {
-      if (!name.startsWith("@frogg/")) {
+    const pkg = JSON.parse(readFileSync(packagePath, "utf8"));
+    let changed = false;
+
+    if (pkg.version !== rootVersion) {
+      pkg.version = rootVersion;
+      changed = true;
+    }
+
+    // Private workspaces (ui) keep "*" for internal deps so npm always
+    // resolves the local sibling, never a registry artifact. Publishable workspaces
+    // get the root version so their published tarballs reference real npm versions.
+    const internalDepRange = pkg.private === true ? "*" : rootVersion;
+
+    for (const section of dependencySections) {
+      const deps = pkg[section];
+      if (!deps || typeof deps !== "object") {
         continue;
       }
-      if (name === pkg.name) {
-        continue;
+
+      for (const name of Object.keys(deps)) {
+        if (!name.startsWith("@frogg/")) {
+          continue;
+        }
+        if (name === pkg.name) {
+          continue;
+        }
+        if (deps[name] !== internalDepRange) {
+          deps[name] = internalDepRange;
+          changed = true;
+        }
       }
-      if (deps[name] !== internalDepRange) {
-        deps[name] = internalDepRange;
-        changed = true;
+    }
+
+    if (changed) {
+      writeFileSync(packagePath, `${JSON.stringify(pkg, null, 2)}\n`);
+      touched.push(path.relative(rootDir, packagePath));
+    }
+  }
+
+  for (const { directory, table, crates } of CARGO_VERSIONED) {
+    const cargoManifestPath = path.join(rootDir, directory, "Cargo.toml");
+    if (!existsSync(cargoManifestPath)) continue;
+    const cargoManifest = readFileSync(cargoManifestPath, "utf8");
+    const sync = table === "workspace" ? syncCargoWorkspaceVersion : syncCargoPackageVersion;
+    const nextManifest = sync(cargoManifest, rootVersion);
+    if (nextManifest !== cargoManifest) {
+      writeFileSync(cargoManifestPath, nextManifest);
+      touched.push(path.relative(rootDir, cargoManifestPath));
+    }
+    const lockPath = path.join(rootDir, directory, "Cargo.lock");
+    if (existsSync(lockPath)) {
+      const lock = readFileSync(lockPath, "utf8");
+      const next = syncCargoLockVersions(lock, crates, rootVersion);
+      if (next !== lock) {
+        writeFileSync(lockPath, next);
+        touched.push(path.relative(rootDir, lockPath));
       }
     }
   }
 
-  if (changed) {
-    writeFileSync(packagePath, `${JSON.stringify(pkg, null, 2)}\n`);
-    touched.push(path.relative(rootDir, packagePath));
-  }
-}
-
-// Rust crates keep their version in Cargo.toml, which npm never touches. Root
-// package.json stays the source of truth.
-for (const [directory, name] of [["apps/daemon-rs", "frogg-daemon"]]) {
-  const cargoManifestPath = path.join(rootDir, directory, "Cargo.toml");
-  if (!existsSync(cargoManifestPath)) continue;
-  const cargoManifest = readFileSync(cargoManifestPath, "utf8");
-  const nextManifest = syncCargoPackageVersion(cargoManifest, rootVersion);
-  if (nextManifest !== cargoManifest) {
-    writeFileSync(cargoManifestPath, nextManifest);
-    touched.push(path.relative(rootDir, cargoManifestPath));
-  }
-  const lockPath = path.join(rootDir, directory, "Cargo.lock");
-  if (existsSync(lockPath)) {
-    const lock = readFileSync(lockPath, "utf8");
-    const next = lock.replace(
-      new RegExp(`name = "${name}"\\nversion = "[^"]+"`),
-      `name = "${name}"\nversion = "${rootVersion}"`,
-    );
-    if (next !== lock) {
-      writeFileSync(lockPath, next);
-      touched.push(path.relative(rootDir, lockPath));
+  if (touched.length === 0) {
+    console.log(`Workspace versions and internal deps already synced to ${rootVersion}`);
+  } else {
+    console.log(`Synced to ${rootVersion}:`);
+    for (const file of touched) {
+      console.log(`- ${file}`);
     }
   }
 }
 
-if (touched.length === 0) {
-  console.log(`Workspace versions and internal deps already synced to ${rootVersion}`);
-} else {
-  console.log(`Synced to ${rootVersion}:`);
-  for (const file of touched) {
-    console.log(`- ${file}`);
-  }
-}
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main();

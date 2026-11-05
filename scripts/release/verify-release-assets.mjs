@@ -1,5 +1,6 @@
 import { channelOfVersion } from "./release-channel.mjs";
 import { assertClientForVersion } from "./build-release-metadata.mjs";
+import { RUST_CLIENT_FEED, RUST_CLIENT_PREFIX } from "./rust-client-assets.mjs";
 import { electronUpdateProtocol } from "./verify-electron-update-path.mjs";
 import { valid, lt, rcompare } from "semver";
 import { execFileSync } from "node:child_process";
@@ -64,7 +65,9 @@ function verifyClientAssets({ descriptor, assets, brand, nextFeeds }) {
     const stray = names.filter(
       (name) =>
         (nextPrefix && lower(name).startsWith(lower(`${nextPrefix}-`))) ||
-        (feedPrefix && name.startsWith(`${feedPrefix}-latest`)),
+        (feedPrefix && name.startsWith(`${feedPrefix}-latest`)) ||
+        name.startsWith(`${RUST_CLIENT_PREFIX}-`) ||
+        name === RUST_CLIENT_FEED,
     );
     if (stray.length)
       throw new Error(`Frogg Next assets on a ${descriptor.client} release: ${stray.join(", ")}`);
@@ -89,6 +92,41 @@ function verifyClientAssets({ descriptor, assets, brand, nextFeeds }) {
   }
   for (const feed of feeds) verifyNextFeed(feed, nextFeeds[feed], assets);
   verifyNextChecksums(checksums, nextFeeds[checksums], assets);
+  verifyRustClientAssets(descriptor, assets, nextFeeds);
+}
+
+/**
+ * Frogg Next RS (the Rust client) is checked only when the descriptor says its job uploaded: the
+ * checksum list covers uploaded assets, and a feed, when named, points at uploaded signed bundles.
+ */
+function verifyRustClientAssets(descriptor, assets, nextFeeds) {
+  const rs = descriptor.froggNextRs;
+  if (!rs) return;
+  if (typeof rs.checksums !== "string")
+    throw new Error("Frogg Next RS release descriptor names no checksum list");
+  for (const name of [rs.checksums, ...(rs.feed ? [rs.feed] : [])]) {
+    if (!assets.has(name)) throw new Error(`Frogg Next RS asset is not uploaded: ${name}`);
+  }
+  const prefix = `${RUST_CLIENT_PREFIX}-${descriptor.version}-`;
+  if (![...assets.keys()].some((name) => name.startsWith(prefix) && name !== rs.checksums))
+    throw new Error(`No ${prefix}* bundles on the release`);
+  verifyNextChecksums(rs.checksums, nextFeeds[rs.checksums], assets);
+  if (!rs.feed || typeof nextFeeds[rs.feed] !== "string") return;
+  const feed = JSON.parse(nextFeeds[rs.feed]);
+  if (feed.version !== descriptor.version)
+    throw new Error(`${rs.feed} is for ${feed.version}, not ${descriptor.version}`);
+  const platforms = Object.entries(feed.platforms ?? {});
+  if (!platforms.length) throw new Error(`${rs.feed} lists no platforms`);
+  for (const [platform, entry] of platforms) {
+    const name = decodeURIComponent(
+      String(entry?.url ?? "")
+        .split("/")
+        .pop(),
+    );
+    if (!assets.has(name))
+      throw new Error(`${rs.feed} ${platform} names a missing payload: ${name}`);
+    if (!entry.signature) throw new Error(`${rs.feed} ${platform} has no signature`);
+  }
 }
 
 function verifyNoClassicAssets(version, names, brand) {
@@ -138,7 +176,8 @@ function verifyNextChecksums(name, text, assets) {
 /** The Frogg Next feed and checksum files a prerelease names, as text, when uploaded. */
 async function downloadNextFeeds({ gh, values, release, descriptor, directory }) {
   const { feeds = [], checksums } = descriptor.froggNext ?? {};
-  const names = [...feeds, checksums];
+  const rs = descriptor.froggNextRs;
+  const names = [...feeds, checksums, ...(rs ? [rs.checksums, rs.feed].filter(Boolean) : [])];
   if (names.some((name) => typeof name !== "string" || path.basename(name) !== name))
     throw new Error("Invalid Frogg Next asset filename");
   const texts = {};

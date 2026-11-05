@@ -2,6 +2,7 @@ import { channelOfVersion, releaseLineOfVersion } from "./release-channel.mjs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { parseArgs } from "node:util";
+import { RUST_CLIENT_FEED, rustClientChecksumsName } from "./rust-client-assets.mjs";
 import { pathToFileURL } from "node:url";
 import {
   froggNextArtifactPrefix,
@@ -69,6 +70,9 @@ export async function buildReleaseMetadata(options) {
     ...(client === "frogg-next"
       ? { froggNext: froggNextAssets(options.version, options.next) }
       : {}),
+    ...(client === "frogg-next" && (options.nextRs === "signed" || options.nextRs === "unsigned")
+      ? { froggNextRs: rustClientAssets(options.version, options.nextRs === "signed") }
+      : {}),
   };
   await mkdir(options.out, { recursive: true });
   await writeFile(
@@ -92,6 +96,17 @@ function froggNextAssets(version, next = {}) {
   };
 }
 
+/**
+ * What the Rust client (rust-client.yml) uploaded to a `-next.N`: its checksum list always, the
+ * Tauri updater feed only when its bundles were signed. Absent when that job did not succeed.
+ */
+function rustClientAssets(version, signed) {
+  return {
+    checksums: rustClientChecksumsName(version),
+    ...(signed ? { feed: RUST_CLIENT_FEED } : {}),
+  };
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const { values } = parseArgs({
     options: {
@@ -100,6 +115,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       brand: { type: "string" },
       assets: { type: "string" },
       out: { type: "string" },
+      "next-rs": { type: "string" },
       "retain-desktop-from": { type: "string" },
     },
   });
@@ -117,5 +133,11 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       platformVersions[platform] = entry.version ?? previous.version;
     }
   }
-  await buildReleaseMetadata({ ...values, client, next: brand?.next, platformVersions });
+  await buildReleaseMetadata({
+    ...values,
+    nextRs: values["next-rs"],
+    client,
+    next: brand?.next,
+    platformVersions,
+  });
 }

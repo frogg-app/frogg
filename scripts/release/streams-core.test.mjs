@@ -131,6 +131,8 @@ test("version-owned files and release cuts are recognised", () => {
     "package-lock.json",
     "apps/daemon-rs/Cargo.toml",
     "apps/daemon-rs/Cargo.lock",
+    "apps/client/Cargo.toml",
+    "apps/client/Cargo.lock",
     "deploy/nix/npm-deps.hash",
   ]) {
     assert.equal(isVersionOwnedFile(file), true, file);

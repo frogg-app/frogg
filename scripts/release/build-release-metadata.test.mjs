@@ -283,6 +283,82 @@ test("-next prereleases carry Frogg Next and never a classic Electron feed", asy
   }
 });
 
+test("a -next release checks Frogg Next RS assets only when its job uploaded them", async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), "frogg-next-rs-assets-"));
+  const out = path.join(dir, "metadata");
+  const version = "1.6.14-next.5";
+  try {
+    const none = await buildReleaseMetadata({ version, out, nextRs: "none" });
+    assert.equal(Object.hasOwn(none, "froggNextRs"), false);
+    const classicRs = await buildReleaseMetadata({
+      version,
+      client: "none",
+      out,
+      nextRs: "signed",
+    });
+    assert.equal(Object.hasOwn(classicRs, "froggNextRs"), false);
+    const unsigned = await buildReleaseMetadata({ version, out, nextRs: "unsigned" });
+    assert.deepEqual(unsigned.froggNextRs, { checksums: `Frogg-Next-RS-${version}-SHA256SUMS` });
+    const descriptor = await buildReleaseMetadata({ version, out, nextRs: "signed" });
+    assert.deepEqual(descriptor.froggNextRs, {
+      checksums: `Frogg-Next-RS-${version}-SHA256SUMS`,
+      feed: "frogg-next-rs-latest.json",
+    });
+
+    const next = `Frogg-Next-${version}-win-x64.exe`;
+    const rs = `Frogg-Next-RS-${version}-linux-x64.AppImage`;
+    const digest = createHash("sha256").update("x").digest("hex");
+    const nextFeeds = {
+      "frogg-next-latest.yml": `files:\n  - url: ${next}\n`,
+      "frogg-next-latest-mac.yml": `files:\n  - url: ${next}\n`,
+      "frogg-next-latest-linux.yml": `files:\n  - url: ${next}\n`,
+      [descriptor.froggNext.checksums]: `${digest}  ${next}\n`,
+      [descriptor.froggNextRs.checksums]: `${digest}  ${rs}\n`,
+      "frogg-next-rs-latest.json": JSON.stringify({
+        version,
+        platforms: {
+          "linux-x86_64": {
+            signature: "sig",
+            url: `https://github.com/frogg-app/frogg/releases/download/v${version}/${rs}`,
+          },
+        },
+      }),
+    };
+    const assets = [
+      { name: "release.json" },
+      ...Object.keys(nextFeeds).map((name) => ({ name })),
+      { name: next, digest: `sha256:${digest}` },
+      { name: rs, digest: `sha256:${digest}` },
+      { name: `${rs}.sig` },
+    ];
+    const release = { tag_name: `v${version}`, assets };
+    const verify = (overrides) =>
+      verifyReleaseAssets({ descriptor, manifests: {}, release, nextFeeds, ...overrides });
+    verify({});
+    // A run whose Rust job did not succeed names no RS assets, so none are required.
+    const without = { ...release, assets: assets.filter(({ name }) => !name.includes("-RS-")) };
+    verify({ descriptor: none, release: without });
+    assert.throws(() => verify({ release: without }), /Frogg Next RS asset is not uploaded/);
+    const noBundle = { ...release, assets: assets.filter(({ name }) => name !== rs) };
+    assert.throws(() => verify({ release: noBundle }), /names a missing/);
+    assert.throws(
+      () =>
+        verify({
+          nextFeeds: {
+            ...nextFeeds,
+            "frogg-next-rs-latest.json": JSON.stringify({ version: "1.0.0", platforms: {} }),
+          },
+        }),
+      /is for 1\.0\.0/,
+    );
+    const badSum = structuredClone(release);
+    badSum.assets.find((asset) => asset.name === rs).digest = `sha256:${"0".repeat(64)}`;
+    assert.throws(() => verify({ release: badSum }), /Checksum mismatch/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("a stable release carries the classic app and no Frogg Next assets", async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), "frogg-classic-only-"));
   const out = path.join(dir, "metadata");
@@ -308,7 +384,12 @@ test("a stable release carries the classic app and no Frogg Next assets", async 
       next: { artifactPrefix: "Frogg-Next", feedPrefix: "frogg-next" },
     };
     verifyReleaseAssets({ descriptor, manifests, release, brand });
-    for (const name of ["Frogg-Next-1.6.14-win-x64.exe", "frogg-next-latest.yml"]) {
+    for (const name of [
+      "Frogg-Next-1.6.14-win-x64.exe",
+      "frogg-next-latest.yml",
+      "Frogg-Next-RS-1.6.14-linux-x64.deb",
+      "frogg-next-rs-latest.json",
+    ]) {
       assert.throws(
         () =>
           verifyReleaseAssets({

@@ -889,13 +889,38 @@ jobs:
       FROGG_NEXT_ANDROID_KEY_PASSWORD: ${{ secrets.FROGG_NEXT_ANDROID_KEY_PASSWORD }}
       BRANDING_READ_TOKEN: ${{ secrets.BRANDING_READ_TOKEN }}
 
+  # Frogg Next RS (apps/client, the Rust client) rides along on every `-next.N`: its bundles,
+  # checksum list and, with the updater key, the frogg-next-rs-latest.json feed. It does not gate
+  # publication; updater-manifest records what it uploaded, and publication checks exactly that.
+  next-rs:
+    name: frogg next rs
+    needs: meta
+    if: inputs.only != 'android' && needs.meta.outputs.client == 'frogg-next'
+    permissions:
+      contents: write
+    uses: ./.github/workflows/rust-client.yml
+    with:
+      release-tag: ${{ needs.meta.outputs.tag }}
+      clobber: ${{ needs.meta.outputs.clobber }}
+    secrets:
+      FROGG_NEXT_RS_UPDATER_KEY: ${{ secrets.FROGG_NEXT_RS_UPDATER_KEY }}
+      FROGG_NEXT_RS_UPDATER_KEY_PASSWORD: ${{ secrets.FROGG_NEXT_RS_UPDATER_KEY_PASSWORD }}
+      FROGG_ANDROID_KEYSTORE_BASE64: ${{ secrets.FROGG_ANDROID_KEYSTORE_BASE64 }}
+      FROGG_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.FROGG_ANDROID_KEYSTORE_PASSWORD }}
+      FROGG_ANDROID_KEY_ALIAS: ${{ secrets.FROGG_ANDROID_KEY_ALIAS }}
+      FROGG_ANDROID_KEY_PASSWORD: ${{ secrets.FROGG_ANDROID_KEY_PASSWORD }}
+      FROGG_NEXT_ANDROID_KEYSTORE_BASE64: ${{ secrets.FROGG_NEXT_ANDROID_KEYSTORE_BASE64 }}
+      FROGG_NEXT_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.FROGG_NEXT_ANDROID_KEYSTORE_PASSWORD }}
+      FROGG_NEXT_ANDROID_KEY_ALIAS: ${{ secrets.FROGG_NEXT_ANDROID_KEY_ALIAS }}
+      FROGG_NEXT_ANDROID_KEY_PASSWORD: ${{ secrets.FROGG_NEXT_ANDROID_KEY_PASSWORD }}
+
   # release.json for every release. A classic or frogg beta release also gets its Electron update
   # feeds (electron-latest or electron-beta), built from the desktop payloads; a Frogg Next release
   # names the feeds next-desktop uploaded, and publication checks they and their payloads are on
   # the release.
   updater-manifest:
     name: Release metadata and update compatibility
-    needs: [meta, desktop, next-desktop]
+    needs: [meta, desktop, next-desktop, next-rs]
     if: >-
       always() && needs.meta.result == 'success' &&
       inputs.only != 'android' && needs.meta.outputs.publishable == 'true' &&
@@ -926,12 +951,18 @@ jobs:
           path: release-assets
           merge-multiple: true
       - name: Build release metadata and compatibility manifests
+        # none, unsigned or signed: what next-rs uploaded (the Rust client's assets and feed).
+        env:
+          NEXT_RS: >-
+            ${{ needs.next-rs.result != 'success' && 'none' ||
+            needs.next-rs.outputs.signed == 'true' && 'signed' || 'unsigned' }}
         run: >-
           node scripts/release/build-release-metadata.mjs
           --version ${{ needs.meta.outputs.version }}
           --client "$CLIENT"
           --brand .generated/branding/brand.json
           --assets release-assets
+          --next-rs "$NEXT_RS"
           --out release-metadata
       - name: Upload metadata
         env:
