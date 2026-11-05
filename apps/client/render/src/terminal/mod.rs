@@ -174,6 +174,10 @@ pub fn Terminal(
         };
         let w = root.client_width() as f64 - pad("padding-left") - pad("padding-right");
         let h = root.client_height() as f64 - pad("padding-top") - pad("padding-bottom");
+        // Not laid out yet (detached or hidden): shrinking now would truncate every line.
+        if !root.is_connected() || w < cw * 2.0 || h < ch {
+            return;
+        }
         let cols = ((w / cw).floor() as u16).max(2);
         let rows = ((h / ch).floor() as u16).max(1);
         if handle.size() != (rows, cols) {

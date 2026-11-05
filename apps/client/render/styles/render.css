@@ -342,7 +342,7 @@
 .fr-term-rows { white-space: pre; }
 .fr-term-row { height: 1.25em; overflow: hidden; }
 .fr-term ::selection { background: var(--term-selection); }
-.fr-term-probe { position: absolute; visibility: hidden; white-space: pre; top: 0; left: 0; }
+.fr-term-probe { position: absolute; display: block; width: max-content; visibility: hidden; white-space: pre; top: 0; left: 0; }
 .fr-term-input {
   position: absolute;
   left: 0;
