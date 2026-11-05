@@ -12,6 +12,9 @@
 //   bin/frogg    launcher: exec node/bin/node daemon/apps/cli/dist/index.js "$@"
 //   bin/frogg  same launcher under the upstream name
 //              (bin/frogg.cmd and bin/frogg.cmd on Windows; the zip holds no symlinks)
+//   bin/frogg-daemond  only with --rust-front (Frogg Next bundles, Linux and macOS): the
+//              opt-in Rust front (apps/daemon-rs). The CLI starts it instead of the Node
+//              supervisor when <PREFIX>_RS_FRONT=1; otherwise it is never run.
 //   manifest.json
 //
 // The launcher runs the CLI, and the CLI starts the daemon through
@@ -23,6 +26,7 @@
 // Prerequisites: `npm run build:server && npm run build:daemon-web-ui`.
 // Usage: node scripts/release/build-daemon-bundle.mjs [--target linux-x64]
 //        [--node-version 22.x.y] [--out-dir dist/bundles] [--keep-staging]
+//        [--rust-front apps/daemon-rs/target/<triple>/release/frogg-daemond]
 // Targets: linux-x64, linux-arm64, darwin-x64, darwin-arm64, win-x64, win-arm64.
 // Every target cross-builds from Linux: the runtime and platform packages are
 // downloaded, nothing is compiled.
@@ -157,6 +161,8 @@ function parseCli() {
       // already-current to anything comparing installed versions. Artifact
       // *filenames* deliberately keep the bare upstream version.
       "release-version": { type: "string", default: "" },
+      // A prebuilt apps/daemon-rs binary for this target, packaged as bin/frogg-daemond.
+      "rust-front": { type: "string", default: "" },
     },
   });
   return {
@@ -165,6 +171,7 @@ function parseCli() {
     outDir: path.resolve(values["out-dir"]),
     keepStaging: values["keep-staging"],
     releaseVersion: values["release-version"] || process.env.FROGG_RELEASE_VERSION || "",
+    rustFront: values["rust-front"] ? path.resolve(values["rust-front"]) : "",
   };
 }
 
@@ -278,6 +285,19 @@ async function applyDependencyPatches(daemonDir) {
   }
 }
 
+export const RUST_FRONT_BINARY = "frogg-daemond";
+
+/** Packages the opt-in Rust front. Unix only: its worker supervision speaks Node IPC over fd 3. */
+async function stageRustFront(stagingDir, binary, isWindows) {
+  if (!binary) return null;
+  if (isWindows) throw new Error("--rust-front is not supported for Windows bundles yet");
+  if (!existsSync(binary)) throw new Error(`--rust-front binary not found: ${binary}`);
+  const target = path.join(stagingDir, "bin", RUST_FRONT_BINARY);
+  await copyFile(binary, target);
+  await chmod(target, 0o755);
+  return { binary: `bin/${RUST_FRONT_BINARY}`, flag: `${brand.envPrefix}_RS_FRONT` };
+}
+
 async function writeLaunchers(stagingDir, isWindows) {
   const binDir = path.join(stagingDir, "bin");
   await mkdir(binDir, { recursive: true });
@@ -366,6 +386,7 @@ async function main() {
     outDir,
     keepStaging,
     releaseVersion,
+    rustFront,
   } = parseCli();
   const rootPackage = JSON.parse(await readFile(path.join(REPO_ROOT, "package.json"), "utf8"));
   const version = rootPackage.version;
@@ -417,6 +438,7 @@ async function main() {
     await materializeWorkspaceLinks(daemonDir);
   }
   await writeLaunchers(stagingDir, isWindows);
+  const rustFrontManifest = await stageRustFront(stagingDir, rustFront, isWindows);
 
   const manifest = {
     ...JSON.parse(
@@ -427,6 +449,7 @@ async function main() {
     platform,
     arch,
     node: nodeVersion,
+    ...(rustFrontManifest ? { rustFront: rustFrontManifest } : {}),
     builtAt: new Date().toISOString(),
   };
   await writeFile(path.join(stagingDir, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
