@@ -321,7 +321,7 @@ jobs:
               echo "::warning::$n already on $RELEASE_TAG; skipping"
               continue
             fi
-            gh release upload "$RELEASE_TAG" "$f" "${flags[@]}"
+            bash "$GITHUB_WORKSPACE/scripts/ci/release-upload.sh" "$RELEASE_TAG" "$f" "$CLOBBER"
           done
 
       - uses: actions/upload-artifact@v7
@@ -474,7 +474,7 @@ jobs:
               echo "::warning::$n already on $RELEASE_TAG; skipping"
               continue
             fi
-            gh release upload "$RELEASE_TAG" "$f" "${flags[@]}"
+            bash "$GITHUB_WORKSPACE/scripts/ci/release-upload.sh" "$RELEASE_TAG" "$f" "$CLOBBER"
           done
       - uses: actions/upload-artifact@v7
         with:
@@ -606,7 +606,7 @@ jobs:
               echo "::warning::$n already on $RELEASE_TAG; skipping"
               continue
             fi
-            gh release upload "$RELEASE_TAG" "$f" "${flags[@]}"
+            bash "$GITHUB_WORKSPACE/scripts/ci/release-upload.sh" "$RELEASE_TAG" "$f" "$CLOBBER"
           done < <(find dist/bundles -maxdepth 1 -type f -print0)
 
   android:
@@ -759,7 +759,7 @@ jobs:
               echo "::warning::$n already on $RELEASE_TAG; skipping"
               continue
             fi
-            gh release upload "$RELEASE_TAG" "$f" "${flags[@]}"
+            bash "$GITHUB_WORKSPACE/scripts/ci/release-upload.sh" "$RELEASE_TAG" "$f" "$CLOBBER"
           done
 
       - uses: actions/upload-artifact@v7

@@ -182,5 +182,5 @@ jobs:
               echo "::warning::$n already on $RELEASE_TAG; skipping"
               continue
             fi
-            gh release upload "$RELEASE_TAG" "$f" "${flags[@]}"
+            bash "$GITHUB_WORKSPACE/scripts/ci/release-upload.sh" "$RELEASE_TAG" "$f" "$CLOBBER"
           done
