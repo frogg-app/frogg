@@ -8,6 +8,7 @@
 pub mod branding;
 
 mod auth;
+mod cli;
 mod config;
 mod daemon_config;
 mod envelope;
@@ -17,10 +18,16 @@ mod generated_tests;
 mod hostnames;
 mod http_proxy;
 mod http_routes;
+#[cfg(unix)]
+mod local_token;
 mod netclass;
+#[cfg(unix)]
+mod pidlock;
 mod proxy;
 mod pty;
 mod search;
+#[cfg(unix)]
+mod supervisor;
 mod terminals;
 mod web_ui;
 
@@ -36,14 +43,19 @@ use axum::routing::get;
 use axum::{Json, Router};
 use envelope::Inbound;
 use serde_json::json;
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, oneshot, watch};
 
 const DAEMON_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 struct AppState {
     server_id: String,
     started: Instant,
-    upstream_url: Option<String>,
+    /// Where the Node daemon is. Fixed when `FROGG_RS_UPSTREAM` names one; `None` while a
+    /// supervised worker is starting or restarting.
+    upstream: watch::Receiver<Option<String>>,
+    /// Whether a Node daemon is expected at all. Without one (standalone), only the native
+    /// message types are served; with one, client frames wait for it.
+    expects_upstream: bool,
     auth: daemon_config::AuthStore,
     allowed_origins: Vec<String>,
     /// `Host` allowlist. Checked on every request: `Origin` alone cannot stop
@@ -55,7 +67,7 @@ struct AppState {
     listen: String,
     web_ui_dist: Option<std::path::PathBuf>,
     native_terminals: bool,
-    http_proxy: Option<http_proxy::HttpProxy>,
+    http_proxy: http_proxy::HttpProxy,
     validate_protocol: bool,
 }
 
@@ -73,30 +85,51 @@ impl AppState {
 async fn main() -> anyhow::Result<()> {
     let boot = Instant::now();
     tracing_subscriber::fmt()
+        .with_writer(std::io::stderr)
         .with_env_filter(
             tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()),
         )
         .init();
 
+    let cli = cli::Cli::parse(std::env::args().skip(1))?;
     let home = daemon_config::resolve_home();
     let persisted = daemon_config::load(home.as_deref());
     let config = config::Config::from_env(persisted.listen.as_deref())?;
 
+    #[cfg(unix)]
+    let supervised = match cli.supervise {
+        Some(spec) => Some(prepare_supervision(spec, home.as_deref(), &config)?),
+        None => None,
+    };
+    #[cfg(not(unix))]
+    if cli.supervise.is_some() {
+        anyhow::bail!("--supervise is not supported on this platform yet");
+    }
+
+    // A fixed upstream keeps its sender alive for the life of the process.
+    let (fixed_upstream, mut upstream) = watch::channel(config.upstream.clone());
+    let mut expects_upstream = config.upstream.is_some();
+    #[cfg(unix)]
+    if let Some(prep) = supervised.as_ref() {
+        upstream = prep.upstream.clone();
+        expects_upstream = true;
+    }
+
+    // Re-read so a token the supervisor just created is honoured.
+    let persisted = daemon_config::load(home.as_deref());
     let auth_required = persisted.auth.password_hash.is_some() || persisted.auth.is_claimed();
     let state = Arc::new(AppState {
         server_id: persisted.server_id.clone(),
         started: Instant::now(),
-        upstream_url: config.upstream.clone(),
+        upstream,
+        expects_upstream,
         auth: daemon_config::AuthStore::new(home.clone(), persisted.auth),
         allowed_origins: persisted.allowed_origins,
         hostnames: persisted.hostnames,
         allow_pairing_hostname: persisted.allow_pairing_hostname,
         hostname: hostname(),
         listen: config.listen.to_string(),
-        http_proxy: config
-            .upstream
-            .as_deref()
-            .and_then(http_proxy::HttpProxy::from_ws_url),
+        http_proxy: http_proxy::HttpProxy::new(),
         web_ui_dist: config.web_ui_dist.clone(),
         native_terminals: config.native_terminals,
         validate_protocol: config.validate_protocol,
@@ -110,7 +143,7 @@ async fn main() -> anyhow::Result<()> {
         elapsed_ms = boot.elapsed().as_millis() as u64,
         host = %bound.ip(),
         port = bound.port(),
-        upstream = config.upstream.as_deref().unwrap_or("<none>"),
+        upstream = config.upstream.as_deref().unwrap_or(if expects_upstream { "<supervised>" } else { "<none>" }),
         auth_required,
         native_terminals = config.native_terminals,
         validate_protocol = config.validate_protocol,
@@ -119,15 +152,177 @@ async fn main() -> anyhow::Result<()> {
         "Server listening"
     );
 
+    // Clients can connect from here on; the worker starts behind the listener.
+    let (done_tx, done_rx) = oneshot::channel::<i32>();
+    #[cfg(unix)]
+    let stop = match supervised {
+        Some(prep) => Some(prep.start(done_tx)),
+        None => {
+            drop(done_tx);
+            None
+        }
+    };
+    #[cfg(not(unix))]
+    drop(done_tx);
+
+    let shutdown = async move {
+        #[cfg(unix)]
+        {
+            let mut sigterm =
+                tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+                    .expect("SIGTERM handler");
+            let reason = tokio::select! {
+                _ = tokio::signal::ctrl_c() => "supervisor_received_SIGINT",
+                _ = sigterm.recv() => "supervisor_received_SIGTERM",
+                // Only a supervised run sends; standalone drops the sender and this disables.
+                Ok(code) = done_rx => return code,
+            };
+            match stop {
+                // Supervised: stop the worker first, then exit with the supervisor.
+                Some((handle, done)) => {
+                    handle.request(reason);
+                    done.await.unwrap_or(0)
+                }
+                None => 0,
+            }
+        }
+        #[cfg(not(unix))]
+        {
+            let _ = done_rx;
+            let _ = tokio::signal::ctrl_c().await;
+            0
+        }
+    };
+    let (code_tx, code_rx) = oneshot::channel::<i32>();
     axum::serve(
         listener,
         app.into_make_service_with_connect_info::<SocketAddr>(),
     )
-    .with_graceful_shutdown(async {
-        let _ = tokio::signal::ctrl_c().await;
+    .with_graceful_shutdown(async move {
+        let code = shutdown.await;
+        let _ = code_tx.send(code);
+        // Open client sockets would hold a graceful shutdown open; their upstream is gone,
+        // so they get a moment to see the close and then the process leaves.
+        tokio::spawn(async move {
+            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+            std::process::exit(code);
+        });
     })
     .await?;
-    Ok(())
+    drop(fixed_upstream);
+    std::process::exit(code_rx.await.unwrap_or(0));
+}
+
+#[cfg(unix)]
+struct Supervision {
+    supervisor: supervisor::Supervisor,
+    upstream: supervisor::UpstreamUrl,
+    stop: supervisor::StopHandle,
+    lock: pidlock::PidLock,
+}
+
+/// Takes the PID lock and the local token before the listener opens, as the Node supervisor
+/// does before it forks, so a second daemon fails fast and loopback clients can authenticate
+/// from the first connection.
+#[cfg(unix)]
+fn prepare_supervision(
+    spec: cli::SuperviseArgs,
+    home: Option<&std::path::Path>,
+    config: &config::Config,
+) -> anyhow::Result<Supervision> {
+    let home = home.ok_or_else(|| anyhow::anyhow!("cannot resolve the daemon home"))?;
+    std::fs::create_dir_all(home)?;
+    let listen = config.listen.to_string();
+    let lock = match pidlock::PidLock::acquire(home, &listen) {
+        Ok(lock) => lock,
+        Err(err) => {
+            eprintln!("{err}");
+            std::process::exit(1);
+        }
+    };
+    local_token::ensure(home)?;
+    let log = supervisor::LogFile::open(
+        log_path(home),
+        std::env::var("FROGG_LOG_ROTATE_SIZE")
+            .ok()
+            .and_then(|v| supervisor::parse_size(&v))
+            .unwrap_or(10 << 20),
+        std::env::var("FROGG_LOG_ROTATE_COUNT")
+            .ok()
+            .and_then(|v| v.trim().parse().ok())
+            .filter(|n| *n > 0)
+            .unwrap_or(3),
+    );
+    let (supervisor, upstream, stop) = supervisor::Supervisor::new(
+        supervisor::WorkerSpec {
+            node: spec.node,
+            node_args: spec.node_args,
+            entry: spec.worker,
+            args: spec.worker_args,
+            public_listen: listen,
+        },
+        log,
+    );
+    Ok(Supervision {
+        supervisor,
+        upstream,
+        stop,
+        lock,
+    })
+}
+
+#[cfg(unix)]
+impl Supervision {
+    /// Starts the worker and the lock heartbeat. `done` receives the exit code once the
+    /// supervisor has stopped and the lock is released.
+    fn start(self, done: oneshot::Sender<i32>) -> (supervisor::StopHandle, oneshot::Receiver<i32>) {
+        let lock = Arc::new(self.lock);
+        let (finished_tx, finished_rx) = oneshot::channel::<i32>();
+        let heartbeat_lock = lock.clone();
+        let heartbeat_stop = self.stop.clone();
+        let heartbeat = tokio::spawn(async move {
+            let mut tick = tokio::time::interval(pidlock::HEARTBEAT_INTERVAL);
+            tick.tick().await;
+            loop {
+                tick.tick().await;
+                if let Err(err) = heartbeat_lock.heartbeat() {
+                    eprintln!("PID lock heartbeat failed: {err}");
+                    heartbeat_stop.request("pid_lock_ownership_lost");
+                    return;
+                }
+            }
+        });
+        let supervisor = self.supervisor;
+        tokio::spawn(async move {
+            let exit = supervisor.run().await;
+            heartbeat.abort();
+            lock.release();
+            let code = match exit {
+                supervisor::Exit::Requested => 0,
+                supervisor::Exit::WorkerExited(code) => code,
+            };
+            let _ = finished_tx.send(code);
+            let _ = done.send(code);
+        });
+        (self.stop, finished_rx)
+    }
+}
+
+#[cfg(unix)]
+fn log_path(home: &std::path::Path) -> std::path::PathBuf {
+    let configured = std::fs::read_to_string(home.join("config.json"))
+        .ok()
+        .and_then(|text| serde_json::from_str::<serde_json::Value>(&text).ok())
+        .and_then(|v| {
+            v.pointer("/log/file/path")
+                .and_then(|p| p.as_str())
+                .map(str::to_owned)
+        });
+    match configured {
+        Some(path) if std::path::Path::new(&path).is_absolute() => path.into(),
+        Some(path) => home.join(path),
+        None => home.join("daemon.log"),
+    }
 }
 
 /// Serves the bundled browser UI. Returns 404 when no dist directory is
@@ -152,8 +347,16 @@ async fn web_ui_handler(
         {
             return response;
         }
-        return match state.http_proxy.as_ref() {
-            Some(proxy) => proxy.forward(request, &peer.ip().to_string()).await,
+        let upstream = state.upstream.borrow().clone();
+        return match upstream {
+            Some(url) => {
+                state
+                    .http_proxy
+                    .forward(&url, request, &peer.ip().to_string())
+                    .await
+            }
+            // A supervised worker that is (re)starting: tell the client to retry.
+            None if state.expects_upstream => StatusCode::SERVICE_UNAVAILABLE.into_response(),
             None => StatusCode::NOT_FOUND.into_response(),
         };
     }
@@ -278,7 +481,7 @@ async fn identity(
     )
 }
 
-fn hostname() -> String {
+pub(crate) fn hostname() -> String {
     std::fs::read_to_string("/proc/sys/kernel/hostname")
         .ok()
         .map(|h| h.trim().to_string())
@@ -420,6 +623,22 @@ struct Client {
     ip: String,
 }
 
+/// How long a client's frames wait for a supervised worker that is still starting before the
+/// client is disconnected to retry. Node's own cold start is well inside this.
+const UPSTREAM_WAIT: std::time::Duration = std::time::Duration::from_secs(60);
+/// Frames held for a starting worker, per client. A client that keeps sending past this
+/// without any reply is disconnected rather than buffered without bound.
+const MAX_PENDING_FRAMES: usize = 1024;
+
+/// The client's path to the Node daemon.
+enum Link {
+    /// Dialling, or waiting for a supervised worker; frames queue in order.
+    Pending(Vec<proxy::Frame>),
+    Up(proxy::Upstream),
+    /// No Node daemon (standalone, or the configured one was unreachable): native only.
+    Absent,
+}
+
 async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>, client: Client) {
     let (from_upstream_tx, mut from_upstream_rx) = mpsc::channel::<proxy::Frame>(256);
     // Frames produced locally (native terminal output) rather than by upstream.
@@ -428,29 +647,60 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>, client: Clie
         .native_terminals
         .then(|| terminals::Terminals::new(local_tx));
 
-    // If the Node daemon is unreachable we still serve the message types we
-    // implement natively rather than dropping the client.
-    let upstream = match &state.upstream_url {
-        Some(url) => match proxy::Upstream::connect(
-            url,
-            from_upstream_tx,
-            client.bearer.as_deref(),
-            &client.ip,
-        )
-        .await
-        {
-            Ok(up) => Some(up),
-            Err(err) => {
-                tracing::warn!(error = %err, "no upstream; serving native message types only");
-                None
+    // Dial in the background, so ping and other native types are answered while the Node
+    // daemon is still starting behind us.
+    let (connected_tx, mut connected_rx) = oneshot::channel::<anyhow::Result<proxy::Upstream>>();
+    let mut link = if state.expects_upstream {
+        let mut upstream = state.upstream.clone();
+        let bearer = client.bearer.clone();
+        let ip = client.ip.clone();
+        tokio::spawn(async move {
+            let result = async {
+                let url = tokio::time::timeout(UPSTREAM_WAIT, upstream.wait_for(Option::is_some))
+                    .await
+                    .map_err(|_| anyhow::anyhow!("daemon worker did not become ready"))?
+                    .map_err(|_| anyhow::anyhow!("daemon worker supervisor stopped"))?
+                    .clone()
+                    .unwrap_or_default();
+                proxy::Upstream::connect(&url, from_upstream_tx, bearer.as_deref(), &ip).await
             }
-        },
-        None => None,
+            .await;
+            let _ = connected_tx.send(result);
+        });
+        Link::Pending(Vec::new())
+    } else {
+        drop(connected_tx);
+        Link::Absent
     };
 
-    let has_upstream = upstream.is_some();
     loop {
         tokio::select! {
+            connected = &mut connected_rx, if matches!(link, Link::Pending(_)) => {
+                match connected {
+                    Ok(Ok(upstream)) => {
+                        let Link::Pending(queued) = std::mem::replace(&mut link, Link::Up(upstream)) else {
+                            unreachable!()
+                        };
+                        let mut ok = true;
+                        for frame in queued {
+                            if !deliver(&mut link, frame).await {
+                                ok = false;
+                                break;
+                            }
+                        }
+                        if !ok {
+                            break;
+                        }
+                    }
+                    // The configured daemon is unreachable. We still serve the message
+                    // types we implement natively rather than dropping the client.
+                    Ok(Err(err)) => {
+                        tracing::warn!(error = %err, "no upstream; serving native message types only");
+                        link = Link::Absent;
+                    }
+                    Err(_) => link = Link::Absent,
+                }
+            }
             // Frames from natively-owned terminals.
             Some(bytes) = local_rx.recv() => {
                 if socket.send(Message::Binary(bytes)).await.is_err() {
@@ -462,7 +712,7 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>, client: Clie
             // reconnects rather than talking into a void. This is the reliable
             // signal - a send into the outbound buffer can still succeed for a
             // moment after the upstream has actually gone.
-            frame = from_upstream_rx.recv(), if has_upstream => {
+            frame = from_upstream_rx.recv(), if matches!(link, Link::Up(_)) => {
                 let Some(frame) = frame else {
                     tracing::warn!("upstream daemon closed; disconnecting client so it reconnects");
                     break;
@@ -477,22 +727,21 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>, client: Clie
             }
             incoming = socket.recv() => {
                 let Some(Ok(msg)) = incoming else { break };
-                match msg {
+                let keep = match msg {
                     Message::Text(text) => {
                         if state.validate_protocol {
                             validate_against_schema(&text);
                         }
-                        if !handle_text(&text, &mut socket, upstream.as_ref(), terminals.as_mut(), client.role).await {
-                            break;
-                        }
+                        handle_text(&text, &mut socket, &mut link, terminals.as_mut(), client.role).await
                     }
                     Message::Binary(bytes) => {
-                        if !handle_binary(bytes, upstream.as_ref(), terminals.as_mut(), client.role).await {
-                            break;
-                        }
+                        handle_binary(bytes, &mut link, terminals.as_mut(), client.role).await
                     }
-                    Message::Close(_) => break,
-                    _ => {}
+                    Message::Close(_) => false,
+                    _ => true,
+                };
+                if !keep {
+                    break;
                 }
             }
         }
@@ -534,7 +783,7 @@ fn validate_against_schema(text: &str) {
 async fn handle_text(
     text: &str,
     socket: &mut WebSocket,
-    upstream: Option<&proxy::Upstream>,
+    upstream: &mut Link,
     terminals: Option<&mut terminals::Terminals>,
     role: auth::Role,
 ) -> bool {
@@ -640,7 +889,7 @@ fn native_terminal_reply(
 /// the payload is relayed intact.
 async fn handle_binary(
     bytes: Vec<u8>,
-    upstream: Option<&proxy::Upstream>,
+    upstream: &mut Link,
     terminals: Option<&mut terminals::Terminals>,
     role: auth::Role,
 ) -> bool {
@@ -678,27 +927,37 @@ async fn handle_binary(
     deliver(upstream, proxy::Frame::Binary(bytes)).await
 }
 
-async fn forward(text: &str, upstream: Option<&proxy::Upstream>) -> bool {
+async fn forward(text: &str, upstream: &mut Link) -> bool {
     deliver(upstream, proxy::Frame::Text(text.to_string())).await
 }
 
 /// Returns false when the client connection should close. Losing the upstream
 /// mid-connection closes the client too: the alternative is silently swallowing
 /// its messages, which looks like a hung UI rather than a dropped connection.
-async fn deliver(upstream: Option<&proxy::Upstream>, frame: proxy::Frame) -> bool {
-    let Some(upstream) = upstream else {
-        return true;
-    };
-    match upstream.send(frame).await {
-        proxy::SendOutcome::Delivered => true,
-        proxy::SendOutcome::Disconnected => {
-            tracing::warn!("upstream daemon closed; disconnecting client so it reconnects");
-            false
+async fn deliver(link: &mut Link, frame: proxy::Frame) -> bool {
+    match link {
+        Link::Absent => true,
+        Link::Pending(queued) => {
+            if queued.len() >= MAX_PENDING_FRAMES {
+                tracing::warn!(
+                    "client sent too much while the daemon worker started; disconnecting"
+                );
+                return false;
+            }
+            queued.push(frame);
+            true
         }
+        Link::Up(upstream) => match upstream.send(frame).await {
+            proxy::SendOutcome::Delivered => true,
+            proxy::SendOutcome::Disconnected => {
+                tracing::warn!("upstream daemon closed; disconnecting client so it reconnects");
+                false
+            }
+        },
     }
 }
 
-fn now_iso8601() -> String {
+pub(crate) fn now_iso8601() -> String {
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap_or_default();
@@ -735,7 +994,8 @@ mod tests {
         Arc::new(AppState {
             server_id: "test".into(),
             started: Instant::now(),
-            upstream_url: None,
+            upstream: watch::channel(None).1,
+            expects_upstream: false,
             auth: daemon_config::AuthStore::fixed(auth::AuthConfig {
                 trust_lan: true,
                 ..Default::default()
@@ -747,7 +1007,7 @@ mod tests {
             listen: "127.0.0.1:0".into(),
             web_ui_dist: None,
             native_terminals: false,
-            http_proxy: None,
+            http_proxy: http_proxy::HttpProxy::new(),
             validate_protocol: false,
         })
     }

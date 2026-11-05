@@ -474,6 +474,12 @@ export interface FroggDaemonConfig {
   /** Internal transport boundary; never persisted or accepted from remote clients. */
   executionService?: { token: string; getPublicListen(): string };
   listen: string;
+  /**
+   * The address clients reach when a front (the Rust daemon, `apps/daemon-rs`) owns the
+   * public listener and this worker binds a private loopback port behind it. Reported in
+   * identity, status, self-update and connection offers instead of the bound address.
+   */
+  publicListen?: string;
   froggHome: string;
   daemonVersion?: string;
   desktopManaged?: boolean;
@@ -940,10 +946,13 @@ export async function createFroggDaemon(
   const agentMcpAuthToken = randomUUID();
 
   const listenTarget = parseListenString(config.listen);
-  const publicListenTarget = () =>
-    config.executionService
-      ? parseListenString(config.executionService.getPublicListen())
-      : (boundListenTarget ?? listenTarget);
+  const publicListenTarget = () => {
+    if (config.executionService) {
+      return parseListenString(config.executionService.getPublicListen());
+    }
+    if (config.publicListen) return parseListenString(config.publicListen);
+    return boundListenTarget ?? listenTarget;
+  };
   const publicTcpPort = () => {
     const target = publicListenTarget();
     return target.type === "tcp" ? target.port : null;

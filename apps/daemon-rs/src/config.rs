@@ -25,8 +25,9 @@ impl Config {
     /// `persisted_listen` is `daemon.listen` from config.json; env wins over it,
     /// matching the Node daemon's precedence.
     pub fn from_env(persisted_listen: Option<&str>) -> anyhow::Result<Self> {
-        let listen = match std::env::var("FROGG_LISTEN") {
-            Ok(v) if !v.trim().is_empty() => parse_listen(v.trim())?,
+        // Brand-prefixed (`FROGG_LISTEN` upstream), as the CLI writes it for a branded build.
+        let listen = match crate::branding::env_value("LISTEN") {
+            Some(v) => parse_listen(&v)?,
             _ => match persisted_listen.map(str::trim).filter(|v| !v.is_empty()) {
                 Some(value) => parse_listen(value)?,
                 None => {
@@ -39,7 +40,7 @@ impl Config {
             },
         };
 
-        let web_ui_enabled = std::env::var("FROGG_WEB_UI_ENABLED")
+        let web_ui_enabled = crate::branding::env_value("WEB_UI_ENABLED")
             .map(|v| v != "0" && v != "false")
             .unwrap_or(true);
         // Ships next to the daemon in a release build; overridable for dev.

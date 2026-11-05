@@ -50,7 +50,12 @@ impl Upstream {
             .into_client_request()
             .with_context(|| format!("building upstream request for {url}"))?;
         let headers = request.headers_mut();
-        headers.insert("x-forwarded-for", client_ip.parse()?);
+        // Node never treats a forwarded loopback address as loopback (the header is
+        // caller-controlled), so a loopback client is sent as what it is: a loopback
+        // connection from this front. Anyone else travels as X-Forwarded-For.
+        if crate::netclass::classify(Some(client_ip)) != crate::netclass::Locality::Loopback {
+            headers.insert("x-forwarded-for", client_ip.parse()?);
+        }
         if let Some(token) = bearer {
             headers.insert(
                 "sec-websocket-protocol",
