@@ -1,5 +1,6 @@
-/* Theme tokens, mirroring apps/ui-next/src/theme (Material, dark). Themes switch by swapping
-   these custom properties on :root; the full theme set lands with the shell phase. */
+/* Theme tokens, mirroring apps/ui-next/src/theme. `theme::apply` writes the active theme's
+   palette and derived tokens onto :root at startup and on every switch; the values below are
+   Material (the default) so the first paint before the WASM loads already matches. */
 :root {
   --bg: #16181b;
   --bg2: #1a1d20;
@@ -9,15 +10,459 @@
   --muted: #a3abb2;
   --faint: #6c757d;
   --cyan: #82aaff;
+  --cyan2: #b0c9ff;
+  --deep: #3f5fa8;
   --mint: #8fcf96;
+  --violet: #c3a6ef;
   --amber: #ffcb6b;
   --coral: #f07178;
-  --violet: #c3a6ef;
+  --on-accent: #0f1a2e;
+  --on-warn: #1f1600;
+  --add-text: #c2e6c6;
+  --del-text: #ffc4c8;
+  --ink: #ffffff;
+  --shadow: #000000;
   --line: rgba(255, 255, 255, 0.07);
   --line2: rgba(255, 255, 255, 0.14);
+  --wash: rgba(255, 255, 255, 0.03);
+  --wash2: rgba(255, 255, 255, 0.05);
+  --wash3: rgba(255, 255, 255, 0.1);
+  --scrim: rgba(10, 11, 13, 0.6);
+  --coral-wash: rgba(240, 113, 120, 0.08);
+  --cyan-wash: rgba(130, 170, 255, 0.1);
+  --cyan-wash2: rgba(130, 170, 255, 0.18);
+  --cyan-wash3: rgba(130, 170, 255, 0.28);
+  --cyan-dim: #6c8dd4;
+  --mint-dim: #7cb483;
+
   --font-body: "Inter", system-ui, sans-serif;
   --font-display: "Space Grotesk", var(--font-body);
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out: cubic-bezier(0.4, 0, 1, 1);
+  --glide-ms: 200ms;
   color-scheme: dark;
+}
+
+/* Fonts: ui-next/assets/fonts, copied to dist/assets/fonts by Trunk. */
+@font-face {
+  font-family: "Inter";
+  src: url("assets/fonts/Inter-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("assets/fonts/Inter-Italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("assets/fonts/Inter-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("assets/fonts/Inter-SemiBold.ttf") format("truetype");
+  font-weight: 600 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("assets/fonts/SpaceGrotesk-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("assets/fonts/SpaceGrotesk-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("assets/fonts/SpaceGrotesk-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("assets/fonts/JetBrainsMono-Italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("assets/fonts/JetBrainsMono-Medium.ttf") format("truetype");
+  font-weight: 500 600;
+  font-display: swap;
+}
+
+/* Motion keyframes (tokens.ts: frames, overlayFrames, toastFrames, stateFrames, toolDoneFrames). */
+@keyframes breathe {
+  0% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.45;
+  }
+}
+@keyframes snap {
+  0% {
+    opacity: 0;
+    transform: scale(1.06);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes enter {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes fade {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+@keyframes beam {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
+}
+@keyframes afterglow {
+  0% {
+    background-color: color-mix(in srgb, var(--mint) 28%, transparent);
+  }
+  100% {
+    background-color: color-mix(in srgb, var(--mint) 9%, transparent);
+  }
+}
+@keyframes pop-down {
+  0% {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes pop-up {
+  0% {
+    opacity: 0;
+    transform: translateY(4px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes pop-out {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+@keyframes rise {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes fade-out {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes sheet-in {
+  0% {
+    transform: translateY(100%);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+@keyframes sheet-out {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+@keyframes toast-in-side {
+  0% {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes toast-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes toast-out-side {
+  0% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+@keyframes toast-out-down {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+@keyframes corner {
+  0% {
+    opacity: 0;
+    transform: scale(1.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes drain {
+  0% {
+    transform: scaleX(1);
+  }
+  100% {
+    transform: scaleX(0);
+  }
+}
+@keyframes state-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes draw-x {
+  0% {
+    transform: scaleX(0);
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}
+@keyframes draw-y {
+  0% {
+    transform: scaleY(0);
+  }
+  100% {
+    transform: scaleY(1);
+  }
+}
+@keyframes flash {
+  0% {
+    background-color: color-mix(in srgb, var(--coral) 30%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+@keyframes glow {
+  0% {
+    box-shadow: 0 0 0 transparent;
+  }
+  35% {
+    box-shadow: 0 0 22px color-mix(in srgb, var(--mint) 32%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 transparent;
+  }
+}
+@keyframes unfold {
+  0% {
+    opacity: 0;
+    max-height: 0;
+  }
+  100% {
+    opacity: 1;
+    max-height: 640px;
+  }
+}
+@keyframes fold {
+  0% {
+    opacity: 1;
+    max-height: 640px;
+  }
+  100% {
+    opacity: 0;
+    max-height: 0;
+  }
+}
+@keyframes tool-draw {
+  0% {
+    width: 0;
+  }
+  100% {
+    width: 14px;
+  }
+}
+@keyframes tool-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes tool-sweep {
+  0% {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(250%);
+  }
+}
+@keyframes tool-edge {
+  0% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Motion utility classes (tokens.ts: motion, overlayMotion, toastMotion, stateMotion). */
+.m-breathe {
+  animation: breathe 1.6s ease-in-out infinite both;
+}
+.m-snap {
+  animation: snap 220ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+.m-enter {
+  animation: enter 200ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+.m-fade {
+  animation: fade 150ms ease-out both;
+}
+.m-afterglow {
+  animation: afterglow 1.2s ease-out both;
+}
+.m-pop-down {
+  animation: pop-down 160ms var(--ease) both;
+}
+.m-pop-up {
+  animation: pop-up 160ms var(--ease) both;
+}
+.m-pop-out {
+  animation: pop-out 110ms var(--ease-out) both;
+}
+.m-rise {
+  animation: rise 170ms var(--ease) both;
+}
+.m-fade-in {
+  animation: fade 160ms var(--ease) both;
+}
+.m-fade-out {
+  animation: fade-out 110ms var(--ease-out) both;
+}
+.m-sheet-in {
+  animation: sheet-in 200ms var(--ease) both;
+}
+.m-sheet-out {
+  animation: sheet-out 140ms var(--ease-out) both;
+}
+.m-shimmer-text {
+  background-image: linear-gradient(
+    90deg,
+    var(--faint) 0%,
+    var(--faint) 35%,
+    var(--cyan2) 50%,
+    var(--faint) 65%,
+    var(--faint) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 2s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
 }
