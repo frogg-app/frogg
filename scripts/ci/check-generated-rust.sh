@@ -10,10 +10,10 @@ set -euo pipefail
 npm run build --workspace=@frogg/protocol >/dev/null
 npm run generate:rust --workspace=@frogg/protocol >/dev/null
 
-if ! git diff --quiet -- apps/daemon-rs/src/generated packages/protocol/generated; then
+if ! git diff --quiet -- crates/frogg-protocol/src packages/protocol/generated; then
   echo "Generated protocol types are stale. Run:" >&2
   echo "  npm run build --workspace=@frogg/protocol" >&2
-  git --no-pager diff --stat -- apps/daemon-rs/src/generated packages/protocol/generated >&2
+  git --no-pager diff --stat -- crates/frogg-protocol/src packages/protocol/generated >&2
   exit 1
 fi
 echo "Generated protocol types are up to date."

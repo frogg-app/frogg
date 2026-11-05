@@ -296,7 +296,7 @@ use serde::{Deserialize, Serialize};
 
 // Written straight into the crate that consumes them: one location, compiled
 // like any other source, and CI fails if they are stale.
-const outputDir = resolve(packageRoot, "../../apps/daemon-rs/src/generated");
+const outputDir = resolve(packageRoot, "../../crates/frogg-protocol/src");
 await mkdir(outputDir, { recursive: true });
 
 const written = [];

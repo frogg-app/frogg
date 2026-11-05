@@ -266,6 +266,7 @@ dependencies = [
  "anyhow",
  "axum",
  "bcrypt",
+ "frogg-protocol",
  "futures-util",
  "http-body-util",
  "hyper",
@@ -284,6 +285,14 @@ dependencies = [
  "tracing-subscriber",
  "uuid",
  "vt100",
+]
+
+[[package]]
+name = "frogg-protocol"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

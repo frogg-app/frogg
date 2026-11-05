@@ -86,7 +86,7 @@ jobs:
       # postbuild); a schema change committed without them leaves this diff.
       - name: Generated Rust protocol types are current
         run: |
-          if ! git diff --exit-code --stat -- apps/daemon-rs/src/generated packages/protocol/generated; then
+          if ! git diff --exit-code --stat -- crates/frogg-protocol/src packages/protocol/generated; then
             echo "::error::Generated protocol types are stale. Run: npm run build --workspace=@frogg/protocol"
             exit 1
           fi

@@ -13,7 +13,7 @@ mod config;
 mod daemon_config;
 mod envelope;
 mod frames;
-mod generated;
+use frogg_protocol as generated;
 mod generated_tests;
 mod hostnames;
 mod http_proxy;

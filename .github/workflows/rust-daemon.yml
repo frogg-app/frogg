@@ -2,7 +2,7 @@ name: Rust daemon
 
 # apps/daemon-rs, the opt-in Rust front for the daemon (docs/plans/rust-rebuild.md).
 #
-# - protocol: the generated Rust protocol types (apps/daemon-rs/src/generated) must match
+# - protocol: the generated Rust protocol types (crates/frogg-protocol/src) must match
 #   packages/protocol, and the crate's tests must pass. Runs on every pull request that touches
 #   the protocol or the crate, and on every push here. ci.yml's checks job also fails on stale
 #   generated types after its build, which covers protocol changes on main.
@@ -16,6 +16,7 @@ on:
   pull_request:
     paths:
       - apps/daemon-rs/**
+      - crates/**
       - packages/protocol/**
       - packages/branding/native/**
       - scripts/bench/**
