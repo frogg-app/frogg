@@ -192,10 +192,7 @@ async function measureSessionRpc(port, localToken) {
 /** The supervised worker's private address, from the front's "Worker ready" log line. */
 function workerPort(froggHome) {
   const log = readFileSync(path.join(froggHome, "daemon.log"), "utf8");
-  const ready = log
-    .split("\n")
-    .filter((line) => line.includes('"Worker ready"'))
-    .at(-1);
+  const ready = log.split("\n").findLast((line) => line.includes('"Worker ready"'));
   return Number(JSON.parse(ready).listen.split(":").at(-1));
 }
 
