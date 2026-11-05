@@ -6,8 +6,9 @@
 
 use anyhow::{Context, Result};
 use futures_util::{SinkExt, StreamExt};
-use tokio::sync::mpsc;
+use tokio::net::TcpStream;
 use tokio_tungstenite::tungstenite::Message as WsMessage;
+use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 
 /// A frame moving between the client and the Node daemon. Binary frames carry
 /// terminal I/O and file transfers and must be relayed intact.
@@ -17,8 +18,12 @@ pub enum Frame {
     Binary(Vec<u8>),
 }
 
+/// The upstream socket, owned by the client's connection loop. No pump tasks or channels sit
+/// between the two sockets: each forwarded frame is one write, and each reply one read, on the
+/// task that already holds the client socket. A task hop costs a cross-thread wake-up per frame,
+/// which is most of what a forwarded RPC would otherwise add.
 pub struct Upstream {
-    to_upstream: mpsc::Sender<Frame>,
+    stream: WebSocketStream<MaybeTlsStream<TcpStream>>,
 }
 
 /// Distinguishes "we have no upstream configured" from "the upstream we had has
@@ -32,19 +37,13 @@ pub enum SendOutcome {
 }
 
 impl Upstream {
-    /// Dials the Node daemon and starts both pump tasks. Frames arriving from
-    /// upstream are pushed to `from_upstream` for the caller to relay to its client.
+    /// Dials the Node daemon.
     ///
     /// `bearer` is the credential the client authenticated with, forwarded so the
     /// Node daemon resolves the same device and role rather than treating this
     /// loopback connection as trusted. `client_ip` travels as X-Forwarded-For,
     /// which Node honours when this front is one of its trusted proxies.
-    pub async fn connect(
-        url: &str,
-        from_upstream: mpsc::Sender<Frame>,
-        bearer: Option<&str>,
-        client_ip: &str,
-    ) -> Result<Self> {
+    pub async fn connect(url: &str, bearer: Option<&str>, client_ip: &str) -> Result<Self> {
         use tokio_tungstenite::tungstenite::client::IntoClientRequest;
         let mut request = url
             .into_client_request()
@@ -62,47 +61,34 @@ impl Upstream {
                 format!("frogg.bearer.{token}").parse()?,
             );
         }
-        let (stream, _) = tokio_tungstenite::connect_async(request)
+        // disable_nagle: request/response frames must not wait on delayed ACKs.
+        let (stream, _) = tokio_tungstenite::connect_async_with_config(request, None, true)
             .await
             .with_context(|| format!("dialing upstream daemon at {url}"))?;
-        let (mut write, mut read) = stream.split();
-        let (to_upstream, mut rx) = mpsc::channel::<Frame>(256);
-
-        tokio::spawn(async move {
-            while let Some(frame) = rx.recv().await {
-                let message = match frame {
-                    Frame::Text(text) => WsMessage::Text(text),
-                    Frame::Binary(bytes) => WsMessage::Binary(bytes),
-                };
-                if write.send(message).await.is_err() {
-                    break;
-                }
-            }
-            let _ = write.close().await;
-        });
-
-        tokio::spawn(async move {
-            while let Some(Ok(msg)) = read.next().await {
-                let frame = match msg {
-                    WsMessage::Text(t) => Frame::Text(t),
-                    WsMessage::Binary(b) => Frame::Binary(b),
-                    WsMessage::Close(_) => break,
-                    // Ping/Pong are handled by the transport itself.
-                    _ => continue,
-                };
-                if from_upstream.send(frame).await.is_err() {
-                    break;
-                }
-            }
-        });
-
-        Ok(Self { to_upstream })
+        Ok(Self { stream })
     }
 
-    pub async fn send(&self, frame: Frame) -> SendOutcome {
-        match self.to_upstream.send(frame).await {
+    pub async fn send(&mut self, frame: Frame) -> SendOutcome {
+        let message = match frame {
+            Frame::Text(text) => WsMessage::Text(text),
+            Frame::Binary(bytes) => WsMessage::Binary(bytes),
+        };
+        match self.stream.send(message).await {
             Ok(()) => SendOutcome::Delivered,
             Err(_) => SendOutcome::Disconnected,
+        }
+    }
+
+    /// The next data frame from the Node daemon; `None` once it has closed. Ping/Pong are
+    /// answered by the transport itself.
+    pub async fn recv(&mut self) -> Option<Frame> {
+        loop {
+            match self.stream.next().await? {
+                Ok(WsMessage::Text(text)) => return Some(Frame::Text(text)),
+                Ok(WsMessage::Binary(bytes)) => return Some(Frame::Binary(bytes)),
+                Ok(WsMessage::Close(_)) | Err(_) => return None,
+                Ok(_) => continue,
+            }
         }
     }
 }

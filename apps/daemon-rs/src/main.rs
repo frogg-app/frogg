@@ -41,7 +41,6 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum::{Json, Router};
-use envelope::Inbound;
 use serde_json::json;
 use tokio::sync::{mpsc, oneshot, watch};
 
@@ -198,6 +197,8 @@ async fn main() -> anyhow::Result<()> {
         listener,
         app.into_make_service_with_connect_info::<SocketAddr>(),
     )
+    // Small request/response frames: never hold one back waiting for an ACK.
+    .tcp_nodelay(true)
     .with_graceful_shutdown(async move {
         let code = shutdown.await;
         let _ = code_tx.send(code);
@@ -640,7 +641,6 @@ enum Link {
 }
 
 async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>, client: Client) {
-    let (from_upstream_tx, mut from_upstream_rx) = mpsc::channel::<proxy::Frame>(256);
     // Frames produced locally (native terminal output) rather than by upstream.
     let (local_tx, mut local_rx) = mpsc::channel::<Vec<u8>>(256);
     let mut terminals = state
@@ -662,7 +662,7 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>, client: Clie
                     .map_err(|_| anyhow::anyhow!("daemon worker supervisor stopped"))?
                     .clone()
                     .unwrap_or_default();
-                proxy::Upstream::connect(&url, from_upstream_tx, bearer.as_deref(), &ip).await
+                proxy::Upstream::connect(&url, bearer.as_deref(), &ip).await
             }
             .await;
             let _ = connected_tx.send(result);
@@ -707,12 +707,10 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>, client: Clie
                     break;
                 }
             }
-            // Replies from the Node daemon, relayed verbatim. A closed channel
-            // means the upstream connection ended; drop the client too so it
-            // reconnects rather than talking into a void. This is the reliable
-            // signal - a send into the outbound buffer can still succeed for a
-            // moment after the upstream has actually gone.
-            frame = from_upstream_rx.recv(), if matches!(link, Link::Up(_)) => {
+            // Replies from the Node daemon, relayed verbatim. When the upstream
+            // closes, drop the client too so it reconnects rather than talking
+            // into a void.
+            frame = recv_upstream(&mut link), if matches!(link, Link::Up(_)) => {
                 let Some(frame) = frame else {
                     tracing::warn!("upstream daemon closed; disconnecting client so it reconnects");
                     break;
@@ -787,36 +785,32 @@ async fn handle_text(
     terminals: Option<&mut terminals::Terminals>,
     role: auth::Role,
 ) -> bool {
-    let parsed: Inbound = match serde_json::from_str(text) {
-        Ok(v) => v,
-        Err(err) => {
-            // Unknown envelope shapes are forwarded rather than rejected: the Node
-            // daemon stays the authority on the protocol while we are partial.
-            tracing::debug!(error = %err, "unparsed envelope, forwarding upstream");
-            return forward(text, upstream).await;
-        }
+    let Some(peeked) = envelope::peek(text) else {
+        // Unknown envelope shapes are forwarded rather than rejected: the Node
+        // daemon stays the authority on the protocol while we are partial.
+        tracing::debug!("unparsed envelope, forwarding upstream");
+        return forward(text, upstream).await;
     };
 
-    match &parsed {
+    match peeked.kind.as_ref() {
         // Natively handled: a pong needs no Node daemon round trip.
         // WSPongMessageSchema is `{ type: "pong" }` and nothing else.
-        Inbound::Ping => {
+        "ping" => {
             let pong = json!({ "type": "pong" });
             socket.send(Message::Text(pong.to_string())).await.is_ok()
         }
-        Inbound::Session { message } => {
-            if let Some(terminals) = terminals {
-                if let Some(reply) = native_terminal_reply(message, terminals, role) {
-                    return socket.send(Message::Text(reply.to_string())).await.is_ok();
+        // Only parsed further when a native handler might claim it.
+        "session" => {
+            if let (Some(terminals), Some(raw)) = (terminals, peeked.message) {
+                if let Ok(message) = serde_json::from_str::<serde_json::Value>(raw.get()) {
+                    if let Some(reply) = native_terminal_reply(&message, terminals, role) {
+                        return socket.send(Message::Text(reply.to_string())).await.is_ok();
+                    }
                 }
             }
-            tracing::trace!(session_type = parsed.session_type(), "forwarding upstream");
             forward(text, upstream).await
         }
-        _ => {
-            tracing::trace!(session_type = parsed.session_type(), "forwarding upstream");
-            forward(text, upstream).await
-        }
+        _ => forward(text, upstream).await,
     }
 }
 
@@ -925,6 +919,13 @@ async fn handle_binary(
         }
     }
     deliver(upstream, proxy::Frame::Binary(bytes)).await
+}
+
+async fn recv_upstream(link: &mut Link) -> Option<proxy::Frame> {
+    match link {
+        Link::Up(upstream) => upstream.recv().await,
+        _ => std::future::pending().await,
+    }
 }
 
 async fn forward(text: &str, upstream: &mut Link) -> bool {

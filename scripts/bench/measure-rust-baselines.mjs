@@ -7,12 +7,21 @@
 //
 //   node scripts/bench/measure-rust-baselines.mjs [--runs 5] [--pings 500]
 //   node scripts/bench/measure-rust-baselines.mjs --binary <apps/daemon-rs release binary>
+//   node scripts/bench/measure-rust-baselines.mjs --front <apps/daemon-rs release binary>
 //
 // `--binary` measures the Rust front half (apps/daemon-rs, no Node upstream) the same way; it
 // answers ping natively. A local-token is written for it, as it only reads one.
+// `--front` measures phase 2: the Rust binary in `--supervise` mode in front of the Node
+// worker (what FROGG_RS_FRONT=1 starts), with session RPCs forwarded to the worker.
+// In `--front` mode the session RPCs alternate between the front and the same Node worker
+// directly (its private port, from daemon.log), so `directSessionRpcPingMs` is the hop's
+// baseline under identical machine load. Separate runs on a shared VM differ by more than the
+// 0.2 ms budget the plan sets for a forwarded RPC.
+// `--out <file>` also writes the JSON summary to a file.
 //
 // Prints a JSON summary. Measures:
-//   coldStartMs   spawn → TCP listen, and spawn → first answered ping over /ws
+//   coldStartMs   spawn → TCP listen, spawn → first answered ping over /ws, and (with a Node
+//                 worker) spawn → first answered session RPC
 //   rssMb         resident memory of the daemon process tree after it has idled
 //   transportPingMs  sequential transport-level ping/pong round trips (p50/p95/p99/max)
 //   sessionRpcPingMs sequential session-RPC pings through DaemonClient (Node daemon only)
@@ -33,6 +42,8 @@ const { values } = parseArgs({
     pings: { type: "string", default: "500" },
     idle: { type: "string", default: "10000" },
     binary: { type: "string" },
+    front: { type: "string" },
+    out: { type: "string" },
   },
 });
 const scratch = path.join(root, ".dev/rust-baselines");
@@ -159,8 +170,8 @@ async function timeSequential(samples, call) {
   }
 }
 
-async function measureSessionRpc(port, localToken) {
-  const client = new DaemonClient({
+function sessionClient(port, localToken) {
+  return new DaemonClient({
     url: `ws://127.0.0.1:${port}/ws`,
     clientId: `rust-baseline-rpc-${port}`,
     clientType: "cli",
@@ -169,21 +180,95 @@ async function measureSessionRpc(port, localToken) {
     webSocketFactory: (url, options) =>
       new WebSocket(url, options?.protocols, { headers: options?.headers }),
   });
+}
+
+async function measureSessionRpc(port, localToken) {
+  const client = sessionClient(port, localToken);
   await client.connect();
   await timeSequential(rpcPings, () => client.ping({ timeoutMs: 5_000 }));
   await client.close?.();
+}
+
+/** The supervised worker's private address, from the front's "Worker ready" log line. */
+function workerPort(froggHome) {
+  const log = readFileSync(path.join(froggHome, "daemon.log"), "utf8");
+  const ready = log
+    .split("\n")
+    .filter((line) => line.includes('"Worker ready"'))
+    .at(-1);
+  return Number(JSON.parse(ready).listen.split(":").at(-1));
+}
+
+/** Alternates front and direct pings so both see the same machine load. */
+async function measureInterleaved(port, directPort, localToken) {
+  const front = sessionClient(port, localToken);
+  const direct = sessionClient(directPort, localToken);
+  await front.connect();
+  await direct.connect();
+  const timed = async (samples, client) => {
+    const t = performance.now();
+    await client.ping({ timeoutMs: 5_000 });
+    samples?.push(performance.now() - t);
+  };
+  for (let i = 0; i < 50; i++) {
+    await timed(null, front);
+    await timed(null, direct);
+  }
+  for (let i = 0; i < Number(values.pings); i++) {
+    // Swap the order every round so neither side always goes first.
+    if (i % 2 === 0) {
+      await timed(rpcPings, front);
+      await timed(directRpcPings, direct);
+    } else {
+      await timed(directRpcPings, direct);
+      await timed(rpcPings, front);
+    }
+  }
+  await front.close?.();
+  await direct.close?.();
+}
+
+/** Retries until the session layer (the Node worker, directly or behind the front) answers. */
+async function firstSessionRpc(port, localToken, started) {
+  for (;;) {
+    const client = sessionClient(port, localToken);
+    try {
+      await client.connect();
+      await client.ping({ timeoutMs: 5_000 });
+      await client.close?.();
+      return;
+    } catch {
+      await client.close?.().catch(() => {});
+    }
+    if (performance.now() - started > 60_000) throw new Error("no session RPC");
+    await new Promise((r) => setTimeout(r, 20));
+  }
 }
 
 const { DaemonClient } = await import(
   pathToFileURL(path.join(root, "packages/client/dist/daemon-client.js")).href
 );
 const entry = path.join(root, "packages/server/dist/scripts/supervisor-entrypoint.js");
+const workerEntry = path.join(root, "packages/server/dist/server/server/daemon-worker.js");
+
+async function readLocalToken(froggHome, started) {
+  for (;;) {
+    try {
+      const token = readFileSync(path.join(froggHome, "local-token"), "utf8").trim();
+      if (token) return token;
+    } catch {}
+    if (performance.now() - started > 60_000) throw new Error("no local-token");
+    await new Promise((r) => setTimeout(r, 5));
+  }
+}
 
 const listen = [];
 const firstPing = [];
+const firstRpc = [];
 const rss = [];
 const pings = [];
 const rpcPings = [];
+const directRpcPings = [];
 
 function openSocket(port, token) {
   return new Promise((resolve, reject) => {
@@ -193,7 +278,7 @@ function openSocket(port, token) {
     });
     socket.once("open", () => {
       // The Node daemon answers nothing before a hello; the Rust front half forwards it upstream
-      // (none here) and answers ping natively either way.
+      // (queued until the worker is up, or dropped with none) and answers ping natively either way.
       if (!values.binary)
         socket.send(
           JSON.stringify({
@@ -232,19 +317,34 @@ for (let run = 0; run < Number(values.runs); run++) {
       mode: 0o600,
     });
   const started = performance.now();
-  const child = values.binary
-    ? spawn(path.resolve(values.binary), [], { cwd: root, env, stdio: "ignore" })
-    : spawn(process.execPath, [entry], { cwd: root, env, stdio: "ignore" });
+  let child;
+  if (values.binary) {
+    child = spawn(path.resolve(values.binary), [], { cwd: root, env, stdio: "ignore" });
+  } else if (values.front) {
+    child = spawn(
+      path.resolve(values.front),
+      ["--supervise", "--node", process.execPath, "--worker", workerEntry],
+      { cwd: root, env, stdio: "ignore" },
+    );
+  } else {
+    child = spawn(process.execPath, [entry], { cwd: root, env, stdio: "ignore" });
+  }
   try {
     listen.push((await waitForPort(port, child, 60_000)) - started);
-    // Loopback clients authenticate with the daemon's local token, like the CLI does.
-    const localToken = readFileSync(path.join(env.FROGG_HOME, "local-token"), "utf8").trim();
+    // Loopback clients authenticate with the daemon's local token, like the CLI does. The Node
+    // daemon writes it while it boots, so wait for the file rather than racing it.
+    const localToken = await readLocalToken(env.FROGG_HOME, started);
     const socket = await firstPong(port, localToken, started);
     firstPing.push(performance.now() - started);
+    if (!values.binary) {
+      await firstSessionRpc(port, localToken, started);
+      firstRpc.push(performance.now() - started);
+    }
     if (run === 0) {
       await timeSequential(pings, () => rawPing(socket));
       // A session RPC (request/response through the session layer) where the daemon has one.
-      if (!values.binary) await measureSessionRpc(port, localToken);
+      if (values.front) await measureInterleaved(port, workerPort(env.FROGG_HOME), localToken);
+      else if (!values.binary) await measureSessionRpc(port, localToken);
     }
     await new Promise((r) => setTimeout(r, Number(values.idle)));
     rss.push(treeRssMb(child.pid));
@@ -255,17 +355,26 @@ for (let run = 0; run < Number(values.runs); run++) {
   }
 }
 rmSync(scratch, { recursive: true, force: true });
-process.stdout.write(
-  `${JSON.stringify(
-    {
-      daemon: values.binary ? path.basename(values.binary) : `node ${process.version}`,
-      coldStartMs: { listen: stats(listen), firstPing: stats(firstPing) },
-      rssMb: stats(rss),
-      transportPingMs: stats(pings),
-      ...(rpcPings.length ? { sessionRpcPingMs: stats(rpcPings) } : {}),
+let daemonLabel = `node ${process.version}`;
+if (values.binary) daemonLabel = path.basename(values.binary);
+if (values.front)
+  daemonLabel = `${path.basename(values.front)} --supervise (node ${process.version})`;
+const summary = `${JSON.stringify(
+  {
+    daemon: daemonLabel,
+    coldStartMs: {
+      listen: stats(listen),
+      firstPing: stats(firstPing),
+      ...(firstRpc.length ? { firstSessionRpc: stats(firstRpc) } : {}),
     },
-    null,
-    2,
-  )}\n`,
-);
+    rssMb: stats(rss),
+    transportPingMs: stats(pings),
+    ...(rpcPings.length ? { sessionRpcPingMs: stats(rpcPings) } : {}),
+    ...(directRpcPings.length ? { directSessionRpcPingMs: stats(directRpcPings) } : {}),
+  },
+  null,
+  2,
+)}\n`;
+if (values.out) writeFileSync(values.out, summary);
+process.stdout.write(summary);
 process.exit(0);
