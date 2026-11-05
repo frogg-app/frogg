@@ -48,9 +48,9 @@ export function resolveInstallDir(env: NodeJS.ProcessEnv = process.env): string 
   if (explicit) return explicit;
   if (process.platform === "win32") {
     const base = env.LOCALAPPDATA?.trim() || path.join(os.homedir(), "AppData", "Local");
-    return path.join(base, brand.id);
+    return path.join(base, brand.installId);
   }
-  return path.join(os.homedir(), ".local", "share", brand.id);
+  return path.join(os.homedir(), ".local", "share", brand.installId);
 }
 
 export function versionsDir(installDir: string): string {

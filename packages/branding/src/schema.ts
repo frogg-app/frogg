@@ -494,6 +494,7 @@ function resolveNextDaemon(manifest: BrandManifest) {
     serviceName: input.serviceName ?? `${stable.id}-next-daemon`,
     launchdLabel: input.launchdLabel ?? `${stable.applicationId}.next-daemon`,
     daemonArtifactPrefix: `${stable.id}-next-daemon`,
+    installId: `${stable.id}-next`,
   };
   const clashes = (
     [
@@ -785,6 +786,8 @@ function resolveIdentity(manifest: BrandManifest) {
     launchdLabel: manifest.launchdLabel ?? `${manifest.applicationId}-daemon`,
     artifactPrefix: manifest.artifactPrefix ?? id,
     daemonArtifactPrefix: `${id}-daemon`,
+    /** Directory name of the daemon install root (`~/.local/share/<installId>`). */
+    installId: id,
     storagePrefix: id === "frogg" ? "" : `${manifest.applicationId}:`,
     legacyFrogg: id === "frogg",
   };

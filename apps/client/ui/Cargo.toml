@@ -60,4 +60,12 @@ web-sys = { version = "0.3", features = [
 
 # views/sessions (popover anchoring, textarea focus). Own table so feature edits never conflict.
 [target.'cfg(not(target_os = "none"))'.dependencies]
-web-sys = { version = "0.3", features = ["DomRect", "MouseEvent", "HtmlTextAreaElement", "HtmlInputElement", "TouchEvent", "TouchList", "Touch"] }
+web-sys = { version = "0.3", features = [
+  "DomRect",
+  "MouseEvent",
+  "HtmlTextAreaElement",
+  "HtmlInputElement",
+  "TouchEvent",
+  "TouchList",
+  "Touch",
+] }

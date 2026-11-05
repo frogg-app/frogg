@@ -322,7 +322,8 @@
   gap: 16px;
   margin-bottom: 26px;
   padding: 18px;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--cyan) 8%, transparent), transparent 60%),
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--cyan) 8%, transparent), transparent 60%),
     var(--panel);
   border: 1px solid color-mix(in srgb, var(--cyan) 18%, transparent);
 }

@@ -27,7 +27,7 @@ desktop and Android follow stable only), 2164f316 (side-by-side beta daemon reti
 - **Frogg Next's own daemon (owner, 2026-11-05).** `-next.N` releases ship a separate daemon
   so Frogg Next develops in parallel with frogg and frogg beta and runs beside them on one host:
   port 9969 (web 9968), `~/.frogg-next`, the `frogg-next` CLI, `FROGG_NEXT_` env prefix,
-  `frogg-next-daemon` service, `frogg-next-daemon-<v>-<os>-<arch>` bundles. It comes from the
+  `frogg-next-daemon` service, `~/.local/share/frogg-next` install root, `frogg-next-daemon-<v>-<os>-<arch>` bundles. It comes from the
   brand's `next` daemon keys (`brand prepare --daemon next`, `FROGG_BRAND_DAEMON=next`, set by
   `release.yml` on every `-next.N` job). Its install script defaults to
   the `next` channel and its self-update follows `-next.N` only. Frogg Next looks for

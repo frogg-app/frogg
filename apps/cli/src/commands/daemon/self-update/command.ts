@@ -183,7 +183,7 @@ export function selfUpdateCommand(): Command {
       .option("--home <path>", `${brand.name} home directory (default: ~/${brand.homeDir})`)
       .option(
         "--install-dir <dir>",
-        `Install root (default: ${brand.envPrefix}_INSTALL_DIR or ~/.local/share/${brand.id})`,
+        `Install root (default: ${brand.envPrefix}_INSTALL_DIR or ~/.local/share/${brand.installId})`,
       )
       .option("--verify-timeout <ms>", "How long to wait for the restarted daemon (default: 90000)")
       .addOption(new Option("--apply <version>").hideHelp())

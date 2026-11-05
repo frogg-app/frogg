@@ -457,6 +457,7 @@ test("the Frogg Next identity is derived for forks and overridable", () => {
       serviceName: "acme-next-daemon",
       launchdLabel: "com.acme.studio.next-daemon",
       daemonArtifactPrefix: "acme-next-daemon",
+      installId: "acme-next",
     },
   });
   assert.equal(resolveBrandManifest({ ...minimal, id: "frogg" }).next.enabled, true);
@@ -511,6 +512,7 @@ test("a Frogg Next daemon build moves every daemon key aside and keeps the clien
       serviceName: next.serviceName,
       launchdLabel: next.launchdLabel,
       daemonArtifactPrefix: next.daemonArtifactPrefix,
+      installId: next.installId,
       legacyFrogg: next.legacyFrogg,
     },
     {
@@ -522,6 +524,8 @@ test("a Frogg Next daemon build moves every daemon key aside and keeps the clien
       serviceName: "frogg-next-daemon",
       launchdLabel: "app.frogg.frogg.next-daemon",
       daemonArtifactPrefix: "frogg-next-daemon",
+      // Its own install root, ~/.local/share/frogg-next, never the stable daemon's.
+      installId: "frogg-next",
       // No second `frogg` launcher or Frogg-*-daemon bundle names to shadow the stable daemon's.
       legacyFrogg: false,
     },

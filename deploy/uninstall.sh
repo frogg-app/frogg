@@ -9,6 +9,7 @@ set -euo pipefail
 
 # BEGIN BRAND DEFAULTS — replaced only in generated distribution scripts.
 BRAND_ID='frogg'
+BRAND_INSTALL_ID='frogg'
 BRAND_NAME='Frogg'
 BRAND_FULL_NAME='Frogg'
 BRAND_APPLICATION_ID='app.frogg.frogg'
@@ -36,7 +37,8 @@ if [ "${BRAND_LEGACY}" != "true" ]; then
   done
 fi
 
-FROGG_INSTALL_DIR="${FROGG_INSTALL_DIR:-${HOME}/.local/share/${BRAND_ID}}"
+# The Frogg Next daemon installs under its own root (BRAND_INSTALL_ID frogg-next), never the stable one.
+FROGG_INSTALL_DIR="${FROGG_INSTALL_DIR:-${HOME}/.local/share/${BRAND_INSTALL_ID:-${BRAND_ID}}}"
 FROGG_BIN_DIR="${FROGG_BIN_DIR:-${HOME}/.local/bin}"
 if [ "${BRAND_LEGACY}" = "true" ]; then FROGG_HOME="${FROGG_HOME:-${FROGG_HOME:-${HOME}/${BRAND_HOME}}}"; else FROGG_HOME="${FROGG_HOME:-${HOME}/${BRAND_HOME}}"; fi
 FROGG_PURGE="${FROGG_PURGE:-0}"
@@ -50,7 +52,7 @@ die() { printf 'error: %s\n' "$*" >&2; exit 1; }
 
 validate_install_owner() {
   if [ -f "${FROGG_INSTALL_DIR}/.brand-identity" ]; then
-    [ "$(cat "${FROGG_INSTALL_DIR}/.brand-identity")" = "${BRAND_ID}:${BRAND_APPLICATION_ID}" ] || die "install directory belongs to another product"
+    [ "$(cat "${FROGG_INSTALL_DIR}/.brand-identity")" = "${BRAND_INSTALL_ID:-${BRAND_ID}}:${BRAND_APPLICATION_ID}" ] || die "install directory belongs to another product"
   elif [ -e "${FROGG_INSTALL_DIR}/current/manifest.json" ]; then
     validate_bundle_identity "${FROGG_INSTALL_DIR}/current"
   elif [ "${BRAND_LEGACY}" != "true" ] && [ -d "${FROGG_INSTALL_DIR}" ] && [ -n "$(ls -A "${FROGG_INSTALL_DIR}")" ]; then

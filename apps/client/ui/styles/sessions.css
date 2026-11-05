@@ -625,7 +625,9 @@
   height: 16px;
   background: var(--wash3);
   border: 1px solid var(--line2);
-  transition: background 160ms var(--ease), border-color 160ms var(--ease);
+  transition:
+    background 160ms var(--ease),
+    border-color 160ms var(--ease);
 }
 .toggle-knob {
   position: absolute;
@@ -634,7 +636,9 @@
   width: 10px;
   height: 10px;
   background: var(--muted);
-  transition: transform 160ms var(--ease), background 160ms var(--ease);
+  transition:
+    transform 160ms var(--ease),
+    background 160ms var(--ease);
 }
 .toggle.on {
   background: color-mix(in srgb, var(--cyan) 22%, transparent);

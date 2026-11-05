@@ -24,6 +24,7 @@ export async function generateInstallers(build: BrandBuild): Promise<void> {
   const b = build.brand;
   const fields = {
     ID: b.id,
+    INSTALL_ID: b.installId,
     NAME: b.name,
     FULL_NAME: b.fullName,
     APPLICATION_ID: b.applicationId,
