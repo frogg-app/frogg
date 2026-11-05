@@ -39,6 +39,27 @@ impl SessionFrame {
         }
         serde_json::from_str::<WithPayload<T>>(self.raw.get()).map(|w| w.payload)
     }
+
+    /// The message as a JSON value.
+    pub fn json(&self) -> serde_json::Value {
+        serde_json::from_str(self.raw.get()).unwrap_or(serde_json::Value::Null)
+    }
+
+    /// `payload.status` for `status` messages (`server_info`, `agent_created`, ...).
+    pub fn payload_status(&self) -> Option<String> {
+        #[derive(Deserialize)]
+        struct P {
+            payload: Option<S>,
+        }
+        #[derive(Deserialize)]
+        struct S {
+            status: Option<String>,
+        }
+        serde_json::from_str::<P>(self.raw.get())
+            .ok()?
+            .payload?
+            .status
+    }
 }
 
 #[derive(Deserialize)]
@@ -70,13 +91,21 @@ pub fn parse(text: &str) -> Option<IncomingFrame> {
     match envelope.kind.as_str() {
         "pong" => Some(IncomingFrame::Pong),
         "session" => {
-            let raw = envelope.message?;
+            let mut raw = envelope.message?;
             let peek: SessionPeek = serde_json::from_str(raw.get()).ok()?;
             let request_id = peek.request_id.or_else(|| {
                 peek.payload
                     .and_then(|p| p.request_id)
                     .and_then(|v| v.as_str().map(str::to_owned))
             });
+            if peek.kind == "providers_snapshot_update"
+                || peek.kind == "get_providers_snapshot_response"
+            {
+                let value: serde_json::Value = serde_json::from_str(raw.get()).ok()?;
+                if let Some(next) = crate::normalize::provider_snapshot_message(&value) {
+                    raw = RawValue::from_string(next.to_string()).ok()?;
+                }
+            }
             Some(IncomingFrame::Session(SessionFrame {
                 kind: peek.kind,
                 request_id,
