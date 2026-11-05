@@ -11,3 +11,4 @@ pub mod search;
 pub mod tasks;
 pub mod terminals;
 pub mod usage;
+pub mod util;

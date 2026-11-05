@@ -3,7 +3,10 @@
 
 pub mod agents;
 pub mod config;
+pub mod checkout;
+pub mod ci;
 pub mod connection;
+pub mod files;
 pub mod hosts;
 pub mod hostview;
 pub mod kbd;
@@ -16,7 +19,11 @@ pub mod sessions;
 pub mod signin;
 pub mod storage;
 pub mod timeline;
+pub mod scm;
+pub mod tasks;
+pub mod terminals;
 pub mod ui;
+pub mod usage;
 
 use std::cell::Cell;
 

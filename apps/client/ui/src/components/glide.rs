@@ -26,10 +26,14 @@ pub fn use_glide(
     let rect = RwSignal::new(None::<GlideBox>);
     let animate = RwSignal::new(false);
     let measure = move || {
-        let Some(root) = container.get_untracked() else {
+        // A frame queued before the owner went away finds its signals disposed.
+        let (Some(root), Some(k)) = (
+            container.try_get_untracked().flatten(),
+            key.try_get_untracked(),
+        ) else {
             return;
         };
-        let k = key.get_untracked();
+
         let found = root
             .query_selector(&format!("[data-glide=\"{k}\"]"))
             .ok()
@@ -41,10 +45,12 @@ pub fn use_glide(
             width: e.offset_width() as f64,
             height: e.offset_height() as f64,
         });
-        if rect.get_untracked().is_some() && !animate.get_untracked() {
+        if rect.try_get_untracked().flatten().is_some()
+            && animate.try_get_untracked() == Some(false)
+        {
             animate.set(true);
         }
-        if next != rect.get_untracked() {
+        if rect.try_get_untracked().is_some_and(|r| r != next) {
             rect.set(next);
         }
     };
