@@ -318,7 +318,12 @@ fn TerminalRow(
                             Some(h) => {
                                 if let Some(c) = app.conn.client_of(&h) {
                                     spawn_local(async move {
-                                        let _ = c.kill_terminal(&id).await;
+                                        if let Err(e) = c.kill_terminal(&id).await {
+                                            terminal_failed(
+                                                "Could not close the terminal",
+                                                e.to_string(),
+                                            );
+                                        }
                                     });
                                 }
                             }
@@ -469,7 +474,9 @@ pub fn TerminalSurface(terminal_id: String) -> impl IntoView {
                 spawn_local(async move {
                     let restore =
                         json!({ "mode": "full-snapshot", "size": { "rows": rows, "cols": cols } });
-                    let _ = c.subscribe_terminal(&tid, Some(restore)).await;
+                    if let Err(e) = c.subscribe_terminal(&tid, Some(restore)).await {
+                        terminal_failed("Could not attach to the terminal", e.to_string());
+                    }
                     send_size();
                 });
             },
@@ -559,6 +566,12 @@ pub fn TerminalSurface(terminal_id: String) -> impl IntoView {
             }}
         </div>
     }
+}
+
+fn terminal_failed(title: &str, err: String) {
+    state::get()
+        .toasts
+        .push(Toast::new(ToastKind::Error, title.to_owned()).detail(err));
 }
 
 fn upload_failed(name: &str, err: String) {

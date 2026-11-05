@@ -669,8 +669,13 @@ pub fn NewSession() -> impl IntoView {
             }
         });
         spawn_local(async move {
-            let ps = ready_providers(&c2).await.unwrap_or_default();
-            f.providers.set(Some(ps));
+            match ready_providers(&c2).await {
+                Ok(ps) => f.providers.set(Some(ps)),
+                Err(e) => {
+                    f.providers.set(Some(Vec::new()));
+                    f.error.set(Some(format!("Could not load providers: {e}")));
+                }
+            }
         });
     });
     // Start from: the picked checkout's branches.
@@ -694,7 +699,10 @@ pub fn NewSession() -> impl IntoView {
                     }
                     f.branches.set(Some(list));
                 }
-                Err(_) => f.branches.set(Some(Vec::new())),
+                Err(e) => {
+                    f.branches.set(Some(Vec::new()));
+                    f.error.set(Some(format!("Could not list branches: {e}")));
+                }
             }
         });
     });
