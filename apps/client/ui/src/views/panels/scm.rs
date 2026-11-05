@@ -564,7 +564,7 @@ pub fn DiffView(
                                 let parent = crate::state::files::parent_of(&f.path);
                                 view! {
                                     <span class="t-mono pn-diff-meta">
-                                        {format!("{parent} · ")}
+                                        {(!parent.is_empty() && parent != ".").then(|| format!("{parent} · "))}
                                         <span class="mint">{format!("+{}", f.additions)}</span>" "
                                         <span class="coral">{format!("-{}", f.deletions)}</span>
                                         {format!(" · {} of {}", i + 1, plural(n, "file"))}

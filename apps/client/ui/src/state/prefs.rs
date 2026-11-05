@@ -158,6 +158,11 @@ impl Prefs {
             .expect("pref has a default of this type")
     }
 
+    /// [`Prefs::get`] without subscribing: for values read once at setup.
+    pub fn get_untracked<T: DeserializeOwned>(&self, key: &str) -> T {
+        untrack(|| self.get(key))
+    }
+
     pub fn set<T: Serialize>(&self, key: &str, value: T) {
         if let Ok(v) = serde_json::to_value(value) {
             self.all.update(|m| {

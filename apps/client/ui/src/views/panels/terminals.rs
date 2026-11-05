@@ -416,7 +416,7 @@ pub fn TerminalDetail(
 #[component]
 pub fn TerminalSurface(terminal_id: String) -> impl IntoView {
     let app = state::get();
-    let scrollback: u64 = app.prefs.get::<f64>("scrollback").max(100.0) as u64;
+    let scrollback: u64 = app.prefs.get_untracked::<f64>("scrollback").max(100.0) as u64;
     let handle = TerminalHandle::new(24, 80, scrollback as usize);
     let client = StoredValue::new_local(app.conn.client());
     let id = StoredValue::new(terminal_id.clone());

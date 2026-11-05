@@ -44,13 +44,12 @@ fn err_line(e: RwSignal<Option<String>>) -> impl IntoView {
 #[component]
 pub fn SessionSheets() -> impl IntoView {
     view! {
-        <leptos::portal::Portal>
-            <LabelsDialog />
-            <RenameDialog />
-            <ArchiveDialog />
-            <ImportDialog />
-            <AddProjectDialog />
-        </leptos::portal::Portal>
+        // Each dialog's `Sheet` portals itself to <body>.
+        <LabelsDialog />
+        <RenameDialog />
+        <ArchiveDialog />
+        <ImportDialog />
+        <AddProjectDialog />
     }
 }
 
