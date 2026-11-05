@@ -5,6 +5,9 @@ use frogg_client_core::{ws, ClientConfig, ConnectionState, DaemonClient, Event};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
+mod native;
+mod views;
+
 type Entry = outbound::FetchAgentsResponsePayloadEntriesItem;
 
 const URL_KEY: &str = "frogg.daemonUrl";

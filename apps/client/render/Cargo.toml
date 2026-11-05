@@ -1,0 +1,10 @@
+[package]
+name = "frogg-render"
+description = "Frogg content renderers: markdown, syntax highlighting, diffs, terminal (Leptos)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+leptos.workspace = true

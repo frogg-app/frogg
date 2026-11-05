@@ -1088,11 +1088,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "frogg-render"
+version = "1.6.14-next.3"
+dependencies = [
+ "leptos",
+]
+
+[[package]]
 name = "frogg-ui"
 version = "1.6.14-next.3"
 dependencies = [
  "console_error_panic_hook",
  "frogg-client-core",
+ "frogg-render",
  "js-sys",
  "leptos",
  "serde_json",
