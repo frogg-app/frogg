@@ -64,7 +64,8 @@ env:
   RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
   # Frogg Next (-next.N) ships its own daemon (port 9969, ~/.frogg-next, `frogg-next` CLI) so it
   # runs beside the stable one: every daemon build, bundle, image and install script of a -next.N
-  # tag resolves the brand's `next` daemon identity. The `ui` job opts back out (see there).
+  # tag resolves the brand's `next` daemon identity, the web UI export included (the daemon build
+  # refuses a web export whose branding differs from its own).
   FROGG_BRAND_DAEMON: ${{ contains(github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name, '-next.') && 'next' || 'stable' }}
 
 jobs:
@@ -360,9 +361,6 @@ jobs:
         brand_channel: ${{ fromJSON(needs.meta.outputs.ui_channels) }}
     env:
       FROGG_BRAND_CHANNEL: ${{ matrix.brand_channel }}
-      # The web client a daemon serves connects to its own origin, so it carries no daemon
-      # identity; the stable brand keeps the classic app's Frogg theme on a Frogg Next daemon too.
-      FROGG_BRAND_DAEMON: stable
     steps:
       - uses: actions/checkout@v7
         with:

@@ -29,7 +29,7 @@ desktop and Android follow stable only), 2164f316 (side-by-side beta daemon reti
   port 9969 (web 9968), `~/.frogg-next`, the `frogg-next` CLI, `FROGG_NEXT_` env prefix,
   `frogg-next-daemon` service, `frogg-next-daemon-<v>-<os>-<arch>` bundles. It comes from the
   brand's `next` daemon keys (`brand prepare --daemon next`, `FROGG_BRAND_DAEMON=next`, set by
-  `release.yml` on every `-next.N` job except the web UI export). Its install script defaults to
+  `release.yml` on every `-next.N` job). Its install script defaults to
   the `next` channel and its self-update follows `-next.N` only. Frogg Next looks for
   `127.0.0.1:9969` by default. `-next.1` to `-next.3` daemons carry the stable identity. This
   replaces "one daemon" below for the `next` line.

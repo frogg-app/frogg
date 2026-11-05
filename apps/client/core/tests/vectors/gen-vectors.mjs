@@ -4,7 +4,9 @@
 import { createRequire } from "node:module";
 import { createHash } from "node:crypto";
 
-const require = createRequire(new URL("../../../../../packages/relay/package.json", import.meta.url));
+const require = createRequire(
+  new URL("../../../../../packages/relay/package.json", import.meta.url),
+);
 const nacl = require("tweetnacl");
 
 const b64 = (bytes) => Buffer.from(bytes).toString("base64");

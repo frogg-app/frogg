@@ -21,4 +21,20 @@ serde_json.workspace = true
 [target.'cfg(all())'.dependencies]
 wasm-bindgen-futures = "0.4"
 serde = { workspace = true }
-web-sys = { version = "0.3", features = ["Document", "Element", "HtmlElement", "HtmlInputElement", "File", "FileList", "Blob", "Navigator", "Clipboard", "Notification", "NotificationOptions", "NotificationPermission", "UrlSearchParams", "EventTarget", "Event"] }
+web-sys = { version = "0.3", features = [
+  "Document",
+  "Element",
+  "HtmlElement",
+  "HtmlInputElement",
+  "File",
+  "FileList",
+  "Blob",
+  "Navigator",
+  "Clipboard",
+  "Notification",
+  "NotificationOptions",
+  "NotificationPermission",
+  "UrlSearchParams",
+  "EventTarget",
+  "Event",
+] }
