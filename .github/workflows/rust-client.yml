@@ -1,0 +1,183 @@
+name: Rust client
+
+# apps/client, the Rust Frogg Next client "Frogg Next RS" (docs/plans/rust-client.md).
+#
+# - check: the UI compiles for wasm32 and the core/render tests pass.
+# - desktop: Tauri bundles for linux-x64 (deb, AppImage), windows-x64 (nsis) and macos-arm64
+#   (dmg, ad-hoc signed). With FROGG_NEXT_RS_UPDATER_KEY set, the updater artifacts (.sig and
+#   frogg-next-rs-latest.json's inputs) are produced too; the release job that publishes the feed
+#   comes later.
+# - android: a universal-ABI release APK, signed with Frogg Next's keystore (or the classic app's)
+#   when the secrets are present, else with the debug key.
+# Every bundle is uploaded as a workflow artifact named frogg-next-rs-<platform>.
+
+on:
+  push:
+    branches: [frogg-next]
+    paths:
+      - apps/client/**
+      - crates/**
+      - .github/workflows/rust-client.yml
+  workflow_dispatch:
+
+concurrency:
+  group: rust-client-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/client
+          key: check
+      - name: UI compiles for wasm32
+        working-directory: apps/client
+        run: cargo check -p frogg-ui --target wasm32-unknown-unknown
+      - name: Core and render tests
+        working-directory: apps/client
+        run: cargo test -p frogg-client-core -p frogg-render
+
+  desktop:
+    needs: check
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux-x64
+            os: ubuntu-22.04
+            bundles: deb,appimage
+          - platform: windows-x64
+            os: windows-latest
+            bundles: nsis
+          - platform: macos-arm64
+            os: macos-latest
+            bundles: dmg
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev \
+            librsvg2-dev libssl-dev patchelf xdg-utils
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/client
+          key: ${{ matrix.platform }}
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: trunk,tauri-cli
+      - name: Build bundles
+        working-directory: apps/client/src-tauri
+        shell: bash
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.FROGG_NEXT_RS_UPDATER_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.FROGG_NEXT_RS_UPDATER_KEY_PASSWORD }}
+        run: |
+          args=(--bundles "${{ matrix.bundles }}" --ci)
+          if [ -n "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+            echo "Updater key present: building updater artifacts."
+            args+=(--config '{"bundle":{"createUpdaterArtifacts":true}}')
+          else
+            echo "No FROGG_NEXT_RS_UPDATER_KEY: bundles only, no updater signatures."
+          fi
+          cargo tauri build "${args[@]}"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: frogg-next-rs-${{ matrix.platform }}
+          if-no-files-found: error
+          path: |
+            apps/client/target/release/bundle/deb/*.deb
+            apps/client/target/release/bundle/appimage/*.AppImage
+            apps/client/target/release/bundle/appimage/*.AppImage.sig
+            apps/client/target/release/bundle/nsis/*.exe
+            apps/client/target/release/bundle/nsis/*.exe.sig
+            apps/client/target/release/bundle/dmg/*.dmg
+            apps/client/target/release/bundle/macos/*.app.tar.gz
+            apps/client/target/release/bundle/macos/*.app.tar.gz.sig
+
+  android:
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools platforms;android-36 build-tools;35.0.0 ndk;27.2.12479018
+          log-accepted-android-sdk-licenses: false
+      - uses: gradle/actions/setup-gradle@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown,aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/client
+          key: android
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: trunk,tauri-cli
+      # Frogg Next's keystore wins when it and its password are set, else the classic app's,
+      # else the APK is signed with the debug key (build.gradle.kts reads keystore.properties).
+      - name: Signing
+        env:
+          NEXT_KEYSTORE_BASE64: ${{ secrets.FROGG_NEXT_ANDROID_KEYSTORE_BASE64 }}
+          NEXT_KEYSTORE_PASSWORD: ${{ secrets.FROGG_NEXT_ANDROID_KEYSTORE_PASSWORD }}
+          NEXT_KEY_ALIAS: ${{ secrets.FROGG_NEXT_ANDROID_KEY_ALIAS }}
+          NEXT_KEY_PASSWORD: ${{ secrets.FROGG_NEXT_ANDROID_KEY_PASSWORD }}
+          CLASSIC_KEYSTORE_BASE64: ${{ secrets.FROGG_ANDROID_KEYSTORE_BASE64 }}
+          CLASSIC_KEYSTORE_PASSWORD: ${{ secrets.FROGG_ANDROID_KEYSTORE_PASSWORD }}
+          CLASSIC_KEY_ALIAS: ${{ secrets.FROGG_ANDROID_KEY_ALIAS }}
+          CLASSIC_KEY_PASSWORD: ${{ secrets.FROGG_ANDROID_KEY_PASSWORD }}
+        run: |
+          keystore="$RUNNER_TEMP/frogg-next-rs.keystore"
+          props=apps/client/src-tauri/gen/android/keystore.properties
+          if [ -n "$NEXT_KEYSTORE_BASE64" ] && [ -n "$NEXT_KEYSTORE_PASSWORD" ]; then
+            echo "Signing with the Frogg Next keystore (FROGG_NEXT_ANDROID_*)."
+            echo "$NEXT_KEYSTORE_BASE64" | base64 -d > "$keystore"
+            alias="${NEXT_KEY_ALIAS:-frogg-next}"; store_pw="$NEXT_KEYSTORE_PASSWORD"
+            key_pw="${NEXT_KEY_PASSWORD:-$NEXT_KEYSTORE_PASSWORD}"
+          elif [ -n "$CLASSIC_KEYSTORE_BASE64" ] && [ -n "$CLASSIC_KEYSTORE_PASSWORD" ]; then
+            echo "Signing with the classic app's keystore (FROGG_ANDROID_*)."
+            echo "$CLASSIC_KEYSTORE_BASE64" | base64 -d > "$keystore"
+            alias="${CLASSIC_KEY_ALIAS:-frogg}"; store_pw="$CLASSIC_KEYSTORE_PASSWORD"
+            key_pw="${CLASSIC_KEY_PASSWORD:-$CLASSIC_KEYSTORE_PASSWORD}"
+          else
+            echo "No Android signing secrets: the APK is debug-signed."
+            exit 0
+          fi
+          {
+            echo "storeFile=$keystore"
+            echo "storePassword=$store_pw"
+            echo "keyAlias=$alias"
+            echo "keyPassword=$key_pw"
+          } > "$props"
+      - name: Build APK
+        working-directory: apps/client/src-tauri
+        run: |
+          export NDK_HOME="$ANDROID_HOME/ndk/27.2.12479018"
+          cargo tauri android build --apk --ci
+      - uses: actions/upload-artifact@v7
+        with:
+          name: frogg-next-rs-android
+          if-no-files-found: error
+          path: apps/client/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
