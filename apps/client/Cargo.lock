@@ -1522,6 +1522,7 @@ dependencies = [
  "console_error_panic_hook",
  "frogg-client-core",
  "frogg-render",
+ "futures",
  "js-sys",
  "leptos",
  "serde",

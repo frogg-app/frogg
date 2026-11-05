@@ -21,11 +21,14 @@ pub struct ManualScheduler {
     inner: Rc<RefCell<ManualInner>>,
 }
 
+/// id, due time, callback.
+type ManualTimer = (TimerId, u64, Box<dyn FnOnce()>);
+
 #[derive(Default)]
 struct ManualInner {
     now: u64,
     next_id: TimerId,
-    timers: Vec<(TimerId, u64, Box<dyn FnOnce()>)>,
+    timers: Vec<ManualTimer>,
     #[cfg(not(target_arch = "wasm32"))]
     started: Option<std::time::Instant>,
 }
@@ -134,6 +137,8 @@ mod browser {
 
     #[derive(Default)]
     struct BrowserInner {
+        // timer id -> (browser handle, closure)
+        #[allow(clippy::type_complexity)]
         live: HashMap<TimerId, (i32, Closure<dyn FnMut()>)>,
         spent: Vec<Closure<dyn FnMut()>>,
         firing: bool,

@@ -1,0 +1,642 @@
+/* Primitives (apps/client/ui/src/components). */
+
+/* ---- Cut: chamfered fill and stroke layers (Cut.tsx) ---- */
+.cut {
+  --c: 8px;
+  --cut-bg: transparent;
+  --cut-line: transparent;
+  position: relative;
+  isolation: isolate;
+}
+.cut::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--cut-bg);
+  clip-path: polygon(
+    var(--c) 0,
+    100% 0,
+    100% calc(100% - var(--c)),
+    calc(100% - var(--c)) 100%,
+    0 100%,
+    0 var(--c)
+  );
+  transition: background 120ms ease-out;
+}
+.cut.flip::before {
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--c)) 0,
+    100% var(--c),
+    100% 100%,
+    var(--c) 100%,
+    0 calc(100% - var(--c))
+  );
+}
+/* A 1px ring along the whole outline, diagonals included. */
+.cut-stroke::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--cut-line);
+  --n: calc(var(--c) + 0.414px);
+  --f: calc(100% - var(--c) - 0.414px);
+  clip-path: polygon(
+    evenodd,
+    var(--c) 0,
+    100% 0,
+    100% calc(100% - var(--c)),
+    calc(100% - var(--c)) 100%,
+    0 100%,
+    0 var(--c),
+    var(--c) 0,
+    var(--n) 1px,
+    calc(100% - 1px) 1px,
+    calc(100% - 1px) var(--f),
+    var(--f) calc(100% - 1px),
+    1px calc(100% - 1px),
+    1px var(--n),
+    var(--n) 1px
+  );
+  transition: background 120ms ease-out;
+}
+.cut-stroke.flip::after {
+  clip-path: polygon(
+    evenodd,
+    0 0,
+    calc(100% - var(--c)) 0,
+    100% var(--c),
+    100% 100%,
+    var(--c) 100%,
+    0 calc(100% - var(--c)),
+    0 0,
+    1px 1px,
+    var(--f) 1px,
+    calc(100% - 1px) var(--n),
+    calc(100% - 1px) calc(100% - 1px),
+    var(--n) calc(100% - 1px),
+    1px var(--f),
+    1px 1px
+  );
+}
+
+/* ---- Logo (Logo.tsx, ripple) ---- */
+.logo {
+  display: block;
+  flex: none;
+}
+.logo-face {
+  fill: var(--cyan2);
+  opacity: 0;
+  pointer-events: none;
+}
+.logo-ripple:hover .logo-face,
+:hover > .logo-ripple .logo-face {
+  animation: logo-ripple 1.12s ease-in-out infinite;
+}
+.logo-ripple:active .logo-face {
+  animation: logo-ripple 0.42s ease-out 1;
+}
+@keyframes logo-ripple {
+  0% {
+    opacity: 0;
+    fill: var(--deep);
+  }
+  20% {
+    opacity: 0.55;
+    fill: var(--cyan2);
+  }
+  45% {
+    opacity: 0.25;
+    fill: var(--mint);
+  }
+  70%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ---- Status glyphs (StatusGlyph.tsx) ---- */
+.glyph {
+  --g: 9px;
+  flex: none;
+  display: inline-block;
+  width: var(--g);
+  height: var(--g);
+}
+.glyph-needs {
+  background: var(--amber);
+  transform: rotate(45deg) scale(0.86);
+}
+.glyph-failed {
+  background: var(--coral);
+}
+.glyph-review {
+  background: var(--mint);
+  border-radius: 50%;
+}
+.glyph-working {
+  width: 0;
+  height: 0;
+  border-top: calc(var(--g) / 2) solid transparent;
+  border-bottom: calc(var(--g) / 2) solid transparent;
+  border-left: var(--g) solid var(--cyan);
+  animation: breathe 1.6s ease-in-out infinite both;
+}
+.glyph-working.still {
+  animation: none;
+}
+.glyph-idle {
+  width: calc(var(--g) - 2px);
+  height: calc(var(--g) - 2px);
+  margin: 1px;
+  border: 1px solid var(--faint);
+  transform: rotate(45deg);
+}
+
+/* ---- Badges, kbd hints, icon buttons ---- */
+.badge {
+  position: absolute;
+  right: 1px;
+  top: 1px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  background: var(--amber);
+  color: var(--on-warn);
+  font: 600 9px/14px var(--font-mono);
+  text-align: center;
+}
+.kbd {
+  font-size: 10px;
+  padding: 0 5px;
+  border: 1px solid var(--line2);
+  color: var(--muted);
+}
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  color: var(--muted);
+  transition: color 120ms ease-out;
+}
+.icon-btn:hover {
+  color: var(--text);
+}
+.count-up {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Button (Button.tsx) ---- */
+.btn {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 6px 11px;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  user-select: none;
+}
+.btn.grow {
+  flex: 1;
+}
+.btn.disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.btn-l {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.btn-k {
+  font-size: 9.5px;
+  padding: 0 4px;
+  border: 1px solid var(--line2);
+}
+.btn-stripe {
+  display: none;
+}
+.btn-ghost {
+  --cut-bg: color-mix(in srgb, var(--ink) 5%, transparent);
+  color: var(--text);
+}
+.btn-ghost:hover {
+  --cut-bg: color-mix(in srgb, var(--ink) 10%, transparent);
+}
+.btn-ghost:active {
+  --cut-bg: color-mix(in srgb, var(--ink) 14%, transparent);
+}
+.btn-danger {
+  --cut-bg: color-mix(in srgb, var(--coral) 8%, transparent);
+  color: var(--coral);
+}
+.btn-danger:hover {
+  --cut-bg: color-mix(in srgb, var(--coral) 16%, transparent);
+}
+.btn-gradient {
+  --cut-bg: linear-gradient(135deg, var(--cyan2), var(--cyan) 55%, var(--deep));
+  color: var(--on-accent);
+}
+.btn-gradient:hover::before {
+  filter: brightness(1.1);
+}
+.btn-gradient:active {
+  --cut-bg: var(--cyan-dim);
+}
+.btn-solid {
+  --cut-bg: var(--cyan);
+  color: var(--on-accent);
+}
+.btn-solid:hover {
+  --cut-bg: var(--cyan2);
+}
+.btn-solid:active {
+  --cut-bg: var(--cyan-dim);
+}
+.btn-mint {
+  --cut-bg: var(--mint);
+  color: var(--on-accent);
+}
+.btn-mint:active {
+  --cut-bg: var(--mint-dim);
+}
+.btn-outline {
+  color: var(--cyan2);
+  box-shadow: inset 0 0 0 1px var(--cyan);
+  padding: 5px 10px;
+}
+.btn-outline:hover {
+  --cut-bg: var(--cyan-wash);
+}
+.btn-bar {
+  --cut-bg: var(--raise);
+  color: var(--text);
+  padding-left: 13px;
+}
+.btn-bar .btn-stripe {
+  display: block;
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--cyan);
+}
+.btn-bar:hover {
+  --cut-bg: var(--panel);
+}
+.btn-bracket {
+  --cut-bg: var(--raise);
+  color: var(--cyan2);
+}
+.btn-bracket:hover {
+  --cut-bg: var(--cyan-wash);
+}
+.btn-tint {
+  --cut-bg: var(--cyan-wash);
+  color: var(--cyan2);
+}
+.btn-tint:hover {
+  --cut-bg: var(--cyan-wash2);
+}
+.btn-tint:active {
+  --cut-bg: var(--cyan-wash3);
+}
+
+/* ---- Seg ---- */
+.seg {
+  position: relative;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+}
+.seg-pill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  background: color-mix(in srgb, var(--cyan2) 12%, transparent);
+  box-shadow: inset 0 -1px 0 var(--cyan);
+  pointer-events: none;
+}
+.seg-opt {
+  position: relative;
+  flex: 1;
+  padding: 6px 12px;
+  font-size: 12.5px;
+  color: var(--faint);
+  text-align: center;
+  white-space: nowrap;
+  transition: color 200ms ease-out;
+}
+.seg-opt:hover {
+  color: var(--text);
+}
+.seg-opt.on {
+  color: var(--cyan2);
+}
+
+/* ---- Field / inputs (AddHost.tsx, Select.tsx field) ---- */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.field-hint {
+  font-size: 11.5px;
+  color: var(--faint);
+}
+.field-err {
+  font-size: 11.5px;
+  color: var(--coral);
+}
+.input,
+.field-box {
+  width: 100%;
+  padding: 9px 12px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-size: 13.5px;
+  outline: none;
+  transition: border-color 120ms ease-out;
+}
+.input.t-mono {
+  font-size: 12.5px;
+  color: var(--text);
+}
+.input:hover,
+.field-box:hover {
+  border-color: var(--line2);
+}
+.input:focus {
+  border-color: color-mix(in srgb, var(--cyan) 60%, transparent);
+}
+.input::placeholder {
+  color: var(--faint);
+}
+
+/* ---- Skeleton (Skeleton.tsx) ---- */
+.skel-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 8px;
+  padding: 7px 8px;
+  animation: fade 240ms ease-out both;
+}
+.skel-chip {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--wash2);
+}
+.skel-bar {
+  height: 9px;
+  border-radius: 2px;
+  background: var(--wash2);
+}
+.sweep {
+  background-image: linear-gradient(
+    90deg,
+    var(--wash2) 0%,
+    var(--wash2) 35%,
+    var(--wash3) 50%,
+    var(--wash2) 65%,
+    var(--wash2) 100%
+  );
+  background-size: 200% 100%;
+  background-attachment: fixed;
+  animation: shimmer 1.6s linear infinite;
+}
+
+/* ---- Brackets (Brackets.tsx, in place) ---- */
+.brackets {
+  --len: 7px;
+  --o: 5px;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms ease-in;
+}
+.brackets .bk {
+  position: absolute;
+  width: var(--len);
+  height: var(--len);
+  border-color: var(--cyan2);
+  border-style: solid;
+  border-width: 0;
+  transition: transform 120ms ease-in;
+}
+.brackets .tl {
+  left: 0;
+  top: 0;
+  border-left-width: 1.5px;
+  border-top-width: 1.5px;
+  transform: translate(3px, 3px);
+}
+.brackets .br {
+  right: 0;
+  bottom: 0;
+  border-right-width: 1.5px;
+  border-bottom-width: 1.5px;
+  transform: translate(-3px, -3px);
+}
+.brackets .tr {
+  right: 0;
+  top: 0;
+  border-right-width: 1.5px;
+  border-top-width: 1.5px;
+  transform: translate(-3px, 3px);
+}
+.brackets .bl {
+  left: 0;
+  bottom: 0;
+  border-left-width: 1.5px;
+  border-bottom-width: 1.5px;
+  transform: translate(3px, -3px);
+}
+.brackets.on {
+  opacity: 1;
+  transition: opacity 140ms var(--ease);
+}
+.brackets.on .bk {
+  transform: none;
+  transition: transform 140ms cubic-bezier(0.34, 1.8, 0.64, 1);
+}
+
+/* ---- Overlays: layer, scrim, sheet, floating, menu, select ---- */
+.layer {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+}
+.layer.closing {
+  pointer-events: none;
+}
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--scrim);
+}
+.scrim.blur {
+  background: color-mix(in srgb, var(--bg) 60%, transparent);
+  backdrop-filter: blur(6px);
+}
+.sheet {
+  --cut-bg: var(--panel);
+  --cut-line: var(--line2);
+  position: relative;
+  width: 100%;
+  max-width: var(--w);
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+  filter: drop-shadow(0 16px 40px color-mix(in srgb, var(--shadow) 55%, transparent));
+}
+.sheet.phone {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-width: none;
+  max-height: 88vh;
+  --cut-line: transparent;
+  --cut-bg: var(--raise);
+  box-shadow: inset 0 1px 0 var(--cyan);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.sheet.phone::before {
+  clip-path: none;
+}
+.sheet-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px 6px 18px;
+}
+.sheet-title {
+  flex: 1;
+  font-size: 16px;
+}
+.sheet-body {
+  overflow: auto;
+  padding: 8px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.floating-catch {
+  position: fixed;
+  inset: 0;
+  z-index: 59;
+}
+.floating {
+  position: absolute;
+  z-index: 60;
+  min-width: 180px;
+  max-height: 300px;
+  overflow: auto;
+  padding: 4px 0;
+  background: var(--raise);
+  border: 1px solid var(--line2);
+  box-shadow: 0 16px 40px color-mix(in srgb, var(--shadow) 67%, transparent);
+}
+.floating.down {
+  top: calc(100% + 4px);
+  transform-origin: top;
+}
+.floating.up {
+  bottom: calc(100% + 4px);
+  transform-origin: bottom;
+}
+.floating.left {
+  left: 0;
+}
+.floating.right {
+  right: 0;
+}
+.menu-item,
+.opt {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 13.5px;
+  color: var(--text);
+}
+.menu-item:hover,
+.opt:hover {
+  background: var(--cyan-wash);
+}
+.menu-item.danger {
+  color: var(--coral);
+}
+.menu-label {
+  flex: 1;
+}
+.menu-hint {
+  font-size: 11px;
+}
+.select-wrap {
+  position: relative;
+}
+.select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+}
+.select.field-box {
+  padding: 7px 10px;
+}
+.select.chip {
+  padding: 4px 8px;
+  background: var(--wash2);
+  font-size: 11.5px;
+}
+.select.chip:hover {
+  background: var(--wash3);
+}
+.select-text {
+  flex: 1;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.select-text.placeholder {
+  color: var(--faint);
+}
+.select-menu {
+  width: 100%;
+}
+.opt-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.opt-hint {
+  color: var(--faint);
+  font-size: 11.5px;
+  margin-top: 2px;
+}
+.opt-check {
+  color: var(--cyan2);
+}

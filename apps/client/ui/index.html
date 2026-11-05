@@ -6,6 +6,15 @@
     <title>Frogg</title>
     <link data-trunk rel="css" href="styles/theme.css" />
     <link data-trunk rel="css" href="styles/app.css" />
+    <link data-trunk rel="css" href="styles/components.css" />
+    <link data-trunk rel="css" href="styles/shell.css" />
+    <link data-trunk rel="css" href="../render/styles/render.css" />
+    <link
+      data-trunk
+      rel="copy-dir"
+      href="../../ui-next/assets/fonts"
+      data-target-path="assets/fonts"
+    />
     <link data-trunk rel="rust" data-wasm-opt="z" data-bin="frogg-ui" />
     <!-- Splash (native stream): painted before the wasm loads, hidden by CSS alone once the app
          mounts its first element into <body>. The shell paints the window in the saved theme. -->
