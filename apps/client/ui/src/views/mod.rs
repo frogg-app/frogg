@@ -4,6 +4,7 @@
 
 pub mod chat;
 pub mod flows;
+pub mod new_session;
 pub mod panels;
 pub mod sessions;
 pub mod settings;

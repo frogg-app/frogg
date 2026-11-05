@@ -6,6 +6,8 @@ pub mod connection;
 pub mod hosts;
 pub mod kbd;
 pub mod prefs;
+pub mod projects;
+pub mod sessions;
 pub mod storage;
 pub mod ui;
 
