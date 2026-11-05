@@ -79,16 +79,28 @@ impl Upstream {
         }
     }
 
-    /// The next data frame from the Node daemon; `None` once it has closed. Ping/Pong are
-    /// answered by the transport itself.
-    pub async fn recv(&mut self) -> Option<Frame> {
+    /// The next data frame from the Node daemon. Ping/Pong are answered by the transport
+    /// itself.
+    pub async fn recv(&mut self) -> Received {
         loop {
-            match self.stream.next().await? {
-                Ok(WsMessage::Text(text)) => return Some(Frame::Text(text)),
-                Ok(WsMessage::Binary(bytes)) => return Some(Frame::Binary(bytes)),
-                Ok(WsMessage::Close(_)) | Err(_) => return None,
-                Ok(_) => continue,
+            match self.stream.next().await {
+                Some(Ok(WsMessage::Text(text))) => return Received::Frame(Frame::Text(text)),
+                Some(Ok(WsMessage::Binary(bytes))) => return Received::Frame(Frame::Binary(bytes)),
+                Some(Ok(WsMessage::Close(frame))) => {
+                    return Received::Closed(
+                        frame.map(|f| (u16::from(f.code), f.reason.into_owned())),
+                    )
+                }
+                Some(Err(_)) | None => return Received::Closed(None),
+                Some(Ok(_)) => continue,
             }
         }
     }
+}
+
+pub enum Received {
+    Frame(Frame),
+    /// The Node daemon closed the socket, with its close code and reason when it sent one
+    /// (4401 "Password required" and the like, which clients show and classify).
+    Closed(Option<(u16, String)>),
 }

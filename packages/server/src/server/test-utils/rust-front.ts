@@ -67,9 +67,14 @@ export async function startRustFront(input: {
       FROGG_LISTEN: `127.0.0.1:${port}`,
       FROGG_RS_UPSTREAM: `ws://127.0.0.1:${input.upstreamPort}/ws`,
       RUST_LOG: process.env.RUST_LOG ?? "error",
+      // A test that fails before closing its daemon must not leave the front running.
+      FROGG_RS_EXIT_WITH_PARENT: "1",
     },
     stdio: ["ignore", "ignore", "inherit"],
   });
+  const killOnExit = () => child.kill("SIGKILL");
+  process.once("exit", killOnExit);
+  child.once("exit", () => process.off("exit", killOnExit));
   await waitForPort(port, child, 10_000);
   return {
     port,

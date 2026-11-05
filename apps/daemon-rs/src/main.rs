@@ -151,6 +151,21 @@ async fn main() -> anyhow::Result<()> {
         "Server listening"
     );
 
+    // Opt-in for harnesses that spawn the front: leave when the parent is gone.
+    #[cfg(unix)]
+    if std::env::var("FROGG_RS_EXIT_WITH_PARENT").is_ok_and(|v| v == "1") {
+        let parent = unsafe { libc::getppid() };
+        tokio::spawn(async move {
+            let mut tick = tokio::time::interval(std::time::Duration::from_secs(1));
+            loop {
+                tick.tick().await;
+                if unsafe { libc::getppid() } != parent {
+                    std::process::exit(0);
+                }
+            }
+        });
+    }
+
     // Clients can connect from here on; the worker starts behind the listener.
     let (done_tx, done_rx) = oneshot::channel::<i32>();
     #[cfg(unix)]
@@ -603,29 +618,38 @@ async fn ws_upgrade(
 
     let protocol_header = header(&headers, "sec-websocket-protocol").map(str::to_owned);
     let token = auth::extract_ws_bearer_token(protocol_header.as_deref());
+    // Refusals follow Node: the upgrade completes and the socket closes with 4401 and a
+    // reason clients show ("Password required", "Pairing required"). Behind a Node daemon the
+    // front does not refuse at all; the connection becomes passthrough-only (nothing served
+    // natively) and Node decides, so a credential the front cannot check (a password set
+    // since it read config.json) behaves exactly as it would without the front.
     let role = match state
         .auth
         .current()
         .authorize(state.locality(peer), token.as_deref())
     {
-        auth::Decision::Ok(role) => role,
+        auth::Decision::Ok(role) => Some(role),
+        decision if state.expects_upstream => {
+            tracing::debug!(?decision, %peer, "unauthorized here; Node decides");
+            None
+        }
         decision => {
             tracing::warn!(?decision, %peer, "rejected websocket upgrade");
-            return (StatusCode::UNAUTHORIZED, "Unauthorized").into_response();
+            let reason = auth_close_reason(&decision);
+            return select_protocol(ws, protocol_header.as_deref()).on_upgrade(
+                move |mut socket| async move {
+                    let _ = socket
+                        .send(Message::Close(Some(axum::extract::ws::CloseFrame {
+                            code: WS_CLOSE_DAEMON_AUTH_FAILED,
+                            reason: reason.into(),
+                        })))
+                        .await;
+                },
+            );
         }
     };
 
-    // Echo back the exact subprotocol the client offered, or the upgrade fails.
-    let selected = protocol_header.as_deref().and_then(|h| {
-        h.split(',')
-            .map(str::trim)
-            .find(|p| !p.is_empty())
-            .map(str::to_owned)
-    });
-    let ws = match selected {
-        Some(protocol) => ws.protocols([protocol]),
-        None => ws,
-    };
+    let ws = select_protocol(ws, protocol_header.as_deref());
     let client = Client {
         role,
         bearer: token,
@@ -634,9 +658,37 @@ async fn ws_upgrade(
     ws.on_upgrade(move |socket| handle_socket(socket, state, client))
 }
 
+/// `WS_CLOSE_DAEMON_AUTH_FAILED` in websocket-server.ts.
+const WS_CLOSE_DAEMON_AUTH_FAILED: u16 = 4401;
+
+/// `describeAuthCloseReason`: stable strings the CLI and apps classify.
+fn auth_close_reason(decision: &auth::Decision) -> &'static str {
+    match decision {
+        auth::Decision::Unclaimed => "Pairing required",
+        auth::Decision::MissingToken => "Password required",
+        _ => "Incorrect password",
+    }
+}
+
+/// Echo back the exact subprotocol the client offered, or the upgrade fails.
+fn select_protocol(ws: WebSocketUpgrade, header: Option<&str>) -> WebSocketUpgrade {
+    let selected = header.and_then(|h| {
+        h.split(',')
+            .map(str::trim)
+            .find(|p| !p.is_empty())
+            .map(str::to_owned)
+    });
+    match selected {
+        Some(protocol) => ws.protocols([protocol]),
+        None => ws,
+    }
+}
+
 /// Who a connection is: the role it acts with, and what to forward upstream.
 struct Client {
-    role: auth::Role,
+    /// `None`: the front could not authorize it and Node decides. Nothing is served
+    /// natively on such a connection.
+    role: Option<auth::Role>,
     bearer: Option<String>,
     ip: String,
 }
@@ -660,8 +712,7 @@ enum Link {
 async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>, client: Client) {
     // Frames produced locally (native terminal output) rather than by upstream.
     let (local_tx, mut local_rx) = mpsc::channel::<Vec<u8>>(256);
-    let mut terminals = state
-        .native_terminals
+    let mut terminals = (state.native_terminals && client.role.is_some())
         .then(|| terminals::Terminals::new(local_tx));
 
     // Dial in the background, so ping and other native types are answered while the Node
@@ -727,10 +778,24 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>, client: Clie
             // Replies from the Node daemon, relayed verbatim. When the upstream
             // closes, drop the client too so it reconnects rather than talking
             // into a void.
-            frame = recv_upstream(&mut link), if matches!(link, Link::Up(_)) => {
-                let Some(frame) = frame else {
-                    tracing::warn!("upstream daemon closed; disconnecting client so it reconnects");
-                    break;
+            received = recv_upstream(&mut link), if matches!(link, Link::Up(_)) => {
+                let frame = match received {
+                    proxy::Received::Frame(frame) => frame,
+                    proxy::Received::Closed(close) => {
+                        // Pass Node's close code and reason on: an auth refusal (4401) or a
+                        // restart must reach the client as Node sent it.
+                        if let Some((code, reason)) = close {
+                            let _ = socket
+                                .send(Message::Close(Some(axum::extract::ws::CloseFrame {
+                                    code,
+                                    reason: reason.into(),
+                                })))
+                                .await;
+                        } else {
+                            tracing::warn!("upstream daemon closed; disconnecting client so it reconnects");
+                        }
+                        break;
+                    }
                 };
                 let message = match frame {
                     proxy::Frame::Text(text) => Message::Text(text),
@@ -800,7 +865,7 @@ async fn handle_text(
     socket: &mut WebSocket,
     upstream: &mut Link,
     terminals: Option<&mut terminals::Terminals>,
-    role: auth::Role,
+    role: Option<auth::Role>,
 ) -> bool {
     let Some(peeked) = envelope::peek(text) else {
         // Unknown envelope shapes are forwarded rather than rejected: the Node
@@ -812,7 +877,7 @@ async fn handle_text(
     match peeked.kind.as_ref() {
         // Natively handled: a pong needs no Node daemon round trip.
         // WSPongMessageSchema is `{ type: "pong" }` and nothing else.
-        "ping" => {
+        "ping" if role.is_some() => {
             let pong = json!({ "type": "pong" });
             socket.send(Message::Text(pong.to_string())).await.is_ok()
         }
@@ -820,6 +885,7 @@ async fn handle_text(
         "session" => {
             if let (Some(terminals), Some(raw)) = (terminals, peeked.message) {
                 if let Ok(message) = serde_json::from_str::<serde_json::Value>(raw.get()) {
+                    let role = role.unwrap_or(auth::Role::Viewer);
                     if let Some(reply) = native_terminal_reply(&message, terminals, role) {
                         return socket.send(Message::Text(reply.to_string())).await.is_ok();
                     }
@@ -902,7 +968,7 @@ async fn handle_binary(
     bytes: Vec<u8>,
     upstream: &mut Link,
     terminals: Option<&mut terminals::Terminals>,
-    role: auth::Role,
+    role: Option<auth::Role>,
 ) -> bool {
     match frames::decode(&bytes) {
         Some(frames::Frame::Terminal {
@@ -918,7 +984,10 @@ async fn handle_binary(
                     opcode,
                     frames::TerminalOpcode::Input | frames::TerminalOpcode::Resize
                 );
-                if writes && role < auth::Role::Operator && terminals.owns_slot(slot) {
+                if writes
+                    && !matches!(role, Some(r) if r >= auth::Role::Operator)
+                    && terminals.owns_slot(slot)
+                {
                     tracing::debug!(slot, "dropping terminal input from a viewer");
                     return true;
                 }
@@ -938,7 +1007,7 @@ async fn handle_binary(
     deliver(upstream, proxy::Frame::Binary(bytes)).await
 }
 
-async fn recv_upstream(link: &mut Link) -> Option<proxy::Frame> {
+async fn recv_upstream(link: &mut Link) -> proxy::Received {
     match link {
         Link::Up(upstream) => upstream.recv().await,
         _ => std::future::pending().await,
@@ -1155,6 +1224,22 @@ mod tests {
     async fn without_a_node_daemon_unknown_hosts_are_still_refused() {
         let (status, _) = via_front("evil.com", None).await;
         assert_eq!(status, StatusCode::FORBIDDEN);
+    }
+
+    #[test]
+    fn refusals_close_with_nodes_reasons() {
+        assert_eq!(
+            auth_close_reason(&auth::Decision::Unclaimed),
+            "Pairing required"
+        );
+        assert_eq!(
+            auth_close_reason(&auth::Decision::MissingToken),
+            "Password required"
+        );
+        assert_eq!(
+            auth_close_reason(&auth::Decision::InvalidToken),
+            "Incorrect password"
+        );
     }
 
     #[test]
