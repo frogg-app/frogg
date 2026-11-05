@@ -814,6 +814,8 @@ export function resolveConfigFromPersisted(
   const relayEnabledFallback = resolvedOptions.relayEnabledFallback ?? false;
 
   const listen = resolveListenAddress(env, cli, persisted);
+  // Set only by the Rust front (`apps/daemon-rs --supervise`), which binds the public address.
+  const publicListen = brandEnv(brand, env, "PUBLIC_LISTEN")?.trim() || undefined;
   const {
     mcpEnabled,
     mcpInjectIntoAgents,
@@ -863,6 +865,7 @@ export function resolveConfigFromPersisted(
 
   return {
     listen,
+    ...(publicListen ? { publicListen } : {}),
     froggHome,
     desktopManaged: env.FROGG_DESKTOP_MANAGED === "1",
     worktreesRoot: resolveWorktreesRoot(froggHome, persisted),
