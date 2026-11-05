@@ -107,7 +107,7 @@ fn App() -> impl IntoView {
         store(URL_KEY, &target);
         client.with_value(|c| {
             c.disconnect();
-            if let Err(e) = ws::connect(c, &target) {
+            if let Err(e) = ws::connect(c, &target, Default::default()) {
                 error.set(Some(e));
             }
         });
