@@ -2,10 +2,15 @@
 //! that `state::get()` (or `use_context::<AppState>()`) hands out the same `Copy` handle.
 
 pub mod agents;
+pub mod config;
 pub mod connection;
 pub mod hosts;
+pub mod hostview;
 pub mod kbd;
+pub mod look;
+pub mod onboarding;
 pub mod prefs;
+pub mod signin;
 pub mod storage;
 pub mod ui;
 
@@ -75,6 +80,12 @@ pub fn init() -> AppState {
     };
     APP.with(|a| a.set(Some(app)));
     provide_context(app);
+    // Flows stream stores (settings, hosts tool, onboarding, sign-in); they read `get()`.
+    config::init();
+    hostview::init();
+    onboarding::init();
+    signin::init();
+    look::init();
     app
 }
 
