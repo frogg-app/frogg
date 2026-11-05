@@ -1,21 +1,108 @@
-* { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 14px/1.45 var(--font-body); }
-.app { display: flex; flex-direction: column; height: 100%; }
-.bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--bg2); }
-.bar h1 { margin: 0; font: 600 15px var(--font-display); letter-spacing: 0.02em; }
-.bar input { flex: 1; min-width: 0; background: var(--panel); color: var(--text); border: 1px solid var(--line2); border-radius: 6px; padding: 6px 8px; font: 12px var(--font-mono); }
-.bar button { background: var(--raise); color: var(--text); border: 1px solid var(--line2); border-radius: 6px; padding: 6px 10px; cursor: pointer; }
-.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); transition: background 200ms var(--ease); }
-.dot.connected { background: var(--mint); }
-.dot.connecting { background: var(--amber); }
-.dot.disconnected { background: var(--coral); }
-.list { flex: 1; overflow: auto; padding: 6px 0; }
-.row { display: grid; grid-template-columns: 10px 1fr auto; align-items: center; gap: 10px; padding: 8px 14px; border-bottom: 1px solid var(--line); }
-.row .title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.row .meta { color: var(--muted); font: 11px var(--font-mono); }
-.row .status { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
-.row .status.running { background: var(--cyan); }
-.row .status.idle { background: var(--mint); }
-.row .status.error { background: var(--coral); }
-.empty, .error { padding: 24px 14px; color: var(--muted); }
-.error { color: var(--coral); }
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.45 var(--font-body);
+}
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg2);
+}
+.bar h1 {
+  margin: 0;
+  font: 600 15px var(--font-display);
+  letter-spacing: 0.02em;
+}
+.bar input {
+  flex: 1;
+  min-width: 0;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--line2);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font: 12px var(--font-mono);
+}
+.bar button {
+  background: var(--raise);
+  color: var(--text);
+  border: 1px solid var(--line2);
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--faint);
+  transition: background 200ms var(--ease);
+}
+.dot.connected {
+  background: var(--mint);
+}
+.dot.connecting {
+  background: var(--amber);
+}
+.dot.disconnected {
+  background: var(--coral);
+}
+.list {
+  flex: 1;
+  overflow: auto;
+  padding: 6px 0;
+}
+.row {
+  display: grid;
+  grid-template-columns: 10px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.row .title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.row .meta {
+  color: var(--muted);
+  font: 11px var(--font-mono);
+}
+.row .status {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--faint);
+}
+.row .status.running {
+  background: var(--cyan);
+}
+.row .status.idle {
+  background: var(--mint);
+}
+.row .status.error {
+  background: var(--coral);
+}
+.empty,
+.error {
+  padding: 24px 14px;
+  color: var(--muted);
+}
+.error {
+  color: var(--coral);
+}
