@@ -3,7 +3,7 @@
 use leptos::prelude::*;
 use wasm_bindgen::JsCast;
 
-use crate::components::{Button, ButtonKind, Sheet, TextInput};
+use crate::components::{Button, ButtonKind, Sheet as BaseSheet, TextInput};
 
 /// What a confirm dialog asks.
 #[derive(Clone)]
@@ -282,5 +282,37 @@ mod tests {
     fn sizes() {
         assert_eq!(human_size(12), "12 B");
         assert_eq!(human_size(2048), "2.0 KB");
+    }
+}
+
+/// The shared sheet, portalled to `<body>`: a panel's transformed ancestors would otherwise trap
+/// its fixed overlay inside the panel.
+#[component]
+pub fn Sheet(
+    #[prop(into)] open: Signal<bool>,
+    on_close: Callback<()>,
+    #[prop(optional, into)] title: Option<String>,
+    #[prop(default = 460.0)] width: f64,
+    children: ChildrenFn,
+) -> impl IntoView {
+    let children = StoredValue::new(children);
+    let title = StoredValue::new(title);
+    view! {
+        <leptos::portal::Portal>
+            {move || match title.get_value() {
+                Some(t) => view! {
+                    <BaseSheet open=open on_close=on_close title=t width=width>
+                        {move || children.with_value(|c| c())}
+                    </BaseSheet>
+                }
+                .into_any(),
+                None => view! {
+                    <BaseSheet open=open on_close=on_close width=width>
+                        {move || children.with_value(|c| c())}
+                    </BaseSheet>
+                }
+                .into_any(),
+            }}
+        </leptos::portal::Portal>
     }
 }

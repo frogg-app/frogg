@@ -10,6 +10,7 @@ pub mod kbd;
 pub mod prefs;
 pub mod scm;
 pub mod storage;
+pub mod tasks;
 pub mod terminals;
 pub mod ui;
 
