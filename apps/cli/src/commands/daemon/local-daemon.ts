@@ -9,6 +9,7 @@ import treeKill from "tree-kill";
 import { stopOwnedDaemonService } from "./service/stop.js";
 import { tryConnectToDaemon } from "../../utils/client.js";
 import { resolveConnectableTcpHost } from "./listen-target.js";
+import { resolveRustFrontLaunch, type DaemonLaunchCommand } from "./rust-front.js";
 
 export {
   normalizeListenTargetForConnect,
@@ -264,6 +265,27 @@ function buildChildEnv(options: DaemonStartOptions): NodeJS.ProcessEnv {
     childEnv[brandEnvKey("WEB_UI_ENABLED")] = "false";
   }
   return childEnv;
+}
+
+/** The Node supervisor, or the opt-in Rust front when `<PREFIX>_RS_FRONT=1`. */
+function resolveLaunchCommand(
+  runnerEntry: string,
+  options: DaemonStartOptions,
+  env: NodeJS.ProcessEnv,
+): DaemonLaunchCommand {
+  const workerArgs = buildRunnerArgs(options);
+  return (
+    resolveRustFrontLaunch({
+      env,
+      envPrefix: brand.envPrefix,
+      runnerEntry,
+      workerArgs,
+      nodePath: process.execPath,
+    }) ?? {
+      command: process.execPath,
+      args: [...process.execArgv, runnerEntry, ...workerArgs],
+    }
+  );
 }
 
 function resolveServerRunnerFromDir(currentDir: string): string | null {
@@ -706,16 +728,13 @@ export async function startLocalDaemonDetached(
   } catch {
     startupErrFd = null;
   }
-  const child = runtime.spawnDetached(
-    process.execPath,
-    [...process.execArgv, daemonRunnerEntry, ...buildRunnerArgs(options)],
-    {
-      detached: true,
-      envMode: "internal",
-      env: childEnv,
-      stdio: ["ignore", "ignore", startupErrFd ?? "ignore"],
-    },
-  );
+  const launch = resolveLaunchCommand(daemonRunnerEntry, options, childEnv);
+  const child = runtime.spawnDetached(launch.command, launch.args, {
+    detached: true,
+    envMode: "internal",
+    env: childEnv,
+    stdio: ["ignore", "ignore", startupErrFd ?? "ignore"],
+  });
   if (startupErrFd !== null) closeSync(startupErrFd);
 
   child.unref();
@@ -775,14 +794,11 @@ export async function startLocalDaemonForeground(
 
   const daemonRunnerEntry = runtime.resolveRunnerEntry();
   const childEnv = buildChildEnv(options);
-  const result = await runtime.spawnForeground(
-    process.execPath,
-    [...process.execArgv, daemonRunnerEntry, ...buildRunnerArgs(options)],
-    {
-      env: childEnv,
-      stdio: "inherit",
-    },
-  );
+  const launch = resolveLaunchCommand(daemonRunnerEntry, options, childEnv);
+  const result = await runtime.spawnForeground(launch.command, launch.args, {
+    env: childEnv,
+    stdio: "inherit",
+  });
 
   if (result.error) {
     throw result.error;

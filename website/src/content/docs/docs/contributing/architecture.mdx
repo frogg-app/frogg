@@ -79,9 +79,18 @@ Protocol rules for adding or changing messages are in
 | `apps/ui`               | `@frogg/app`              | Expo client for web, iOS, Android and the desktop renderer    |
 | `apps/desktop` | `@frogg/desktop` | Production Electron app-only shell                            |
 | `apps/cli`              | `@frogg/cli`              | `frogg` command-line client and daemon launcher                 |
-| `apps/daemon-rs`        | none (Cargo crate)      | Inactive Rust daemon. Reference source only                   |
+| `apps/daemon-rs`        | none (Cargo crate)      | Rust daemon front (`frogg-daemond`), opt-in, Frogg Next only  |
 
-`apps/daemon-rs` is excluded from releases. Do not build features on it.
+`apps/daemon-rs` is the base of the Rust daemon rebuild ([plan](https://github.com/frogg-app/frogg/blob/frogg-next/docs/plans/rust-rebuild.md)),
+which moves the daemon to Rust one feature-flagged phase at a time. Today it is the
+connection front: with `FROGG_RS_FRONT=1` the CLI starts `frogg-daemond --supervise` instead
+of the Node supervisor. It binds the public listener, answers transport pings itself,
+supervises the Node worker (`daemon-worker.js`) on a private loopback port over Node IPC, and
+forwards every other request and session message to it. The Node daemon stays the default and
+the source of truth for the protocol. Only Frogg Next (`X.Y.Z-next.N`) daemon bundles for
+Linux and macOS carry the binary (`bin/frogg-daemond`); stable and beta releases do not. Its
+protocol types in `src/generated/` are generated from `packages/protocol` and CI fails when
+they are stale.
 
 ### packages/
 

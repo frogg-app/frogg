@@ -117,8 +117,15 @@ pub struct Loaded {
     pub allow_pairing_hostname: bool,
 }
 
-/// `$FROGG_HOME`, else `$FROGG_HOME`, else `~/.frogg`.
+/// `$FROGG_HOME` (brand-prefixed), else `~/.frogg`. An absolute `$FROGG_HOME` needs no
+/// user home: a service environment can set it without `HOME`.
 pub fn resolve_home() -> Option<PathBuf> {
+    let explicit = crate::branding::env_value("HOME")
+        .map(PathBuf::from)
+        .filter(|p| p.is_absolute());
+    if explicit.is_some() {
+        return explicit;
+    }
     let base = std::env::var("HOME")
         .or_else(|_| std::env::var("USERPROFILE"))
         .ok()?;

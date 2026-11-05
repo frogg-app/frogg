@@ -1,0 +1,114 @@
+name: Rust daemon
+
+# apps/daemon-rs, the opt-in Rust front for the daemon (docs/plans/rust-rebuild.md).
+#
+# - protocol: the generated Rust protocol types (apps/daemon-rs/src/generated) must match
+#   packages/protocol, and the crate's tests must pass. Runs on every pull request that touches
+#   the protocol or the crate, and on every push here. ci.yml's checks job also fails on stale
+#   generated types after its build, which covers protocol changes on main.
+# - bench: measure-rust-baselines.mjs for the Node daemon, the Rust front supervising the Node
+#   worker (what FROGG_RS_FRONT=1 starts) and the front alone, on one pinned runner image, with
+#   the phase targets in the job summary. Reports, does not gate: hosted runners are shared.
+
+on:
+  push:
+    branches: [frogg-next, rust-rebuild]
+  pull_request:
+    paths:
+      - apps/daemon-rs/**
+      - packages/protocol/**
+      - packages/branding/native/**
+      - scripts/bench/**
+      - scripts/ci/check-generated-rust.sh
+      - .github/workflows/rust-daemon.yml
+  workflow_dispatch:
+    inputs:
+      runs:
+        description: Cold starts per daemon
+        default: "5"
+      pings:
+        description: Timed pings per daemon
+        default: "2000"
+
+concurrency:
+  group: rust-daemon-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
+  CI: "true"
+  LEFTHOOK: "0"
+  CARGO_TERM_COLOR: always
+
+jobs:
+  protocol:
+    name: generated protocol and crate tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup-node-deps
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/daemon-rs
+
+      - name: Generated protocol types match packages/protocol
+        run: bash scripts/ci/check-generated-rust.sh
+
+      - name: Crate tests
+        working-directory: apps/daemon-rs
+        run: cargo test --locked
+
+  bench:
+    name: bench (Node vs Rust front)
+    needs: protocol
+    if: github.event_name != 'pull_request'
+    # Pinned image so runs compare with each other; still a shared VM, so read trends, not
+    # single sub-millisecond differences.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      RUNS: ${{ inputs.runs || '5' }}
+      PINGS: ${{ inputs.pings || '2000' }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup-node-deps
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/daemon-rs
+
+      - name: Build the Node daemon
+        run: npm run build:server
+
+      - name: Build the Rust front
+        working-directory: apps/daemon-rs
+        run: cargo build --release --locked
+
+      - name: Measure
+        run: |
+          mkdir -p bench
+          front=apps/daemon-rs/target/release/frogg-daemond
+          node scripts/bench/measure-rust-baselines.mjs --runs "$RUNS" --pings "$PINGS" --out bench/node.json
+          node scripts/bench/measure-rust-baselines.mjs --runs "$RUNS" --pings "$PINGS" --front "$front" --out bench/front.json
+          node scripts/bench/measure-rust-baselines.mjs --runs "$RUNS" --pings "$PINGS" --binary "$front" --out bench/standalone.json
+
+      - name: Report against the targets
+        run: |
+          node scripts/bench/report-rust-targets.mjs --node bench/node.json --front bench/front.json \
+            --standalone bench/standalone.json | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: rust-daemon-bench
+          path: bench/

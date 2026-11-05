@@ -158,7 +158,18 @@ Other workflows:
 - `release.yml`: runs the Electron smoke test on Linux. See
   [Release process](/docs/contributing/release-process/).
 
-No workflow builds or tests the Rust sources in `apps/daemon-rs`.
+- `rust-daemon.yml`: the Rust daemon front in `apps/daemon-rs`. On pull requests touching the
+  crate, `packages/protocol` or the bench scripts, and on `frogg-next` and `rust-rebuild` pushes,
+  it checks the generated protocol types against `packages/protocol` and runs `cargo test`. On
+  pushes and manual runs it also runs `scripts/bench/measure-rust-baselines.mjs` for the Node
+  daemon, the supervised Rust front and the front alone, and writes the phase targets from
+  `docs/plans/rust-rebuild.md` to the job summary. It reports and does not gate.
+  `ci.yml`'s checks job also fails when the build leaves the generated Rust types stale.
+
+To run the server e2e suite through the Rust front, build it
+(`cargo build --release` in `apps/daemon-rs`) and set
+`FROGG_TEST_RS_FRONT=<path to target/release/frogg-daemond>`: every test daemon is then
+reached through the front, which forwards to the in-process Node daemon.
 The `apps/desktop` TypeScript is still typechecked by `npm run typecheck`.
 `.github/workflows/android-startup.yml` is an Android startup diagnostic (manual dispatch, or
 pushes to `fix/android-launch-crash`), not a gate.

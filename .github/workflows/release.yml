@@ -72,6 +72,8 @@ jobs:
       tag: ${{ env.RELEASE_TAG }}
       version: ${{ steps.version.outputs.version }}
       prerelease: ${{ steps.version.outputs.prerelease }}
+      # stable, beta or next (the tag's release line)
+      line: ${{ steps.version.outputs.line }}
       clobber: ${{ steps.release.outputs.clobber }}
       docker: ${{ steps.secrets.outputs.docker }}
       android_signing: ${{ steps.secrets.outputs.android_signing }}
@@ -584,9 +586,58 @@ jobs:
           name: daemon-dist
           path: .
 
+      # Frogg Next (-next.N) bundles for Linux and macOS also carry the opt-in Rust front
+      # (apps/daemon-rs, bin/frogg-daemond), which the CLI starts only with FROGG_RS_FRONT=1.
+      # docs/plans/rust-rebuild.md has the phases. Windows waits on Node IPC over a named pipe.
+      - name: Resolve the Rust front target
+        id: rust
+        if: steps.script.outputs.present == 'true' && needs.meta.outputs.line == 'next' && !startsWith(matrix.target, 'win-')
+        run: |
+          case "${{ matrix.target }}" in
+            linux-x64) triple=x86_64-unknown-linux-gnu ;;
+            linux-arm64) triple=aarch64-unknown-linux-gnu ;;
+            darwin-x64) triple=x86_64-apple-darwin ;;
+            darwin-arm64) triple=aarch64-apple-darwin ;;
+            *) echo "::error::No Rust target for ${{ matrix.target }}"; exit 1 ;;
+          esac
+          echo "triple=$triple" >> "$GITHUB_OUTPUT"
+
+      - uses: dtolnay/rust-toolchain@stable
+        if: steps.rust.outputs.triple != ''
+        with:
+          targets: ${{ steps.rust.outputs.triple }}
+
+      # Linux builds link against glibc 2.28, the floor of the Node runtime in the bundle, and
+      # cross-compile arm64 from the same runner.
+      - uses: mlugg/setup-zig@v2
+        if: startsWith(steps.rust.outputs.triple, 'x86_64-unknown-linux') || startsWith(steps.rust.outputs.triple, 'aarch64-unknown-linux')
+
+      - uses: taiki-e/install-action@v2
+        if: startsWith(steps.rust.outputs.triple, 'x86_64-unknown-linux') || startsWith(steps.rust.outputs.triple, 'aarch64-unknown-linux')
+        with:
+          tool: cargo-zigbuild
+
+      - name: Build the Rust front
+        id: rust_build
+        if: steps.rust.outputs.triple != ''
+        working-directory: apps/daemon-rs
+        env:
+          TRIPLE: ${{ steps.rust.outputs.triple }}
+        run: |
+          case "$TRIPLE" in
+            *-linux-gnu) cargo zigbuild --release --locked --target "$TRIPLE.2.28" ;;
+            *) cargo build --release --locked --target "$TRIPLE" ;;
+          esac
+          echo "binary=apps/daemon-rs/target/$TRIPLE/release/frogg-daemond" >> "$GITHUB_OUTPUT"
+
       - name: Build daemon bundle
         if: steps.script.outputs.present == 'true'
-        run: npm run build:daemon-bundle -- --target ${{ matrix.target }} --out-dir dist/bundles
+        env:
+          RUST_FRONT: ${{ steps.rust_build.outputs.binary }}
+        run: |
+          args=(--target ${{ matrix.target }} --out-dir dist/bundles)
+          if [ -n "$RUST_FRONT" ]; then args+=(--rust-front "$RUST_FRONT"); fi
+          npm run build:daemon-bundle -- "${args[@]}"
 
       - name: Upload to GitHub release
         if: steps.script.outputs.present == 'true'

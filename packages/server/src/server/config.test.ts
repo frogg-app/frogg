@@ -84,6 +84,17 @@ describe("server config", () => {
     expect(loadConfig(froggHome, { env: {} }).browserToolsEnabled).toBe(true);
   });
 
+  test("reports the Rust front's public listen only when the front sets it", async () => {
+    const froggHome = await mkdtemp(path.join(os.tmpdir(), "frogg-config-public-listen-"));
+    roots.push(froggHome);
+    const behindFront = loadConfig(froggHome, {
+      env: { FROGG_LISTEN: "127.0.0.1:41234", FROGG_PUBLIC_LISTEN: "0.0.0.0:9999" },
+    });
+    expect(behindFront.listen).toBe("127.0.0.1:41234");
+    expect(behindFront.publicListen).toBe("0.0.0.0:9999");
+    expect(loadConfig(froggHome, { env: {} })).not.toHaveProperty("publicListen");
+  });
+
   test("records mutable and startup launch overrides by persisted leaf", async () => {
     const froggHome = await mkdtemp(path.join(os.tmpdir(), "frogg-config-overrides-"));
     roots.push(froggHome);

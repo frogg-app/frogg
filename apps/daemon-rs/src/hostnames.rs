@@ -115,6 +115,13 @@ fn is_default_allowed_hostname(hostname: &str, allow_pairing_hostname: bool) -> 
     hostname.parse::<IpAddr>().is_ok()
 }
 
+/// `<label>.localhost`, the shape of a workspace service host (not plain `localhost`).
+pub fn is_localhost_subdomain(host_header: &str) -> bool {
+    parse_hostname_from_host_header(host_header).is_some_and(|hostname| {
+        hostname.len() > ".localhost".len() && hostname.ends_with(".localhost")
+    })
+}
+
 /// `isHostnameAllowed`. A missing or unparseable `Host` is rejected, matching
 /// Node: every HTTP/1.1 client sends one, and a request without it cannot be
 /// checked for rebinding.
@@ -147,6 +154,16 @@ mod tests {
     use super::*;
 
     const DEFAULTS: Hostnames = Hostnames::List(Vec::new());
+
+    #[test]
+    fn recognises_service_shaped_hosts() {
+        assert!(is_localhost_subdomain("web--app.localhost:9999"));
+        assert!(is_localhost_subdomain("a.localhost"));
+        assert!(!is_localhost_subdomain("localhost:9999"));
+        assert!(!is_localhost_subdomain(".localhost"));
+        assert!(!is_localhost_subdomain("127.0.0.1:9999"));
+        assert!(!is_localhost_subdomain("evil.com"));
+    }
 
     fn allowed(host: &str) -> bool {
         is_hostname_allowed(Some(host), &DEFAULTS, true)
