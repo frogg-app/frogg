@@ -1,0 +1,31 @@
+# The Rust Frogg client (docs/plans/rust-client.md).
+#   core       daemon connection, RPCs and relay E2EE (wasm32 and native)
+#   ui         Leptos CSR app, built to WASM by Trunk
+#   src-tauri  desktop and Android shell around the ui build
+[workspace]
+resolver = "2"
+members = ["core", "ui", "src-tauri"]
+
+[workspace.package]
+version = "1.6.14-next.3"
+edition = "2021"
+license = "Apache-2.0"
+rust-version = "1.85"
+
+[workspace.dependencies]
+frogg-protocol = { path = "../../crates/frogg-protocol" }
+frogg-client-core = { path = "core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["raw_value"] }
+futures = "0.3"
+thiserror = "2"
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = "z"
+strip = "debuginfo"
+
+# The native shell keeps speed over size.
+[profile.release.package.frogg-app]
+opt-level = 3

@@ -1,0 +1,16 @@
+[package]
+name = "frogg-ui"
+description = "Frogg client UI (Leptos, compiled to WASM)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+frogg-client-core.workspace = true
+leptos = { version = "0.8", features = ["csr"] }
+wasm-bindgen = "0.2"
+web-sys = { version = "0.3", features = ["Storage", "Window", "Location"] }
+console_error_panic_hook = "0.1"
+js-sys = "0.3"
+serde_json.workspace = true

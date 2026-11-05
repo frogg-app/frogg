@@ -1,0 +1,23 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Frogg Next RS",
+  "identifier": "app.frogg.next.rs",
+  "build": {
+    "beforeDevCommand": { "script": "trunk serve", "cwd": "../ui" },
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": { "script": "trunk build --release", "cwd": "../ui" },
+    "frontendDist": "../ui/dist"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [{ "title": "Frogg", "width": 1280, "height": 820, "minWidth": 360, "minHeight": 480 }],
+    "security": {
+      "csp": "default-src 'self'; connect-src 'self' ws: wss: http: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'wasm-unsafe-eval'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico", "icons/icon.png"]
+  }
+}
