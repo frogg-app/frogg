@@ -27,6 +27,12 @@ architecture) and `docs/plans/rust-client-work.md` (workstreams, ownership, cont
 - No timelines or effort-in-time estimates anywhere.
 - Don't ask questions: nobody will answer. Make the best call, write it down in your report.
 
+## Start on the right base
+
+Your worktree may be created from `main`, which has no `apps/client`. Before any work, if
+`apps/client` is missing, run `git reset --hard <base>` where `<base>` is the commit or branch
+your brief names (default `rebuild-client-rust-tauri`).
+
 ## The machine is shared and small (8 vCPU, 15 GB, other agents building at once)
 
 - Always build with `CARGO_BUILD_JOBS=2` and prefix heavy commands with `nice -n 10`.
