@@ -46,6 +46,7 @@ pub fn StatusBar() -> impl IntoView {
                 <span class=move || format!("dot {}", link.get().conn.id())></span>
                 <span class="sb-t">{host_label}</span>
             </button>
+            <crate::views::panels::scm::ScmStatusSegments />
             <span class="spacer"></span>
             {move || {
                 let n = buckets.get().needs;
