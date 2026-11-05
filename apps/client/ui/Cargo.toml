@@ -11,10 +11,25 @@ frogg-client-core.workspace = true
 leptos.workspace = true
 frogg-render.workspace = true
 wasm-bindgen = "0.2"
-web-sys = { version = "0.3", features = ["Storage", "Window", "Location"] }
+web-sys = { version = "0.3", features = [
+  "Storage",
+  "Window",
+  "Location",
+  "Navigator",
+  "MediaQueryList",
+  "UrlSearchParams",
+  "HtmlElement",
+  "CssStyleDeclaration",
+  "KeyboardEvent",
+  "Element",
+  "WebSocket",
+  "MessageEvent",
+  "Event",
+] }
 console_error_panic_hook = "0.1"
 js-sys = "0.3"
 serde_json.workspace = true
+serde.workspace = true
 
 # native/ (the Tauri bridge and its web fallbacks). A separate table so other streams' feature
 # edits to the main web-sys line never conflict; features unify.
