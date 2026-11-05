@@ -762,6 +762,8 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>, client: Clie
                     }
                     // The configured daemon is unreachable. We still serve the message
                     // types we implement natively rather than dropping the client.
+                    // A connection only Node could admit has nothing left to talk to.
+                    Ok(Err(_)) | Err(_) if client.role.is_none() => break,
                     Ok(Err(err)) => {
                         tracing::warn!(error = %err, "no upstream; serving native message types only");
                         link = Link::Absent;
