@@ -229,6 +229,8 @@ function Shell() {
     </View>
   );
 
+  // The overlays below carry keys so rotating between the phone and wide layouts keeps them
+  // mounted (an open New session form keeps its prompt and attachments).
   if (phone) {
     // Phone: each tab's panel is the root; a detail view pushes over it and hides the tabs.
     return (
@@ -244,10 +246,10 @@ function Shell() {
           <View style={s.fill}>{phoneHasDetail ? detailEl : side}</View>
           {!phoneHasDetail && !keyboard && <PhoneTabs badges={badges} />}
         </KeyboardFrame>
-        <Palette />
-        <NewSession />
-        <ToastHost />
-        <SignInDialog />
+        <Palette key="palette" />
+        <NewSession key="new-session" />
+        <ToastHost key="toasts" />
+        <SignInDialog key="sign-in" />
         <Onboarding phone chipBottom={phoneHasDetail ? 16 : 76} />
       </SafeAreaView>
     );
@@ -291,10 +293,10 @@ function Shell() {
         </View>
         <StatusBar />
       </KeyboardFrame>
-      <Palette />
-      <NewSession />
-      <ToastHost />
-      <SignInDialog />
+      <Palette key="palette" />
+      <NewSession key="new-session" />
+      <ToastHost key="toasts" />
+      <SignInDialog key="sign-in" />
       <Onboarding phone={false} />
     </SafeAreaView>
   );
