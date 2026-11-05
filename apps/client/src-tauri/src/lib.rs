@@ -55,6 +55,7 @@ fn deliver_link<R: Runtime>(app: &AppHandle<R>, url: String) {
     }
     *app.state::<Shell>().pending_link.lock().unwrap() = Some(url.clone());
     if let Some(window) = app.get_webview_window("main") {
+        #[cfg(desktop)]
         let _ = window.unminimize();
         let _ = window.show();
         let _ = window.set_focus();
@@ -87,18 +88,26 @@ fn native_info<R: Runtime>(app: AppHandle<R>) -> NativeInfo {
 
 #[tauri::command]
 fn window_minimize<R: Runtime>(window: WebviewWindow<R>) -> Result<(), String> {
-    window.minimize().map_err(|e| e.to_string())
+    #[cfg(desktop)]
+    window.minimize().map_err(|e| e.to_string())?;
+    #[cfg(mobile)]
+    let _ = window;
+    Ok(())
 }
 
 #[tauri::command]
 fn window_toggle_maximize<R: Runtime>(window: WebviewWindow<R>) -> Result<bool, String> {
     let maximized = window.is_maximized().map_err(|e| e.to_string())?;
+    #[cfg(desktop)]
     if maximized {
         window.unmaximize()
     } else {
         window.maximize()
     }
     .map_err(|e| e.to_string())?;
+    #[cfg(mobile)]
+    return Ok(maximized);
+    #[cfg(desktop)]
     Ok(!maximized)
 }
 
@@ -114,7 +123,11 @@ fn window_close<R: Runtime>(window: WebviewWindow<R>) -> Result<(), String> {
 
 #[tauri::command]
 fn window_start_drag<R: Runtime>(window: WebviewWindow<R>) -> Result<(), String> {
-    window.start_dragging().map_err(|e| e.to_string())
+    #[cfg(desktop)]
+    window.start_dragging().map_err(|e| e.to_string())?;
+    #[cfg(mobile)]
+    let _ = window;
+    Ok(())
 }
 
 #[tauri::command]
@@ -257,6 +270,7 @@ fn update_install() -> Result<(), String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    #[allow(unused_mut)]
     let mut builder = tauri::Builder::default();
 
     // Must be first: a second launch focuses the running window and passes on its link.

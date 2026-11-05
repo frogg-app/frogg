@@ -227,6 +227,7 @@ pub fn open_session_window<R: Runtime>(
         .chain(key.bytes().map(|b| format!("{b:02x}")))
         .collect();
     if let Some(open) = app.get_webview_window(&label) {
+        #[cfg(desktop)]
         let _ = open.unminimize();
         let _ = open.set_focus();
         return true;
