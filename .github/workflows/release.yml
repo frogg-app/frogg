@@ -91,6 +91,7 @@ jobs:
       desktop_matrix: ${{ steps.platforms.outputs.desktop }}
       daemon_matrix: ${{ steps.platforms.outputs.daemon }}
       build_all: ${{ steps.platforms.outputs.build_all }}
+      publishable: ${{ steps.platforms.outputs.publishable }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -215,28 +216,38 @@ jobs:
 
       # Which platforms this run builds.
       #
-      # A tag push is a real release and builds everything. A manual run defaults to the
-      # small set actually used for day-to-day testing -- Windows x64 desktop, the
-      # linux-x64 daemon bundle, and the arm64 Android APK -- because the full matrix is
-      # four desktop runners and six daemon targets, and most runs only need those three.
-      # Pick `platforms: all` on a manual run to get the whole matrix without a tag.
+      # `full` is the whole matrix: four desktop runners and six daemon targets. It runs for
+      # stable tags (release milestones) and for a manual run with `platforms: all`.
       #
-      # The win-x64 daemon bundle rides along with the default set: the Windows desktop
-      # app supervises a local daemon, so shipping it without that bundle is a broken
-      # install rather than a smaller one.
+      # `core` is everything else: a prerelease tag push, or a manual run left on `default`. It
+      # builds the daemon for linux-x64 only, the arm64 Android APK and, for Frogg Next, the
+      # Windows x64 and Mac arm64 desktop clients. Frogg Next's feeds take whichever platforms
+      # were built, so a core -next.N still publishes. The classic (frogg beta) desktop keeps
+      # its full matrix: its electron-updater feeds need Windows, Linux and both Mac payloads.
+      #
+      # `publishable` says whether updater-manifest and publish may run: every tag push and
+      # `platforms: all` do; a manual `default` run stays a draft for testing.
       - name: Resolve platform matrix
         id: platforms
         env:
-          PLATFORMS: ${{ github.event_name == 'workflow_dispatch' && inputs.platforms || 'all' }}
+          PLATFORMS: ${{ github.event_name == 'workflow_dispatch' && inputs.platforms || '' }}
+          LINE: ${{ steps.version.outputs.line }}
+          CLIENT: ${{ steps.client.outputs.client }}
         run: |
-          if [ "$PLATFORMS" = "all" ]; then
-            build_all=true
-            desktop='{"include":[
+          if [ "$PLATFORMS" = "all" ] || { [ -z "$PLATFORMS" ] && [ "$LINE" = "stable" ]; }; then
+            tier=full
+          else
+            tier=core
+          fi
+          publishable=$([ "$PLATFORMS" = "default" ] && echo false || echo true)
+          desktop_full='
               {"platform":"windows","arch":"x86_64","runner":"windows-latest","target":"win-x64"},
               {"platform":"linux","arch":"x86_64","runner":"ubuntu-22.04","target":"linux-x64"},
               {"platform":"macos","arch":"aarch64","runner":"macos-15","target":"darwin-arm64"},
-              {"platform":"macos","arch":"x86_64","runner":"macos-15-intel","target":"darwin-x64"}
-            ]}'
+              {"platform":"macos","arch":"x86_64","runner":"macos-15-intel","target":"darwin-x64"}'
+          if [ "$tier" = "full" ]; then
+            build_all=true
+            desktop="{\"include\":[$desktop_full]}"
             daemon='{"include":[
               {"runner":"ubuntu-latest","target":"linux-x64"},
               {"runner":"ubuntu-latest","target":"linux-arm64"},
@@ -247,20 +258,22 @@ jobs:
             ]}'
           else
             build_all=false
-            desktop='{"include":[
-              {"platform":"windows","arch":"x86_64","runner":"windows-latest","target":"win-x64"}
-            ]}'
-            daemon='{"include":[
-              {"runner":"ubuntu-latest","target":"linux-x64"},
-              {"runner":"ubuntu-latest","target":"win-x64"}
-            ]}'
+            if [ "$CLIENT" = "classic-beta" ] && [ "$publishable" = "true" ]; then
+              desktop="{\"include\":[$desktop_full]}"
+            else
+              desktop='{"include":[
+                {"platform":"windows","arch":"x86_64","runner":"windows-latest","target":"win-x64"}
+              ]}'
+            fi
+            daemon='{"include":[{"runner":"ubuntu-latest","target":"linux-x64"}]}'
           fi
           {
             echo "build_all=$build_all"
+            echo "publishable=$publishable"
             echo "desktop=$(echo "$desktop" | tr -d '\n ')"
             echo "daemon=$(echo "$daemon" | tr -d '\n ')"
           } >> "$GITHUB_OUTPUT"
-          echo "platforms=$PLATFORMS (all=$build_all)"
+          echo "tier=$tier publishable=$publishable client=$CLIENT"
 
       - name: Release notes from CHANGELOG.md
         env:
@@ -841,7 +854,7 @@ jobs:
     with:
       release-tag: ${{ needs.meta.outputs.tag }}
       clobber: ${{ needs.meta.outputs.clobber }}
-      mac: ${{ needs.meta.outputs.build_all == 'true' }}
+      mac: true
       mac-x64: ${{ needs.meta.outputs.build_all == 'true' }}
       linux: ${{ needs.meta.outputs.build_all == 'true' }}
       windows: true
@@ -887,7 +900,7 @@ jobs:
     needs: [meta, desktop, next-desktop]
     if: >-
       always() && needs.meta.result == 'success' &&
-      inputs.only != 'android' && needs.meta.outputs.build_all == 'true' &&
+      inputs.only != 'android' && needs.meta.outputs.publishable == 'true' &&
       (((needs.meta.outputs.client == 'classic' || needs.meta.outputs.client == 'classic-beta') &&
       needs.desktop.result == 'success') ||
       (needs.meta.outputs.client == 'frogg-next' && needs.next-desktop.result == 'success') ||
@@ -1018,7 +1031,7 @@ jobs:
       [meta, desktop, daemon-bundle, android, updater-manifest, docker, next-desktop, next-android]
     if: >-
       always() && needs.meta.result == 'success' &&
-      needs.meta.outputs.build_all == 'true' &&
+      needs.meta.outputs.publishable == 'true' &&
       needs.daemon-bundle.result == 'success' && needs.updater-manifest.result == 'success' &&
       (needs.docker.result == 'success' || needs.docker.result == 'skipped') &&
       (((needs.meta.outputs.client == 'classic' || needs.meta.outputs.client == 'classic-beta') &&
