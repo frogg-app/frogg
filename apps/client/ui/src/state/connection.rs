@@ -100,9 +100,11 @@ pub const LOCAL_DAEMON: &str = "127.0.0.1:9969";
 /// A saved host that won't answer is retried more gently than core's default (1.5 s to 30 s),
 /// so a gone host doesn't fill the console with failed handshakes.
 const RECONNECT_BASE_MS: u64 = 4_000;
-/// A host that drops a live connection (daemon restart) is first retried quickly: 0.5 s, 1 s,
-/// 2 s, 4 s, then the gentle backoff above.
-const QUICK_RETRIES: u32 = 4;
+/// A host that drops a live connection (daemon restart) is first retried quickly: 0.5 s, then
+/// every second for about 15 s (a daemon restart takes a few seconds, and doubling past 1 s left
+/// the client up to 4 s behind a daemon that was already back), then the gentle backoff above.
+const QUICK_RETRIES: u32 = 16;
+const QUICK_RETRY_MAX_MS: u64 = 1_000;
 const RECONNECT_MAX_MS: u64 = 300_000;
 /// Consecutive failed dials (first try included) before retries stop until the user asks.
 pub const GIVE_UP_AFTER: u32 = 5;
@@ -210,7 +212,7 @@ fn new_client() -> DaemonClient {
             reconnect_max_delay_ms: RECONNECT_MAX_MS,
             reconnect_fast_retries: QUICK_RETRIES,
             reconnect_fast_base_delay_ms: 500,
-            reconnect_fast_max_delay_ms: 4_000,
+            reconnect_fast_max_delay_ms: QUICK_RETRY_MAX_MS,
             ..ClientOptions::default()
         },
     )
@@ -540,6 +542,15 @@ impl Connections {
             "agent_update" | "agent_deleted" => {
                 if let Ok(p) = frame.payload::<Value>() {
                     self.agents.apply_push(host_id, &frame.kind, &p);
+                }
+            }
+            // The daemon pushes the providers snapshot whenever a provider settles (after a
+            // restart they all start out probing); keep the active host's copy current.
+            "providers_snapshot_update"
+                if self.hosts.active_id.get_untracked().as_deref() == Some(host_id) =>
+            {
+                if let Ok(p) = frame.payload::<Value>() {
+                    super::config::get().apply_snapshot_push(p);
                 }
             }
             _ => {}

@@ -268,6 +268,15 @@ impl HostConfig {
         });
     }
 
+    /// A pushed `providers_snapshot_update` payload. Per-project snapshots (`cwd`) are not the
+    /// host-wide one this store holds.
+    pub fn apply_snapshot_push(&self, payload: Value) {
+        if payload.get("cwd").is_some_and(|c| !c.is_null()) || payload.get("entries").is_none() {
+            return;
+        }
+        self.providers.set(Some(payload));
+    }
+
     /// A value in the loaded config by JSON pointer (`/relay/enabled`). Reactive.
     pub fn at(&self, pointer: &str) -> Option<Value> {
         self.config.with(|c| c.as_ref()?.pointer(pointer).cloned())
