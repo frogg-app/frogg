@@ -1,0 +1,501 @@
+/* Chat session slice (7a): session menu, state cards, composer notices, viewers, chips.
+   Mirrors ui-next chat/SessionMenu, SessionState, Notices, Viewers, ProviderChip, AccountChip. */
+
+/* ----- header -------------------------------------------------------------------------- */
+.chat-title-reveal {
+  animation: rise 200ms var(--ease) both;
+}
+.sm-anchor {
+  position: relative;
+  flex: none;
+}
+.sm-btn {
+  color: var(--muted);
+}
+.sm-btn:hover {
+  color: var(--text);
+}
+.sm-eyebrow {
+  color: var(--faint);
+}
+.sm-mut {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 20px;
+}
+.sm-warn {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--amber) 35%, transparent);
+  background: color-mix(in srgb, var(--amber) 6%, transparent);
+}
+.sm-warn-head {
+  font-weight: 600;
+  font-size: 12.5px;
+}
+.sm-ck {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.sm-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sm-choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  background: var(--wash);
+  font-size: 13.5px;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 120ms var(--ease),
+    background 120ms var(--ease);
+}
+.sm-choice:hover {
+  border-color: var(--line);
+}
+.sm-choice.on {
+  border-color: color-mix(in srgb, var(--cyan) 50%, transparent);
+  background: color-mix(in srgb, var(--cyan) 8%, transparent);
+}
+.sm-radio {
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--muted);
+  transform: rotate(45deg);
+}
+.sm-choice.on .sm-radio {
+  background: var(--cyan2);
+  border-color: var(--cyan2);
+}
+
+/* ----- state cards (edge / bracket / banner) ------------------------------------------- */
+.st-wrap {
+  --k: var(--mint);
+  --kw: color-mix(in srgb, var(--mint) 7%, transparent);
+  margin-top: 18px;
+  animation: rise 200ms var(--ease) both;
+}
+.st-failed {
+  --k: var(--coral);
+  --kw: color-mix(in srgb, var(--coral) 8%, transparent);
+}
+.st-offline {
+  --k: var(--amber);
+  --kw: color-mix(in srgb, var(--amber) 7%, transparent);
+}
+.st-waiting {
+  --k: var(--cyan);
+  --kw: color-mix(in srgb, var(--cyan) 7%, transparent);
+}
+.st-card {
+  position: relative;
+  overflow: hidden;
+  background: var(--kw);
+}
+.st-v-bracket .st-card {
+  border: 1px solid var(--line2);
+  overflow: visible;
+}
+.st-v-banner .st-card {
+  border-bottom: 1px solid var(--line);
+}
+.st-trim {
+  position: absolute;
+  pointer-events: none;
+  background: var(--k);
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  transform-origin: top;
+  animation: st-draw-y 220ms var(--ease) 60ms both;
+}
+.st-v-banner .st-trim {
+  right: 0;
+  bottom: auto;
+  width: auto;
+  height: 2px;
+  transform-origin: left;
+  animation-name: st-draw-x;
+}
+.st-v-bracket .st-trim {
+  inset: -1px;
+  width: auto;
+  background: none;
+  border: 2px solid var(--k);
+  clip-path: polygon(
+    0 0,
+    10px 0,
+    10px 2px,
+    2px 2px,
+    2px 10px,
+    0 10px,
+    0 0,
+    100% 100%,
+    calc(100% - 10px) 100%,
+    calc(100% - 10px) calc(100% - 2px),
+    calc(100% - 2px) calc(100% - 2px),
+    calc(100% - 2px) calc(100% - 10px),
+    100% calc(100% - 10px)
+  );
+  animation: snap 160ms var(--ease) 60ms both;
+}
+.st-flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+}
+.st-failed .st-flash {
+  background: var(--coral);
+  animation: st-flash 520ms ease-out 80ms both;
+}
+.st-review .st-card {
+  animation: st-glow 900ms ease-out 80ms both;
+}
+.st-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px 12px;
+}
+.st-v-edge .st-body {
+  padding-left: 17px;
+}
+.st-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.st-tag {
+  font-size: 10px;
+  letter-spacing: 1.6px;
+  font-weight: 600;
+  color: var(--k);
+}
+.st-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.st-text {
+  flex: 1;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+}
+.st-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.st-detail {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 18px;
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+}
+.st-detail.mono {
+  font-size: 11.5px;
+  color: var(--text);
+}
+@keyframes st-draw-y {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@keyframes st-draw-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes st-flash {
+  0% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes st-glow {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--mint) 0%, transparent);
+  }
+  35% {
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--mint) 16%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--mint) 0%, transparent);
+  }
+}
+
+/* ----- composer notices ---------------------------------------------------------------- */
+.nt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.nt-note {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 7px 10px;
+  background: color-mix(in srgb, var(--cyan) 6%, transparent);
+}
+.nt-note.nt-warn {
+  background: color-mix(in srgb, var(--amber) 8%, transparent);
+}
+.nt-t {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.nt-t b,
+.nt-warn-t b {
+  font-weight: 700;
+  color: var(--text);
+}
+.nt-warn-t {
+  font-size: 12.5px;
+  color: var(--amber);
+}
+.nt-clock {
+  font-size: 11.5px;
+  color: var(--text);
+}
+.nt-hint {
+  font-size: 11.5px;
+  color: var(--faint);
+  flex-shrink: 1;
+}
+.nt-preview {
+  font-size: 12.5px;
+  color: var(--text);
+  flex: 1;
+  min-width: 60px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nt-link {
+  font-size: 12px;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.nt-link:hover {
+  color: var(--text);
+}
+.nt-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  overflow: hidden;
+}
+.nt-beam {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 25%;
+  background-image: linear-gradient(90deg, transparent, var(--cyan2), transparent);
+  animation: beam 1.4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nt-beam,
+  .st-wrap,
+  .st-trim,
+  .st-flash,
+  .st-card,
+  .chat-title-reveal {
+    animation: none !important;
+  }
+}
+
+/* ----- viewers ------------------------------------------------------------------------- */
+.vw-anchor {
+  position: relative;
+  display: flex;
+  margin-bottom: 6px;
+}
+.vw-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 3px 6px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  transition: background 120ms var(--ease);
+}
+.vw-row:hover {
+  background: var(--wash);
+}
+.vw-stack {
+  display: flex;
+  align-items: center;
+}
+.vw-avatar {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--on-accent);
+  flex: none;
+}
+.vw-avatar.overlap {
+  margin-left: -5px;
+  box-shadow: 0 0 0 2px var(--bg);
+}
+.vw-more {
+  background: var(--wash3);
+  color: var(--muted);
+}
+.vw-live {
+  width: 6px;
+  height: 6px;
+  background: var(--mint);
+  animation: breathe 1.6s var(--ease) infinite;
+}
+.vw-lead {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vw-lead.active {
+  color: var(--text);
+}
+.vw-rest {
+  font-size: 12px;
+  color: var(--faint);
+  white-space: nowrap;
+}
+.vw-pop {
+  width: 260px;
+  padding: 8px;
+}
+.vw-head {
+  display: block;
+  padding: 4px 6px 8px;
+}
+.vw-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px;
+  color: var(--muted);
+}
+.vw-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vw-act {
+  font-size: 11px;
+  color: var(--faint);
+}
+.vw-act.active {
+  color: var(--mint);
+}
+
+/* ----- provider / account chips -------------------------------------------------------- */
+.chip-anchor {
+  position: relative;
+}
+.chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--wash);
+  padding: 4px 8px;
+  border: 0;
+  color: var(--muted);
+  cursor: pointer;
+  max-width: 200px;
+}
+.chip-btn:hover {
+  background: var(--wash2);
+  color: var(--text);
+}
+.chip-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--cyan);
+  transform: rotate(45deg);
+  flex: none;
+}
+.chip-t {
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chip-menu-head {
+  padding: 6px 10px 4px;
+  color: var(--faint);
+}
+.chip-menu-sep {
+  height: 1px;
+  background: var(--line);
+  margin: 4px 0;
+}
+.chip-check {
+  width: 12px;
+  display: inline-flex;
+  color: var(--cyan);
+}
+.menu-item.disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.menu-item.on {
+  opacity: 1;
+}
+.chip-reuse {
+  color: var(--mint);
+  font-size: 12.5px;
+  line-height: 19px;
+}
+.chip-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
