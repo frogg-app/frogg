@@ -119,23 +119,30 @@ additive edits only. Sizes are S/M/L.
 **7d sessions-shell** — owns `ui/src/views/sessions/**`, `ui/src/views/new_session/**`,
 `ui/src/shell/**`, `ui/src/state/{sessions,projects,ui}.rs`
 
-- M: merged terminals in the sessions list (`sessions/merged.tsx`); S (done): fall back to
-  Sessions when the current tool stops being offered.
-- M: projects dialog and device-local projects — `sessions/ProjectsDialog.tsx`,
+- M (done): merged terminals in the sessions list (`sessions/merged.tsx`), active host only
+  (other hosts' terminals not merged); S (done): fall back to Sessions when the current tool
+  stops being offered.
+- M (done): projects dialog and device-local projects — `sessions/ProjectsDialog.tsx`,
   `localProjects.ts`.
-- M: sub-work chips on session rows and in the status summary.
-- M: launch fields: provider feature toggles, project defaults ("Save for project"), account
-  flag merge — `sessions/LaunchFields.tsx`, `launch.ts`.
-- S (done): New session name label by session type, not layout. S: host feature gating hints.
-- M: modal stack: one Escape closes the top layer only; back guard counts sheets/popovers;
-  hardware back on every layout — `shell/modalStack.ts`, `useHardwareBack.ts`.
+- M (done): sub-work chips on session rows and in the status summary (provider subagents;
+  workspace scripts not counted yet).
+- M (done): launch fields: provider feature toggles, project defaults ("Save for project"),
+  account flag merge — `sessions/LaunchFields.tsx`, `launch.ts`.
+- S (done): New session name label by session type, not layout. S (done): host feature gating
+  hints.
+- M (done): modal stack: one Escape closes the top layer only; back guard counts
+  sheets/popovers; hardware back on every Android layout (desktop browser back untouched) —
+  `shell/modalStack.ts`, `useHardwareBack.ts`.
 - S (done): phone layout must not rebuild the list on selection (`shell/layout.rs` phone branch).
 - S (done): palette "New terminal" creates one; "Getting started"; sessions by `updatedAt`.
 - S (done): status-bar host segment opens Hosts; `railBadge` pref honoured.
-- M: home composer reuses the full composer.
-- M: phone keyboard frame and tab hiding while the keyboard is up.
-- M: error boundary screen; M: popout single-session window.
-- M: toast history log, live toast updates, accurate pause, variants; host toasts with Retry.
+- M: home composer reuses the full composer. Blocked on 7b: `chat::Composer` needs a detached
+  mode (no agent; `on_send`, `placeholder`, `chips` props).
+- M (done): phone keyboard frame and tab hiding while the keyboard is up.
+- M (done): error boundary screen (panic hook crash page); M (done): popout single-session
+  window.
+- M (done): toast history log, live toast updates, accurate pause; host toasts with Retry.
+  Left: toast variants (`toastStyle` hud/facet).
 
 **7e panels** — owns `ui/src/views/panels/{files,scm,terminals,tasks,search,prs,usage,plugins,companion,util}.rs`,
 `apps/client/render/src/terminal`
