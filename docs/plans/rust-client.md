@@ -76,6 +76,34 @@ the shipping Frogg Next install until phase 8.
 8. **Switch (S).** Benchmarks pass; `frogg-next` ships the Rust client under the Frogg Next app
    id with an upgrade path from the Electron and Expo builds; `apps/ui-next` is retired.
 
+### Where it stands
+
+| Phase               | State                                                                     |
+| ------------------- | ------------------------------------------------------------------------- |
+| 0 Foundation        | Reached                                                                   |
+| 1 Client core       | Reached                                                                   |
+| 2 Shell             | Reached                                                                   |
+| 3 Sessions and chat | Reached                                                                   |
+| 4 Panels            | Reached                                                                   |
+| 5 Flows             | Reached                                                                   |
+| 6 Native            | Reached on desktop; Android builds in CI, not yet run on a real device    |
+| 7 Lab and parity    | Not started (parity checked by the smoke walk and live verification only) |
+| 8 Switch            | Not started                                                               |
+
+Verified live against a real Claude provider: daemon restart mid-turn (reconnect about 0.8 s after
+the daemon is healthy; the resumed turn completes and a message sent meanwhile is answered),
+60 fps while streaming a 1,200-word reply, fork carrying provider/model/thinking, pair-by-code
+address prefill, file editor Revert, subagent step counts, and a warning-free debug walk.
+
+What remains:
+
+- Android on a real device (keyboard insets, share intents, background behaviour).
+- A signing key for the Tauri updater.
+- iOS.
+- Protocol decode slimming for WASM size (release is about 2.1 MB gzip, just over the gate).
+- CI re-run and cancel: needs a daemon RPC.
+- Phase 7 lab fixtures and screenshot parity, then the phase 8 switch.
+
 ## Gates
 
 Measured with `scripts/bench/measure-ui-next-web.mjs` (ported to the Rust web build) and the

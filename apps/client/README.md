@@ -63,4 +63,30 @@ cargo check -p frogg-ui --target wasm32-unknown-unknown
 CI (`.github/workflows/rust-client.yml`) runs the wasm check and the core/render tests, builds the
 desktop bundles and the Android APK, and attaches them to `-next.N` releases.
 
-Release wasm size at the time of writing: about 5.1 MB raw, 1.9 MB gzip.
+`apps/client/e2e/smoke.mts` walks every screen against a throwaway mock daemon (see its header);
+`SMOKE_WARN=1` on a debug build also prints reactive-graph warnings.
+
+Release wasm size at the time of writing: about 5.5 MB raw, 2.1 MB gzip.
+
+## Status
+
+Web and desktop are feature-complete against ui-next (phases 0–6 of the plan) and verified live
+against a real Claude provider:
+
+- Daemon restart mid-turn: the client reconnects about 0.8 s after the daemon is healthy, the
+  interrupted turn resumes to completion and a message sent during the resume is answered.
+- Streaming holds 60 fps on a 1,200-word reply (p99 frame 16.8 ms, desktop, release build).
+- Fork keeps provider, model and thinking level; pair by code prefills the address from
+  `?daemon=`; the file editor's Revert appears only with an edit and restores the file; subagent
+  rows show their real step count.
+- A debug-build walk (smoke plus a live session) logs no untracked-read or disposed-signal
+  warnings and no panics.
+
+## Known gaps
+
+- Android: the APK builds in CI but has not been run on a real device.
+- Desktop updater: no signing key yet, so updates are not verified.
+- iOS: not started.
+- WASM size sits just above the 2 MB gzip gate; slimming the protocol decode is the next lever.
+- CI panel: re-run and cancel need a daemon RPC that does not exist yet.
+- Lab fixtures and screenshot parity (plan phase 7) are not ported.
