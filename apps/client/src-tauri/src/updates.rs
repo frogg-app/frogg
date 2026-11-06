@@ -4,31 +4,115 @@
 //! stable build follows stable releases; the newest matching release that carries the
 //! `frogg-next-rs-latest.json` feed (Tauri's updater manifest, signed with the updater key) wins.
 //! The feed is then handed to `tauri-plugin-updater`, which verifies and installs in place.
+//!
+//! The shell checks on start and every [`CHECK_EVERY`]. In `auto` mode a found update downloads
+//! in the background (progress on the [`STATE_EVENT`] event) and waits as `ready` for a restart;
+//! in `download` mode (a Linux package install the updater can't replace) the UI offers the
+//! release page instead.
 
 use serde::Serialize;
 use std::sync::Mutex;
-use tauri::{AppHandle, Manager, Runtime};
+use std::time::Duration;
+use tauri::{AppHandle, Emitter, Manager, Runtime};
 use tauri_plugin_updater::{Update, UpdaterExt};
 
 pub const REPOSITORY: &str = "frogg-app/frogg";
 pub const FEED: &str = "frogg-next-rs-latest.json";
+/// Event carrying every [`UpdateState`] change to the UI.
+pub const STATE_EVENT: &str = "frogg://update-state";
+/// Background check interval (ui-next: "on start and every few hours").
+const CHECK_EVERY: Duration = Duration::from_secs(4 * 60 * 60);
+/// First background check, once the window has settled.
+const FIRST_CHECK: Duration = Duration::from_secs(10);
 
 #[derive(Default)]
 pub struct Updates {
     pending: Mutex<Option<Update>>,
+    /// The downloaded package of `pending`, verified on install.
+    bytes: Mutex<Option<Vec<u8>>>,
+    state: Mutex<Option<UpdateState>>,
+    busy: Mutex<bool>,
 }
 
-/// What `update_check` reports to the UI (mirrors ui-next's `DesktopUpdateState` subset).
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct Progress {
+    pub percent: f64,
+    pub transferred: u64,
+    pub total: Option<u64>,
+}
+
+/// What the shell reports to the UI (mirrors ui-next's `DesktopUpdateState`).
+#[derive(Clone, Debug, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateState {
-    /// "up-to-date" | "available" | "error"
+    /// "idle" | "checking" | "up-to-date" | "available" | "downloading" | "ready" | "error"
     pub status: &'static str,
+    /// "auto" (downloads itself) | "download" (the user installs from the release page)
+    pub mode: &'static str,
     pub current_version: String,
     pub latest_version: Option<String>,
     pub release_url: String,
     pub notes: Option<String>,
+    pub progress: Option<Progress>,
     pub error: Option<String>,
+}
+
+/// Whether the updater can replace this install: everything but a Linux package (deb/rpm)
+/// install, which only an AppImage escapes.
+fn mode() -> &'static str {
+    if cfg!(target_os = "linux") && std::env::var_os("APPIMAGE").is_none() {
+        "download"
+    } else {
+        "auto"
+    }
+}
+
+fn base_state<R: Runtime>(app: &AppHandle<R>) -> UpdateState {
+    UpdateState {
+        status: "idle",
+        mode: mode(),
+        current_version: app.package_info().version.to_string(),
+        latest_version: None,
+        release_url: format!("https://github.com/{REPOSITORY}/releases"),
+        notes: None,
+        progress: None,
+        error: None,
+    }
+}
+
+/// The last state (idle before the first check).
+pub fn current<R: Runtime>(app: &AppHandle<R>) -> UpdateState {
+    app.state::<Updates>()
+        .state
+        .lock()
+        .unwrap()
+        .clone()
+        .unwrap_or_else(|| base_state(app))
+}
+
+fn publish<R: Runtime>(app: &AppHandle<R>, state: &UpdateState) {
+    *app.state::<Updates>().state.lock().unwrap() = Some(state.clone());
+    let _ = app.emit(STATE_EVENT, state);
+}
+
+/// Checks on start and then periodically, downloading in `auto` mode.
+pub fn start<R: Runtime>(app: &AppHandle<R>) {
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        tokio_sleep(FIRST_CHECK).await;
+        loop {
+            let s = check(&app).await;
+            if s.status == "available" && s.mode == "auto" {
+                let _ = download(&app).await;
+            }
+            tokio_sleep(CHECK_EVERY).await;
+        }
+    });
+}
+
+async fn tokio_sleep(d: Duration) {
+    tokio::time::sleep(d).await;
 }
 
 #[derive(serde::Deserialize)]
@@ -94,16 +178,24 @@ async fn latest(current: &semver::Version) -> Result<Option<Selected>, String> {
     Ok(select(&releases, current))
 }
 
+/// Checks for an update and publishes the result. A download in flight or a ready update is
+/// left alone (its state is returned).
 pub async fn check<R: Runtime>(app: &AppHandle<R>) -> UpdateState {
-    let current_version = app.package_info().version.to_string();
-    let mut state = UpdateState {
-        status: "up-to-date",
-        current_version: current_version.clone(),
-        latest_version: None,
-        release_url: format!("https://github.com/{REPOSITORY}/releases"),
-        notes: None,
-        error: None,
-    };
+    let now = current(app);
+    if matches!(now.status, "downloading" | "ready" | "checking") {
+        return now;
+    }
+    let mut checking = base_state(app);
+    checking.status = "checking";
+    publish(app, &checking);
+    let s = check_inner(app).await;
+    publish(app, &s);
+    s
+}
+
+async fn check_inner<R: Runtime>(app: &AppHandle<R>) -> UpdateState {
+    let mut state = base_state(app);
+    state.status = "up-to-date";
     let fail = |mut s: UpdateState, e: String| {
         s.status = "error";
         s.error = Some(e);
@@ -138,7 +230,9 @@ pub async fn check<R: Runtime>(app: &AppHandle<R>) -> UpdateState {
             state.status = "available";
             state.latest_version = Some(update.version.clone());
             state.notes = update.body.clone();
-            *app.state::<Updates>().pending.lock().unwrap() = Some(update);
+            let u = app.state::<Updates>();
+            *u.pending.lock().unwrap() = Some(update);
+            *u.bytes.lock().unwrap() = None;
             state
         }
         Ok(None) => state,
@@ -146,8 +240,37 @@ pub async fn check<R: Runtime>(app: &AppHandle<R>) -> UpdateState {
     }
 }
 
-/// Downloads and installs the update found by the last `check`, then restarts.
-pub async fn install<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
+/// Percent of `total` done, for the progress line.
+pub fn percent(transferred: u64, total: Option<u64>) -> f64 {
+    match total {
+        Some(t) if t > 0 => (transferred as f64 / t as f64 * 100.0).min(100.0),
+        _ => 0.0,
+    }
+}
+
+/// Downloads the update the last check found, publishing progress; ends `ready`.
+pub async fn download<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
+    let u = app.state::<Updates>();
+    {
+        let mut busy = u.busy.lock().unwrap();
+        if *busy {
+            return Ok(());
+        }
+        *busy = true;
+    }
+    let result = download_inner(app).await;
+    *app.state::<Updates>().busy.lock().unwrap() = false;
+    if let Err(e) = &result {
+        let mut s = current(app);
+        s.status = "error";
+        s.progress = None;
+        s.error = Some(e.clone());
+        publish(app, &s);
+    }
+    result
+}
+
+async fn download_inner<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
     let update = app
         .state::<Updates>()
         .pending
@@ -155,11 +278,69 @@ pub async fn install<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
         .unwrap()
         // Keep it stored: a failed download can then be retried without checking again.
         .clone()
-        .ok_or("no update to install; check first")?;
-    update
-        .download_and_install(|_, _| {}, || {})
+        .ok_or("no update to download; check first")?;
+    let mut s = current(app);
+    s.status = "downloading";
+    s.error = None;
+    s.progress = Some(Progress {
+        percent: 0.0,
+        transferred: 0,
+        total: None,
+    });
+    publish(app, &s);
+    let mut transferred = 0u64;
+    let mut shown = -1.0f64;
+    let progress_app = app.clone();
+    let progress_state = s.clone();
+    let bytes = update
+        .download(
+            move |chunk, total| {
+                transferred += chunk as u64;
+                let pct = percent(transferred, total);
+                // One event per whole percent is plenty.
+                if pct.floor() > shown {
+                    shown = pct.floor();
+                    let mut p = progress_state.clone();
+                    p.progress = Some(Progress {
+                        percent: pct,
+                        transferred,
+                        total,
+                    });
+                    publish(&progress_app, &p);
+                }
+            },
+            || {},
+        )
         .await
         .map_err(|e| e.to_string())?;
+    *app.state::<Updates>().bytes.lock().unwrap() = Some(bytes);
+    let mut ready = s;
+    ready.status = "ready";
+    ready.progress = None;
+    publish(app, &ready);
+    Ok(())
+}
+
+/// Installs the update (downloading it first if needed), then restarts.
+pub async fn install<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
+    if app.state::<Updates>().bytes.lock().unwrap().is_none() {
+        download(app).await?;
+    }
+    let update = app
+        .state::<Updates>()
+        .pending
+        .lock()
+        .unwrap()
+        .clone()
+        .ok_or("no update to install; check first")?;
+    let bytes = app
+        .state::<Updates>()
+        .bytes
+        .lock()
+        .unwrap()
+        .clone()
+        .ok_or("the update didn't download")?;
+    update.install(bytes).map_err(|e| e.to_string())?;
     app.restart();
 }
 
@@ -192,5 +373,12 @@ mod tests {
         assert_eq!(select(&releases, &pre).unwrap().tag, "v1.6.14-next.4");
         let stable = semver::Version::parse("1.6.12").unwrap();
         assert_eq!(select(&releases, &stable).unwrap().tag, "v1.6.13");
+    }
+
+    #[test]
+    fn progress_percent() {
+        assert_eq!(percent(50, Some(200)), 25.0);
+        assert_eq!(percent(50, None), 0.0);
+        assert_eq!(percent(300, Some(200)), 100.0);
     }
 }

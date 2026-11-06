@@ -160,15 +160,15 @@ additive edits only. Sizes are S/M/L.
 **7f hosts-settings-native** — owns `ui/src/views/panels/hosts/**`, `ui/src/views/settings/**`,
 `ui/src/native/`, `apps/client/src-tauri/src` (not the CI workflow)
 
-- M: pairing QR code (pure-Rust QR), relay vs local link, copy link/code, new code, expiry
+- **Done:** M: pairing QR code (pure-Rust QR), relay vs local link, copy link/code, new code, expiry
   countdown, auto-create on open — `hosts/PairDevice.tsx`, `Qr.tsx`.
-- M: pair confirm dialog with expiry, role and not-a-link states — `hosts/PairConfirm.tsx`.
-- M: Here now, Tailscale and Service URL cards.
-- M: offline view: "Use this daemon" rebind, TLS toggle probe, Retry now; route latency.
-- S: route "Use" only reconnects the active host; offline route dot; forget-route confirm;
+- M: pair confirm dialog with expiry, role and not-a-link states — `hosts/PairConfirm.tsx`. **Open:** lives in `shell/host_sheet.rs` (7d).
+- **Done:** M: Here now, Tailscale and Service URL cards.
+- **Done:** M: offline view: "Use this daemon" rebind, TLS toggle probe, Retry now; route latency.
+- **Done:** S: route "Use" only reconnects the active host; offline route dot; forget-route confirm;
   restart daemon in host detail.
-- M: OS notifications on finish/permission honouring delivery, sound and quiet-hours prefs.
-- M: accounts move between hosts; usage & limits page controls; app usage-stats opt-in; bug
+- **Done:** M: OS notifications on finish/permission honouring delivery, sound and quiet-hours prefs.
+- **Done:** M: accounts move between hosts; usage & limits page controls; app usage-stats opt-in; bug
   report attach/save. S: session order setting; device role select.
-- L: design options live preview.
-- M: app updates download mode with progress and periodic checks; L: Android APK updater.
+- **Partly done:** L: design options live preview (button, logo, toast previews; shape, state, sub-work and reveal previews still missing).
+- **Done:** M: app updates download mode with progress and periodic checks. **Open:** L: Android APK updater.

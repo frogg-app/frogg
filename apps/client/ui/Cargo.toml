@@ -93,3 +93,7 @@ web-sys = { version = "0.3", features = [
 # views/chat (bottom anchor on content resize). Own table so feature edits never conflict.
 [target.'cfg(not(target_os = "haiku"))'.dependencies]
 web-sys = { version = "0.3", features = ["ResizeObserver"] }
+
+# views/panels/hosts (pairing QR). Own table so dependency edits never conflict.
+[target.'cfg(not(target_os = "solaris"))'.dependencies]
+qrcodegen = "1.8"

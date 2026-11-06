@@ -20,6 +20,7 @@ pub fn App() -> impl IntoView {
     app.conn.start();
     host_toasts(app);
     pair_links(app);
+    native::alerts::install();
     view! {
         <TitleBar />
         <Shell />
@@ -31,6 +32,7 @@ pub fn App() -> impl IntoView {
         <ToastHost />
         // One image viewer per window (chat panes share it).
         <crate::views::chat::Lightbox />
+        <crate::views::panels::hosts::service_url::ServiceUrlDialog />
     }
 }
 

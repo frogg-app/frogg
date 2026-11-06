@@ -37,3 +37,5 @@ tauri-plugin-process = "2"
 reqwest = { version = "0.13", default-features = false, features = ["json"] }
 rustls = { version = "0.23", default-features = false, features = ["ring"] }
 semver = "1"
+# Periodic update checks (tauri's runtime is tokio already).
+tokio = { version = "1", features = ["time"] }

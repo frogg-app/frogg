@@ -244,6 +244,27 @@ pub fn ChatComposer() -> impl IntoView {
             <Row label="Downloads"><PrefSeg key="downloads" options=&[("ask", "Ask every time"), ("folder", "Save to folder")] /></Row>
             <Row label="Show hidden folders in pickers"><PrefToggle key="hiddenFolders" /></Row>
         </Section>
+        <Section title="Session list">
+            <Row
+                label="Order sessions by"
+                hint="Attention first puts sessions that need you, failed or are ready above working and idle ones, in every grouping. Also in the list's filter menu."
+            >
+                <SortSeg />
+            </Row>
+        </Section>
+    }
+}
+
+/// The session list's sort (shared with its filter menu; saved with the list's prefs).
+#[component]
+fn SortSeg() -> impl IntoView {
+    let list = crate::state::sessions::get();
+    view! {
+        <Seg
+            options=opts(&[("state", "Attention first"), ("recent", "Recent"), ("created", "Created"), ("title", "Title")])
+            value=Signal::derive(move || list.prefs.with(|p| p.sort.clone()))
+            on_change=Callback::new(move |v: String| list.prefs.update(|p| p.sort = v))
+        />
     }
 }
 
@@ -431,6 +452,9 @@ pub fn Notifications() -> impl IntoView {
             </div>
         </Section>
         <Section title="This device">
+            <Row label="OS notifications" hint="Desktop and push alerts while Frogg isn't focused">
+                <NotifyPermission />
+            </Row>
             <Row label="Play sound"><PrefToggle key="playSound" /></Row>
             <Row label="Quiet hours" hint="Hold desktop and push; Inbox still records">
                 <TextField
@@ -448,6 +472,75 @@ pub fn Notifications() -> impl IntoView {
                 />
             </Row>
         </Section>
+    }
+}
+
+/// Whether OS notifications are allowed on this device, with a button to ask.
+#[component]
+fn NotifyPermission() -> impl IntoView {
+    let allowed = RwSignal::new(None::<bool>);
+    let check = move || {
+        leptos::task::spawn_local(async move {
+            allowed.set(Some(crate::native::notify_permission().await));
+        });
+    };
+    // The web reads the state without prompting; the shell asks the OS when undecided.
+    if crate::native::is_tauri() {
+        check();
+    } else {
+        allowed.set(Some(
+            web_sys::Notification::permission() == web_sys::NotificationPermission::Granted,
+        ));
+    }
+    move || {
+        match allowed.get() {
+        Some(true) => view! { <Pill text="allowed" tint="mint" /> }.into_any(),
+        _ => view! { <Button label="Allow notifications" on_press=Callback::new(move |_| check()) /> }
+            .into_any(),
+    }
+    }
+}
+
+/// A live sample of what a design pick changes (ui-next `DesignOptions.tsx` previews), for
+/// the picks whose components live here; the rest show in the app as you change them.
+fn design_preview(key: &str) -> Option<AnyView> {
+    use crate::shell::toast::{Toast, ToastKind};
+    let app = crate::state::get();
+    let prefs = app.prefs;
+    match key {
+        "buttonStyle" => Some(
+            view! {
+                <Button kind=ButtonKind::Primary label="Create session" icon=Ico::Plus />
+                <Button kind=ButtonKind::Primary label="Approve" kbd="⌘↵" />
+                <Button label="Cancel" />
+                <Button kind=ButtonKind::Danger label="Deny" />
+                <Button label="Refresh" icon=Ico::RefreshCw />
+            }
+            .into_any(),
+        ),
+        "logoMotion" => Some(
+            view! {
+                <crate::components::Logo size=48.0 motion=Signal::derive(move || prefs.text("logoMotion")) />
+                <crate::components::Logo size=26.0 motion=Signal::derive(move || prefs.text("logoMotion")) />
+                <span class="faint">"Hover or click the gems."</span>
+            }
+            .into_any(),
+        ),
+        "toastStyle" => Some(
+            view! {
+                <Button label="Show done" on_press=Callback::new(move |_| {
+                    app.toasts.push(Toast::new(ToastKind::Done, "Fix flaky session list finished").detail("Ready to review"));
+                }) />
+                <Button label="Needs you" on_press=Callback::new(move |_| {
+                    app.toasts.push(Toast::new(ToastKind::Needs, "Release notes needs you"));
+                }) />
+                <Button label="Error" on_press=Callback::new(move |_| {
+                    app.toasts.push(Toast::new(ToastKind::Error, "Agent crashed").detail("exit code 137 while running npm test"));
+                }) />
+            }
+            .into_any(),
+        ),
+        _ => None,
     }
 }
 
@@ -572,6 +665,7 @@ pub fn DesignOptions() -> impl IntoView {
                                     .collect_view()}
                             </div>
                         </Block>
+                        {design_preview(key).map(|p| view! { <Block><div class="design-preview">{p}</div></Block> })}
                     </Section>
                 }
             })

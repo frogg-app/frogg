@@ -1,0 +1,338 @@
+/* Hosts tool additions: pair-a-device dialog, QR, here-now cards, offline view (ui-next
+   hosts/PairDevice.tsx, Qr.tsx, HereNow.tsx, Tailscale.tsx, ServiceUrl.tsx, Offline.tsx). */
+
+.sheet-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pair-device {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.pair-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+.pair-qr {
+  padding: 6px;
+}
+.qr {
+  display: block;
+}
+.qr-empty {
+  background: var(--wash, var(--raise));
+}
+.pair-side {
+  flex: 1;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pair-cells {
+  display: flex;
+  gap: 8px;
+}
+.pair-cell {
+  width: 30px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 2px solid var(--cyan);
+  font-size: 20px;
+  font-weight: 600;
+  white-space: pre;
+}
+.pair-cell.gap {
+  margin-right: 10px;
+}
+.pair-link {
+  padding: 9px 12px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.pair-link .t-mono {
+  display: block;
+  font-size: 12px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pair-note {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+.pair-note .t-mono {
+  font-size: 11px;
+}
+.pair-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.pair-foot-t {
+  flex: 1;
+  color: var(--muted);
+  font-size: 12px;
+}
+.pair-foot-t.err {
+  color: var(--coral);
+  line-height: 17px;
+}
+
+/* Route rows: offline dot, latency. */
+.route .hdot.offline {
+  background: var(--coral);
+}
+.route-ms {
+  color: var(--faint);
+  font-size: 11px;
+}
+
+/* Here now / Tailscale / Service URL cards. */
+.hn-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.hn-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.hn-line .t-mono {
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hn-line .grow {
+  flex: 1;
+  min-width: 0;
+}
+.svc-field {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.svc-field .field-input {
+  flex: 1;
+}
+
+/* Design options live previews (settings, ui-next DesignOptions.tsx). */
+.design-preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* App updates download progress (settings, ui-next AppUpdates.tsx). */
+.upd-bar {
+  height: 2px;
+  background: var(--line);
+  overflow: hidden;
+}
+.upd-bar > div {
+  height: 100%;
+  background: var(--cyan);
+  transition: width 0.3s ease;
+}
+
+/* Offline banner (ui-next hosts/Offline.tsx). */
+.off-banner {
+  max-width: 720px;
+  margin-bottom: 16px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-left: 2px solid var(--coral);
+  background: color-mix(in srgb, var(--coral) 6%, transparent);
+}
+.off-banner.wait {
+  border-left-color: var(--amber);
+  background: color-mix(in srgb, var(--amber) 5%, transparent);
+}
+.off-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.off-flag {
+  width: 10px;
+  height: 10px;
+  flex: none;
+  background: var(--coral);
+}
+.off-flag.wait {
+  background: var(--amber);
+}
+.off-flag.live {
+  animation: breathe 1.6s ease-in-out infinite both;
+}
+.off-body {
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 21px;
+}
+.off-hint {
+  color: var(--text);
+  font-size: 13px;
+  line-height: 19px;
+}
+.off-ids {
+  color: var(--faint);
+  font-size: 11px;
+}
+.off-banner .set-acts {
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+.retry-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.retry-track {
+  position: relative;
+  width: 120px;
+  height: 2px;
+  background: var(--line);
+  overflow: hidden;
+}
+.retry-scan {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 25%;
+  background: var(--coral);
+  animation: retry-beam 1.4s ease-in-out infinite;
+}
+@keyframes retry-beam {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(400%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .retry-scan,
+  .off-flag.live {
+    animation: none;
+  }
+}
+.retry-on {
+  color: var(--coral);
+  font-size: 11.5px;
+}
+.retry-idle {
+  color: var(--faint);
+  font-size: 11.5px;
+}
+
+/* Here now card. */
+.hn-device {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.hn-device .hn-line {
+  min-height: 32px;
+}
+.hn-name {
+  display: block;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hn-sub {
+  display: block;
+  font-size: 12px;
+}
+.hn-sub.mint {
+  color: var(--mint);
+}
+.hn-err {
+  color: var(--coral);
+  font-size: 12px;
+}
+.hn-request {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: color-mix(in srgb, var(--amber) 6%, transparent);
+}
+.hn-request .grow {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.hn-diamond {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  background: var(--amber);
+  transform: rotate(45deg);
+}
+.muted.amber {
+  color: var(--amber);
+}
+.muted.coral {
+  color: var(--coral);
+}
+
+/* Service URL dialog. */
+.svc-body {
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 20px;
+}
+.svc-choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  background: none;
+  color: var(--text);
+  font-size: 13.5px;
+  text-align: left;
+  cursor: pointer;
+}
+.svc-choice.on {
+  border-color: var(--cyan);
+  background: color-mix(in srgb, var(--cyan) 8%, transparent);
+}
+.svc-diamond {
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--muted);
+  transform: rotate(45deg);
+}
+.svc-choice.on .svc-diamond {
+  background: var(--cyan2);
+  border-color: var(--cyan2);
+}
+.svc-remember {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}

@@ -46,6 +46,8 @@
 
 #![allow(dead_code)] // The API is for other streams; not all of it is called yet.
 
+pub mod alerts;
+
 use leptos::task::spawn_local;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
@@ -324,10 +326,32 @@ pub fn open_external(url: &str) {
 
 /// Shows an OS notification (asks for permission the first time).
 pub fn notify(title: &str, body: Option<&str>) {
+    notify_with(title, body, false);
+}
+
+/// Asks for notification permission now (call from a user gesture, e.g. a settings toggle).
+/// Returns whether notifications are allowed.
+pub async fn notify_permission() -> bool {
+    if is_tauri() {
+        return invoke::<bool>("notify_permission", ())
+            .await
+            .unwrap_or(false);
+    }
+    use web_sys::{Notification, NotificationPermission};
+    if Notification::permission() == NotificationPermission::Default {
+        if let Ok(p) = Notification::request_permission() {
+            let _ = JsFuture::from(p).await;
+        }
+    }
+    Notification::permission() == NotificationPermission::Granted
+}
+
+/// As [`notify`], with the platform's default sound when `sound` (web: `silent` otherwise).
+pub fn notify_with(title: &str, body: Option<&str>, sound: bool) {
     if is_tauri() {
         fire(
             "notify",
-            serde_json::json!({ "title": title, "body": body }),
+            serde_json::json!({ "title": title, "body": body, "sound": sound }),
         );
         return;
     }
@@ -346,6 +370,7 @@ pub fn notify(title: &str, body: Option<&str>) {
         if let Some(body) = body {
             options.set_body(&body);
         }
+        options.set_silent(Some(!sound));
         let _ = Notification::new_with_options(&title, &options);
     });
 }
@@ -422,6 +447,36 @@ async fn pick_files_web(multiple: bool) -> Result<Vec<PickedFile>, JsValue> {
         });
     }
     Ok(out)
+}
+
+/// Saves `text` as a file named `name`: the shell's save dialog, or a browser download.
+/// `Ok(false)` when the user cancelled the dialog.
+pub async fn save_text(name: &str, text: &str) -> Result<bool, String> {
+    if is_tauri() {
+        return invoke(
+            "save_text",
+            serde_json::json!({ "name": name, "text": text }),
+        )
+        .await;
+    }
+    let document = web_sys::window()
+        .and_then(|w| w.document())
+        .ok_or("no document")?;
+    let parts = js_sys::Array::of1(&JsValue::from_str(text));
+    let opts = web_sys::BlobPropertyBag::new();
+    opts.set_type("text/markdown");
+    let blob = web_sys::Blob::new_with_str_sequence_and_options(&parts, &opts).map_err(js_error)?;
+    let url = web_sys::Url::create_object_url_with_blob(&blob).map_err(js_error)?;
+    let a: web_sys::HtmlAnchorElement = document
+        .create_element("a")
+        .map_err(js_error)?
+        .dyn_into()
+        .map_err(|_| "not an anchor".to_owned())?;
+    a.set_href(&url);
+    a.set_download(name);
+    a.click();
+    let _ = web_sys::Url::revoke_object_url(&url);
+    Ok(true)
 }
 
 // ----- clipboard ------------------------------------------------------------------------------
@@ -546,13 +601,80 @@ pub fn on_open_url(callback: impl Fn(String) + 'static) {
 #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase", default)]
 pub struct UpdateState {
-    /// "disabled" | "up-to-date" | "available" | "error"
+    /// "disabled" | "idle" | "checking" | "up-to-date" | "available" | "downloading" | "ready"
+    /// | "error"
     pub status: String,
+    /// "auto" (the shell downloads and installs) | "download" (the user installs from the
+    /// release page).
+    pub mode: String,
     pub current_version: String,
     pub latest_version: Option<String>,
     pub release_url: String,
     pub notes: Option<String>,
+    pub progress: Option<UpdateProgress>,
     pub error: Option<String>,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase", default)]
+pub struct UpdateProgress {
+    pub percent: f64,
+    pub transferred: u64,
+    pub total: Option<u64>,
+}
+
+/// The shell's last update state, without checking.
+pub async fn update_state() -> UpdateState {
+    match invoke::<UpdateState>("update_state", ()).await {
+        Ok(state) => state,
+        Err(_) => UpdateState {
+            status: "disabled".into(),
+            current_version: env!("CARGO_PKG_VERSION").into(),
+            ..Default::default()
+        },
+    }
+}
+
+/// Downloads the found update in the background (`auto` mode) or opens its release page
+/// (`download` mode).
+pub async fn update_download() -> Result<(), String> {
+    invoke("update_download", ()).await
+}
+
+thread_local! {
+    static UPDATES: std::cell::Cell<Option<leptos::prelude::RwSignal<Option<UpdateState>>>> =
+        const { std::cell::Cell::new(None) };
+}
+
+/// The shell's update state, live (one listener for the app's lifetime). None until read.
+pub fn updates() -> leptos::prelude::RwSignal<Option<UpdateState>> {
+    use leptos::prelude::*;
+    if let Some(s) = UPDATES.with(|u| u.get()) {
+        return s;
+    }
+    // A root owner of its own: the first reader may be a page that unmounts.
+    let owner = Owner::new_root(None);
+    let s = owner.with(|| RwSignal::new(None::<UpdateState>));
+    std::mem::forget(owner);
+    UPDATES.with(|u| u.set(Some(s)));
+    on_update_state(move |st| s.set(Some(st)));
+    spawn_local(async move {
+        let st = update_state().await;
+        // An event may have landed first; keep the newer one.
+        if s.get_untracked().is_none() {
+            s.set(Some(st));
+        }
+    });
+    s
+}
+
+/// Every update state change the shell publishes (checks, progress, ready).
+pub fn on_update_state(callback: impl Fn(UpdateState) + 'static) {
+    listen("frogg://update-state", move |payload| {
+        if let Ok(s) = serde_json::from_value::<UpdateState>(payload) {
+            callback(s);
+        }
+    });
 }
 
 pub async fn update_check() -> UpdateState {

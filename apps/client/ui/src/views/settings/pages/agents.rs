@@ -6,7 +6,7 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use serde_json::{json, Value};
 
-use crate::components::{Button, ButtonKind, Ico, Icon, Seg};
+use crate::components::{Button, ButtonKind, Ico, Icon, Seg, Select, SelectOption};
 use crate::state::config::{self, call, ns, provider_label, s, Action};
 use crate::state::hosts::Host;
 use crate::state::signin::{open_sign_in, SignInTarget};
@@ -302,6 +302,142 @@ pub fn Accounts() -> impl IntoView {
     }
 }
 
+/// Export a host's provider accounts as a JSON bundle, or import one exported elsewhere
+/// (ui-next `Accounts.tsx` `Transfer`). Import never overwrites an existing account.
+#[component]
+fn Transfer(host_id: String, providers: Vec<String>, reload: Callback<()>) -> impl IntoView {
+    let app = crate::state::get();
+    let hid = StoredValue::new(host_id);
+    let providers = StoredValue::new(providers);
+    let exported = RwSignal::new(None::<String>);
+    let paste = RwSignal::new(None::<String>);
+    let note = RwSignal::new(None::<String>);
+    let act = Action::new();
+    let client = move || {
+        app.conn
+            .client_of(&hid.get_value())
+            .ok_or_else(|| "This host is offline.".to_owned())
+    };
+    let export = Callback::new(move |_| {
+        note.set(None);
+        let ps = providers.get_value();
+        act.run(
+            "export",
+            async move {
+                let c = client()?;
+                let mut bundles = Vec::new();
+                for p in ps {
+                    let v = ns(
+                        &c,
+                        "provider.account.export.request",
+                        json!({ "provider": p }),
+                    )
+                    .await?;
+                    if let Some(e) = v.get("error").and_then(Value::as_str) {
+                        return Err(e.to_owned());
+                    }
+                    if let Some(b) = v.get("bundle").filter(|b| !b.is_null()) {
+                        bundles.push(b.clone());
+                    }
+                }
+                Ok(if bundles.len() == 1 {
+                    bundles.remove(0)
+                } else {
+                    Value::Array(bundles)
+                })
+            },
+            move |v| exported.set(serde_json::to_string_pretty(&v).ok()),
+        );
+    });
+    let import = Callback::new(move |_| {
+        note.set(None);
+        let parsed: Value = match serde_json::from_str(&paste.get_untracked().unwrap_or_default()) {
+            Ok(v) => v,
+            Err(_) => {
+                note.set(Some("That is not valid JSON.".into()));
+                return;
+            }
+        };
+        let list = match parsed {
+            Value::Array(a) => a,
+            v => vec![v],
+        };
+        let n = list.len();
+        act.run(
+            "import",
+            async move {
+                let c = client()?;
+                for bundle in list {
+                    let v = ns(
+                        &c,
+                        "provider.account.import.request",
+                        json!({ "bundle": bundle }),
+                    )
+                    .await?;
+                    if let Some(e) = v.get("error").and_then(Value::as_str) {
+                        return Err(e.to_owned());
+                    }
+                }
+                Ok(Value::Null)
+            },
+            move |_| {
+                paste.set(None);
+                note.set(Some(format!(
+                    "Imported {n} bundle{}.",
+                    if n == 1 { "" } else { "s" }
+                )));
+                reload.run(());
+            },
+        );
+    });
+    let pending = move |k: &'static str| act.pending.get() == Some(k);
+    view! {
+        <Section title="Move accounts between hosts">
+            <Row label="Export bundle" hint="Contains credentials in plain text">
+                {move || if exported.get().is_none() {
+                    view! {
+                        <Button
+                            label=Signal::derive(move || if pending("export") { "Exporting…".to_owned() } else { "Export…".to_owned() })
+                            disabled=Signal::derive(move || providers.with_value(Vec::is_empty) || act.busy())
+                            on_press=export
+                        />
+                    }.into_any()
+                } else {
+                    view! { <Button label="Hide" on_press=Callback::new(move |_| exported.set(None)) /> }.into_any()
+                }}
+            </Row>
+            {move || exported.get().map(|t| view! {
+                <Block>
+                    <textarea class="set-area tall t-mono" prop:value=t on:input=move |ev| exported.set(Some(event_target_value(&ev)))></textarea>
+                </Block>
+            })}
+            <Row label="Import bundle">
+                {move || paste.get().is_none().then(|| view! { <Button label="Paste JSON…" on_press=Callback::new(move |_| paste.set(Some(String::new()))) /> })}
+            </Row>
+            {move || paste.get().is_some().then(|| view! {
+                <Block>
+                    <textarea
+                        class="set-area t-mono"
+                        placeholder="Paste an exported bundle"
+                        prop:value=move || paste.get().unwrap_or_default()
+                        on:input=move |ev| paste.set(Some(event_target_value(&ev)))
+                    ></textarea>
+                    <Acts>
+                        <Button label="Cancel" on_press=Callback::new(move |_| paste.set(None)) />
+                        <Button
+                            kind=ButtonKind::Primary
+                            label=Signal::derive(move || if pending("import") { "Importing…".to_owned() } else { "Import".to_owned() })
+                            disabled=Signal::derive(move || paste.get().unwrap_or_default().trim().is_empty() || act.busy())
+                            on_press=import
+                        />
+                    </Acts>
+                </Block>
+            })}
+            <ErrorLine text=Signal::derive(move || act.error.get().or_else(|| note.get())) />
+        </Section>
+    }
+}
+
 #[component]
 fn HostAccounts(host: Host, named: bool) -> impl IntoView {
     let app = crate::state::get();
@@ -388,6 +524,8 @@ fn HostAccounts(host: Host, named: bool) -> impl IntoView {
                 .collect();
             let usage = d.get("usage").cloned().unwrap_or(Value::Null);
             let hid = hid.get_value();
+            let all: Vec<String> = groups.iter().map(|g| g.0.clone()).collect();
+            let hid_t = hid.clone();
             view! {
                 {groups
                     .into_iter()
@@ -416,6 +554,7 @@ fn HostAccounts(host: Host, named: bool) -> impl IntoView {
                         {rest.into_iter().map(|p| view! { <AddAccount host_id=hid.clone() provider=p reload=reload /> }).collect_view()}
                     </Section>
                 })}
+                <Transfer host_id=hid_t providers=all reload=reload />
             }
             .into_any()
         }}
@@ -765,10 +904,92 @@ pub fn UsageLimits() -> impl IntoView {
             </RpcStatus>
         </Section>
         <Section title="Meters">
-            <Row label="Warn at"><NumField value=num("warnPct") on_change=set_num("warnPct") unit="%" max=100.0 /></Row>
-            <Row label="Critical at"><NumField value=num("criticalPct") on_change=set_num("criticalPct") unit="%" max=100.0 /></Row>
-            <Row label="Animate meters"><PrefToggle key="meterAnimate" /></Row>
-            <Row label="Suggest switching account near a limit"><PrefToggle key="suggestSwitch" /></Row>
+            <Row label="Refresh on a timer" hint="The usage endpoint rate-limits; Frogg backs off on its own when it does">
+                <PrefToggle key="meterTimer" />
+                <NumField value=num("meterSeconds") on_change=set_num("meterSeconds") unit="s" min=30.0 max=3600.0 />
+            </Row>
+            <Row label="Refresh on hover" hint="Pointer over the usage panel"><PrefToggle key="meterHover" /></Row>
+            <Row label="Refresh after a reply" hint="When a session finishes a turn"><PrefToggle key="meterAfterReply" /></Row>
+            <Row label="Warning at"><NumField value=num("warnPct") on_change=set_num("warnPct") unit="%" min=1.0 max=100.0 /></Row>
+            <Row label="Critical at"><NumField value=num("criticalPct") on_change=set_num("criticalPct") unit="%" min=1.0 max=100.0 /></Row>
+            <Row label="Animate changes"><PrefToggle key="meterAnimate" /></Row>
+        </Section>
+        <Note>"Device settings for the rings in the composer and status bar"</Note>
+        <LimitHit usage=usage />
+    }
+}
+
+/// "When a limit is hit": the host's auto-resume, the composer countdown, account switching.
+#[component]
+fn LimitHit(usage: config::Rpc) -> impl IntoView {
+    let app = crate::state::get();
+    let prefs = app.prefs;
+    let cfg = config::get();
+    let host = Signal::derive(move || {
+        app.conn
+            .active_link()
+            .server_name
+            .unwrap_or_else(|| "host".to_owned())
+    });
+    // Providers with more than one account reporting usage can suggest a switch.
+    let multi = Signal::derive(move || {
+        let list = usage
+            .data
+            .get()
+            .and_then(|d| d.get("providers").and_then(Value::as_array).cloned())
+            .unwrap_or_default();
+        let mut names: Vec<String> = Vec::new();
+        for p in &list {
+            let id = s(p, "providerId");
+            let n = list.iter().filter(|q| s(q, "providerId") == id).count();
+            let label = provider_label(&id);
+            if n > 1 && !names.contains(&label) {
+                names.push(label);
+            }
+        }
+        names
+    });
+    let countdown = vec![
+        SelectOption::new("reset", "Immediately at reset"),
+        SelectOption::new("1m", "1 minute after reset"),
+        SelectOption::new("5m", "5 minutes after reset"),
+        SelectOption::new("off", "No countdown"),
+    ];
+    view! {
+        <Section title="When a limit is hit">
+            <Row label="Resume after the window resets" hint=host>
+                {move || match cfg.flag("/autoResumeOnUsageLimit") {
+                    // COMPAT: daemons before autoResumeOnUsageLimit omit the key.
+                    None => view! { <Pill text="needs a newer daemon" /> }.into_any(),
+                    Some(_) => view! {
+                        <Toggle
+                            value=Signal::derive(move || cfg.flag("/autoResumeOnUsageLimit").unwrap_or(false))
+                            on_change=Callback::new(move |v: bool| cfg.patch(json!({ "autoResumeOnUsageLimit": v })))
+                            label="Resume after the window resets"
+                        />
+                    }.into_any(),
+                }}
+            </Row>
+            <Row label="Auto-resume countdown" hint="Shown in the composer; cancel any time">
+                <Select
+                    options=countdown
+                    value=Signal::derive(move || prefs.text("resumeCountdown"))
+                    on_change=Callback::new(move |v: String| prefs.set("resumeCountdown", v))
+                />
+            </Row>
+            <Row
+                label="Suggest moving to another account"
+                hint=Signal::derive(move || {
+                    let m = multi.get();
+                    if m.is_empty() {
+                        "Needs a second account on the same provider".to_owned()
+                    } else {
+                        format!("Offers the {} account with headroom", m.join(" or "))
+                    }
+                })
+            >
+                <PrefToggle key="suggestSwitch" />
+            </Row>
         </Section>
     }
 }

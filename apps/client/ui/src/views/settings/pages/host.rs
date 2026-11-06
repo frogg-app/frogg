@@ -169,7 +169,7 @@ const ROLES: &[(&str, &str)] = &[
 ];
 const INVITE_ROLES: &[(&str, &str)] = &[("operator", "Operator"), ("viewer", "Viewer")];
 
-fn device_icon(name: &str) -> Ico {
+pub fn device_icon(name: &str) -> Ico {
     let n = name.to_lowercase();
     if ["phone", "pixel", "android", "iphone", "galaxy"]
         .iter()
@@ -186,7 +186,7 @@ fn device_icon(name: &str) -> Ico {
     }
 }
 
-fn seen_text(d: &Value) -> String {
+pub fn seen_text(d: &Value) -> String {
     let connected = d.get("connected") == Some(&Value::Bool(true));
     let current = d.get("current") == Some(&Value::Bool(true));
     let mut seen = match d.get("lastSeenAt").and_then(Value::as_str) {
@@ -414,11 +414,12 @@ fn PendingRow(req: Value, on_done: Callback<()>) -> impl IntoView {
 #[component]
 fn DeviceRow(device: Value, on_change: Callback<()>) -> impl IntoView {
     let act = Action::new();
-    let can_roles = config::feature("deviceRoleManagement") == Some(true);
+    let current = device.get("current") == Some(&Value::Bool(true));
+    let owner = config::caller_role().is_none_or(|r| r == "owner");
+    let can_roles = config::feature("deviceRoleManagement") == Some(true) && owner && !current;
     let name = RwSignal::new(None::<String>);
     let draft = RwSignal::new(String::new());
     let id = StoredValue::new(s(&device, "id"));
-    let current = device.get("current") == Some(&Value::Bool(true));
     let dname = s(&device, "name");
     let role = s(&device, "role");
     let seen = seen_text(&device);

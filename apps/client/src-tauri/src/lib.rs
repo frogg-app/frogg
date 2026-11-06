@@ -10,12 +10,14 @@
 //! - `set_window_theme { colors: { bg, faint, accent, symbols } }`
 //! - `open_session_window { sessionId, hostId? }` → bool
 //! - `open_external { url }` (http/https/mailto only)
-//! - `notify { title, body? }`
+//! - `notify { title, body?, sound? }`, `notify_permission` → bool (asks when undecided)
 //! - `pick_files { multiple }` → `[{ name, mime, size, base64 }]`
+//! - `save_text { name, text }` → false when the save dialog was cancelled
 //! - `clipboard_write { text }`, `clipboard_read` → string
 //! - `take_pending_link` → the `frogg-next-rs://` link that launched or reached the app, if any;
 //!   later links arrive as the `frogg://open-url` event (payload: the url string)
-//! - `update_check` → `UpdateState`, `update_install` (desktop only)
+//! - `update_check` → `UpdateState`, `update_state` → the last one, `update_download`,
+//!   `update_install` (desktop only); changes arrive as the `frogg://update-state` event
 
 use base64::Engine as _;
 use serde::Serialize;
@@ -154,18 +156,35 @@ fn notify<R: Runtime>(
     app: AppHandle<R>,
     title: String,
     body: Option<String>,
+    sound: Option<bool>,
 ) -> Result<(), String> {
-    let n = app.notification();
-    if n.permission_state().ok() != Some(PermissionState::Granted)
-        && n.request_permission().ok() != Some(PermissionState::Granted)
-    {
+    if !notify_permission(app.clone()) {
         return Err("notifications not permitted".into());
     }
-    let mut b = n.builder().title(title);
+    let mut b = app.notification().builder().title(title);
     if let Some(body) = body {
         b = b.body(body);
     }
+    if sound == Some(true) {
+        b = b.sound(DEFAULT_SOUND);
+    }
     b.show().map_err(|e| e.to_string())
+}
+
+/// The platform's default notification sound, by the name the notification plugin expects.
+#[cfg(target_os = "macos")]
+const DEFAULT_SOUND: &str = "NSUserNotificationDefaultSoundName";
+#[cfg(target_os = "windows")]
+const DEFAULT_SOUND: &str = "Default";
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+const DEFAULT_SOUND: &str = "message-new-instant";
+
+/// Whether notifications are allowed, asking the OS (the Android 13+ prompt) when undecided.
+#[tauri::command]
+fn notify_permission<R: Runtime>(app: AppHandle<R>) -> bool {
+    let n = app.notification();
+    n.permission_state().ok() == Some(PermissionState::Granted)
+        || n.request_permission().ok() == Some(PermissionState::Granted)
 }
 
 #[derive(Serialize)]
@@ -191,6 +210,29 @@ fn mime_for(name: &str) -> &'static str {
         }
         _ => "application/octet-stream",
     }
+}
+
+/// Asks where to save `text` (suggesting `name`) and writes it. False when cancelled.
+#[tauri::command]
+async fn save_text<R: Runtime>(
+    app: AppHandle<R>,
+    name: String,
+    text: String,
+) -> Result<bool, String> {
+    use std::io::Write as _;
+    let Some(path) = app
+        .dialog()
+        .file()
+        .set_file_name(&name)
+        .blocking_save_file()
+    else {
+        return Ok(false);
+    };
+    let mut opts = tauri_plugin_fs::OpenOptions::new();
+    opts.read(false).write(true).create(true).truncate(true);
+    let mut file = app.fs().open(path, opts).map_err(|e| e.to_string())?;
+    file.write_all(text.as_bytes()).map_err(|e| e.to_string())?;
+    Ok(true)
 }
 
 #[tauri::command]
@@ -256,10 +298,41 @@ async fn update_install<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
     updates::install(&app).await
 }
 
+#[cfg(desktop)]
+#[tauri::command]
+fn update_state<R: Runtime>(app: AppHandle<R>) -> updates::UpdateState {
+    updates::current(&app)
+}
+
+/// `auto` mode: downloads in the background (progress on `frogg://update-state`).
+/// `download` mode: opens the release page, where the user picks the package.
+#[cfg(desktop)]
+#[tauri::command]
+async fn update_download<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
+    let s = updates::current(&app);
+    if s.mode == "download" {
+        open_external_url(&app, &s.release_url);
+        return Ok(());
+    }
+    updates::download(&app).await
+}
+
 #[cfg(mobile)]
 #[tauri::command]
 fn update_check() -> serde_json::Value {
     serde_json::json!({ "status": "disabled" })
+}
+
+#[cfg(mobile)]
+#[tauri::command]
+fn update_state() -> serde_json::Value {
+    serde_json::json!({ "status": "disabled" })
+}
+
+#[cfg(mobile)]
+#[tauri::command]
+fn update_download() -> Result<(), String> {
+    Err("updates come from the store on this platform".into())
 }
 
 #[cfg(mobile)]
@@ -312,12 +385,16 @@ pub fn run() {
             open_session_window,
             open_external,
             notify,
+            notify_permission,
             pick_files,
+            save_text,
             clipboard_write,
             clipboard_read,
             take_pending_link,
             update_check,
             update_install,
+            update_state,
+            update_download,
         ])
         .setup(|app| {
             let handle = app.handle().clone();
@@ -339,6 +416,8 @@ pub fn run() {
             // The main window shows at once; index.html paints the splash before the wasm loads.
             // A launch link goes into its `?pair=` query (and is consumed there).
             windows::create_main_window(&handle)?;
+            #[cfg(desktop)]
+            updates::start(&handle);
             Ok(())
         })
         .run(tauri::generate_context!())
