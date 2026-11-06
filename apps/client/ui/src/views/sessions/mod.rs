@@ -174,8 +174,10 @@ fn model(needle: &str) -> Model {
             let Some(pid) = x.s.parent_id() else { break };
             let key = format!("{}:{pid}", x.host.as_deref().unwrap_or(""));
             match index.get(&key) {
-                Some(&p) if p != i => cur = p,
-                _ => break,
+                // A parent cycle leads back to the start: treat the row as its own root.
+                Some(&p) if p == i => return i,
+                Some(&p) => cur = p,
+                None => break,
             }
         }
         cur
