@@ -285,7 +285,12 @@ impl Hosts {
         }
         let host = Host {
             id: existing.id.clone(),
-            name: input.name,
+            // A pairing that only knows the daemon's server id keeps the saved human name.
+            name: if input.server_id.as_deref() == Some(input.name.as_str()) {
+                existing.name
+            } else {
+                input.name
+            },
             endpoint: input.endpoint,
             tls: input.tls,
             password: input.password.or(existing.password),
