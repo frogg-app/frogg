@@ -108,7 +108,9 @@ function summary(
         icon: Bot,
         verb: d.subAgentType ?? "Subagent",
         arg: d.description ?? "",
-        meta: d.actions ? `${d.actions.length} steps` : undefined,
+        // Actions are a capped tail whose indexes keep counting, so the last index is the total.
+        // Providers without a step feed send an empty list: show nothing rather than "0 steps".
+        meta: d.actions?.length ? `${d.actions.at(-1)!.index} steps` : undefined,
       };
     case "plan":
       return {

@@ -586,5 +586,13 @@ describe("ClaudeAgentSession sub-agent sidechain updates", () => {
     expect(latest.detail.log).not.toContain("[Read] file-5.md");
     expect(latest.detail.log).toContain("[Read] file-6.md");
     expect(latest.detail.log).toContain("[Read] file-205.md");
+    // The steps ride along as structured actions: the kept tail, indexed from the first step.
+    expect(latest.detail.actions).toHaveLength(200);
+    expect(latest.detail.actions?.[0]).toEqual({
+      index: 6,
+      toolName: "Read",
+      summary: "file-6.md",
+    });
+    expect(latest.detail.actions?.at(-1)?.index).toBe(205);
   });
 });

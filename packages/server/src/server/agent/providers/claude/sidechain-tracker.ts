@@ -134,7 +134,12 @@ export class ClaudeSidechainTracker {
           action.summary ? `[${action.toolName}] ${action.summary}` : `[${action.toolName}]`,
         )
         .join("\n"),
-      actions: [],
+      // The kept tail; `index` keeps counting past the cap, so the last index is the total.
+      actions: state.actions.map(({ index, toolName, summary }) => ({
+        index,
+        toolName,
+        ...(summary ? { summary } : {}),
+      })),
     };
 
     const descriptorEvents: AgentStreamEvent[] = this.isDescriptorOwnedElsewhere()

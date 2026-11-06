@@ -890,9 +890,8 @@ const ToolCallDetailPayloadSchema: z.ZodType<ToolCallDetail, unknown> = z.discri
       description: z.string().optional(),
       childSessionId: z.string().optional(),
       log: z.string(),
-      // Compat cruft for clients <= 0.1.65-beta.3 that required this field. Producers still
-      // emit `[]`; nothing reads it. Drop the field (and the `[]` emissions) once those
-      // clients are no longer in the field.
+      // The subagent's steps, newest last; a capped tail whose `index` keeps counting from 1.
+      // Claude fills it from the live sidechain; providers without a step feed send `[]`.
       actions: z
         .array(
           z.object({
