@@ -88,6 +88,11 @@ contains it. To claim on the host, run `frogg auth claim` (add `--home` for a
   you meant to pair with.
 - Turning claim mode on, or turning `trustLan` off, disconnects the sessions that were
   already relying on LAN trust. It does not wait for their next reconnect.
+- Owners change `trustLan` and claim mode from Settings > Security (`auth.settings.update`),
+  which writes them to `daemon.auth` in `config.json`. A value set by `FROGG_TRUST_LAN`,
+  `FROGG_CLAIM_MODE` or `FROGG_PASSWORD` is locked: the daemon refuses the change with an
+  error naming the variable, and Settings shows the lock. `FROGG_PASSWORD` locks only the
+  password.
 
 The stock `frogg` brand ships with claim mode **off**, LAN trust **on** and binds `0.0.0.0`.
 A brand can change these defaults, plus `claimScope`, in `brand.json` (see

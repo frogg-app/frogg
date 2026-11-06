@@ -17,7 +17,9 @@ afterEach(() => {
   for (const home of homes.splice(0)) rmSync(home, { recursive: true, force: true });
 });
 
-function harness(overrides: { claimMode?: boolean; trustLan?: boolean } = {}) {
+function harness(
+  overrides: { claimMode?: boolean; trustLan?: boolean; envLocked?: string[] } = {},
+) {
   const home = mkdtempSync(path.join(os.tmpdir(), "frogg-device-access-"));
   homes.push(home);
   const claimStore = createClaimStore(home);
@@ -48,7 +50,7 @@ function harness(overrides: { claimMode?: boolean; trustLan?: boolean } = {}) {
         passwordHash = hash;
         settings.passwordEnabled = hash !== null;
       },
-      overrideControlledPaths: () => ["daemon.auth.trustLan"],
+      overrideControlledPaths: () => overrides.envLocked ?? [],
     },
     connectedCredentialIds: () => connected,
     onDeviceRevoked: (id) => revoked.push(id),
@@ -205,6 +207,38 @@ describe("device access service", () => {
     expect(updated.claimMode).toBe(true);
     expect(updated.trustLan).toBe(true);
     expect(updated.lanTrustEffective).toBe(false);
+  });
+
+  test("an owner's trustLan and claimMode changes reach the settings store", async () => {
+    const h = harness({ claimMode: false, trustLan: true });
+    const updated = await h.service.updateSettings({ device: null }, { trustLan: false });
+    expect(updated.trustLan).toBe(false);
+    expect(h.settings.trustLan).toBe(false);
+  });
+
+  test("settings set by an environment variable are refused with the variable named", async () => {
+    const h = harness({
+      envLocked: ["daemon.auth.trustLan", "daemon.auth.claimMode", "daemon.auth.password"],
+    });
+    await expect(h.service.updateSettings({ device: null }, { trustLan: false })).rejects.toThrow(
+      /FROGG_TRUST_LAN/,
+    );
+    await expect(h.service.updateSettings({ device: null }, { claimMode: true })).rejects.toThrow(
+      /FROGG_CLAIM_MODE/,
+    );
+    await expect(h.service.setPassword({ device: null }, "long-enough")).rejects.toThrow(
+      /FROGG_PASSWORD/,
+    );
+    expect(h.settings).toMatchObject({ trustLan: true, claimMode: false });
+  });
+
+  test("an environment password does not lock trustLan or claimMode", async () => {
+    const h = harness({ envLocked: ["daemon.auth.password"] });
+    const updated = await h.service.updateSettings(
+      { device: null },
+      { trustLan: false, claimMode: true },
+    );
+    expect(updated).toMatchObject({ trustLan: false, claimMode: true });
   });
 
   test("settings changes are owner-only", async () => {

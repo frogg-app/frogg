@@ -1239,10 +1239,7 @@ export async function createFroggDaemon(
         passwordEnabled: Boolean(authConfig.password),
       }),
       update: async (input) => {
-        daemonConfigStore.patch({
-          ...(input.claimMode === undefined ? {} : { claimMode: input.claimMode }),
-          ...(input.trustLan === undefined ? {} : { trustLan: input.trustLan }),
-        });
+        daemonConfigStore.patchAccess(input);
         // Withdrawing LAN trust has to reach the clients it already let in,
         // or it takes effect only at their next reconnect.
         if (

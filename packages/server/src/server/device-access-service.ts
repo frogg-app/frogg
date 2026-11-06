@@ -238,6 +238,15 @@ export function createDeviceAccessService(options: DeviceAccessServiceOptions) {
       input: { claimMode?: boolean; trustLan?: boolean },
     ): Promise<AuthSettings> => {
       requireOwner(caller);
+      // An environment override wins at every start, so a change here would
+      // apply until the next restart and then silently revert.
+      const locked = settingsStore.overrideControlledPaths();
+      if (input.trustLan !== undefined && locked.includes("daemon.auth.trustLan")) {
+        throw new DeviceAccessError(envLockedMessage("Trust LAN", "FROGG_TRUST_LAN"));
+      }
+      if (input.claimMode !== undefined && locked.includes("daemon.auth.claimMode")) {
+        throw new DeviceAccessError(envLockedMessage("Claim mode", "FROGG_CLAIM_MODE"));
+      }
       await settingsStore.update(input);
       options.onSettingsChanged?.();
       return settings();
@@ -248,6 +257,9 @@ export function createDeviceAccessService(options: DeviceAccessServiceOptions) {
       password: string | null,
     ): Promise<AuthSettings> => {
       requireOwner(caller);
+      if (settingsStore.overrideControlledPaths().includes("daemon.auth.password")) {
+        throw new DeviceAccessError(envLockedMessage("The password", "FROGG_PASSWORD"));
+      }
       if (password !== null && password.length < DAEMON_PASSWORD_MIN_LENGTH) {
         throw new DeviceAccessError(
           `The password must be at least ${DAEMON_PASSWORD_MIN_LENGTH} characters`,
@@ -258,6 +270,10 @@ export function createDeviceAccessService(options: DeviceAccessServiceOptions) {
       return settings();
     },
   };
+}
+
+function envLockedMessage(setting: string, envVar: string): string {
+  return `${setting} is set by the ${envVar} environment variable on the daemon host. Change or remove it there and restart the daemon.`;
 }
 
 export type DeviceAccessService = ReturnType<typeof createDeviceAccessService>;

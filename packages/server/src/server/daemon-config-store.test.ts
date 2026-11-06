@@ -110,6 +110,34 @@ describe("DaemonConfigStore", () => {
     }
   });
 
+  test("patchAccess applies and persists trustLan and claimMode; patch ignores them", () => {
+    const froggHome = mkdtempSync(path.join(tmpdir(), "frogg-daemon-config-store-"));
+    tempDirs.push(froggHome);
+    const store = new DaemonConfigStore(froggHome, {
+      relay: { enabled: false },
+      mcp: { injectIntoAgents: false },
+      browserTools: { enabled: false },
+      providers: {},
+      metadataGeneration: { providers: [] },
+      autoArchiveAfterMerge: false,
+      enableTerminalAgentHooks: false,
+      appendSystemPrompt: "",
+      trustLan: true,
+      claimMode: false,
+    } as MutableDaemonConfig);
+
+    // set_daemon_config is not an access-management path.
+    store.patch({ trustLan: false } as never);
+    expect((store.get() as Record<string, unknown>).trustLan).toBe(true);
+
+    store.patchAccess({ trustLan: false, claimMode: true });
+    expect(store.get()).toMatchObject({ trustLan: false, claimMode: true });
+    expect(loadPersistedConfig(froggHome).daemon?.auth).toMatchObject({
+      trustLan: false,
+      claimMode: true,
+    });
+  });
+
   test("patch persists the hidden host settings sections an admin re-enables", () => {
     const froggHome = mkdtempSync(path.join(tmpdir(), "frogg-daemon-config-store-"));
     tempDirs.push(froggHome);

@@ -38,6 +38,10 @@ interface SupportedMutableConfigPatch {
   enableTerminalAgentHooks?: boolean;
   appendSystemPrompt?: string;
   terminalProfiles?: MutableDaemonConfig["terminalProfiles"];
+  // Access settings: reachable only through patchAccess (auth.settings.update,
+  // `access.manage`), never through set_daemon_config.
+  trustLan?: boolean;
+  claimMode?: boolean;
 }
 
 interface LoggerLike {
@@ -450,6 +454,14 @@ export class DaemonConfigStore {
     return this.applySupportedPatch(parsedPatch);
   }
 
+  /** `daemon.auth.trustLan` / `daemon.auth.claimMode`, persisted and applied live. */
+  public patchAccess(input: { trustLan?: boolean; claimMode?: boolean }): MutableDaemonConfig {
+    return this.applySupportedPatch({
+      ...(input.trustLan === undefined ? {} : { trustLan: input.trustLan }),
+      ...(input.claimMode === undefined ? {} : { claimMode: input.claimMode }),
+    });
+  }
+
   private applySupportedPatch(parsedPatch: SupportedMutableConfigPatch): MutableDaemonConfig {
     if (parsedPatch.relay?.enabled !== undefined && !this.relayEnabledMutable) {
       throw new Error(
@@ -839,5 +851,12 @@ function mergeMutableDaemonPatch(
   }
   if (patch.appendSystemPrompt !== undefined) next.appendSystemPrompt = patch.appendSystemPrompt;
   if (patch.terminalProfiles !== undefined) next.terminalProfiles = patch.terminalProfiles;
+  if (patch.trustLan !== undefined || patch.claimMode !== undefined) {
+    next.auth = {
+      ...next.auth,
+      ...(patch.trustLan === undefined ? {} : { trustLan: patch.trustLan }),
+      ...(patch.claimMode === undefined ? {} : { claimMode: patch.claimMode }),
+    };
+  }
   return Object.keys(next).length > 0 ? next : undefined;
 }
