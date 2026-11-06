@@ -71,6 +71,8 @@ pub enum Sheet {
     Archive(String),
     Import,
     AddProject,
+    /// This device's project list (pin, hide, list local folders).
+    Projects,
 }
 
 #[derive(Default, Serialize, Deserialize)]

@@ -253,7 +253,9 @@ pub fn ScopeMenu(at: RwSignal<Option<At>>) -> impl IntoView {
                 .hint(format!("{} · {host}", plural(all, "session")))
                 .on(scope == "all"),
         ];
-        for p in d.projects.get() {
+        let daemon: Vec<_> = d.projects.get();
+        let host_id = crate::state::get().hosts.active_id.get();
+        for p in crate::state::projects::local::visible(host_id.as_deref(), &daemon) {
             let n = counts.get(&p.project_id).copied().unwrap_or(0);
             out.push(
                 Entry::item(p.name(), set(p.project_id.clone()))
@@ -273,6 +275,7 @@ pub fn ScopeMenu(at: RwSignal<Option<At>>) -> impl IntoView {
                 .on(scope == "archived"),
             Entry::Sep,
             Entry::item("Add project…", move || l.open(Sheet::AddProject)).icon(Ico::FolderPlus),
+            Entry::item("Manage projects…", move || l.open(Sheet::Projects)).icon(Ico::Folder),
             Entry::item("Import conversations…", move || l.open(Sheet::Import)).icon(Ico::Upload),
         ]);
         out

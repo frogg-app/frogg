@@ -50,6 +50,7 @@ pub fn SessionSheets() -> impl IntoView {
         <ArchiveDialog />
         <ImportDialog />
         <AddProjectDialog />
+        <ProjectsDialog />
     }
 }
 
@@ -513,6 +514,150 @@ fn AddProjectDialog() -> impl IntoView {
                     disabled=Signal::derive(move || target().is_none())
                     on_press=Callback::new(move |_| add())
                 />
+            </div>
+        </Dialog>
+    }
+}
+
+/// This device's project list for the active host (ui-next `sessions/ProjectsDialog.tsx`): pin,
+/// hide (here only) or list folders the daemon does not have. Nothing here changes the host's
+/// own projects.
+#[component]
+fn ProjectsDialog() -> impl IntoView {
+    use crate::state::projects::local;
+    let app = crate::state::get();
+    let l = list::get();
+    let d = projects::get();
+    let open = Signal::derive(move || l.sheet.with(|s| s == &Some(Sheet::Projects)));
+    let host_id = move || app.hosts.active_id.get();
+    let host = move || {
+        app.conn
+            .active_link()
+            .server_name
+            .unwrap_or_else(|| "this host".into())
+    };
+    let merged = Memo::new(move |_| {
+        let daemon: Vec<_> = d
+            .projects
+            .get()
+            .into_iter()
+            .filter(|p| p.chats != Some(true))
+            .collect();
+        local::merge(&daemon, &local::prefs_of(host_id().as_deref()))
+    });
+    let browsing = RwSignal::new(false);
+    let picked = RwSignal::new(None::<String>);
+    let cwd = RwSignal::new(None::<String>);
+    let target = move || picked.get().or_else(|| cwd.get());
+    Effect::new(move |_| {
+        if !open.get() {
+            browsing.set(false);
+        }
+    });
+    let add = move || {
+        if let (Some(h), Some(t)) = (host_id(), target()) {
+            local::add(&h, &t);
+            browsing.set(false);
+            picked.set(None);
+        }
+    };
+    view! {
+        <Dialog open=open on_close=Callback::new(move |_| l.close()) title="Projects on this device".to_string() width=640.0>
+            <span class="t-label proj-eyebrow">{move || format!("Projects · {}", host())}</span>
+            {move || browsing.get().then(|| view! {
+                <div class="proj-browse">
+                    <div class="proj-browse-list">
+                        <FolderBrowser picked=picked cwd=cwd host_id=None />
+                    </div>
+                    <div class="sheet-actions">
+                        <Button label="Cancel" on_press=Callback::new(move |_| browsing.set(false)) />
+                        <Button
+                            label=Signal::derive(move || {
+                                target()
+                                    .map(|t| format!("List {}", Some(paths::base_name(&t)).filter(|b| !b.is_empty()).unwrap_or(t)))
+                                    .unwrap_or_else(|| "Pick a folder".into())
+                            })
+                            kind=ButtonKind::Primary
+                            disabled=Signal::derive(move || target().is_none())
+                            on_press=Callback::new(move |_| add())
+                        />
+                    </div>
+                </div>
+            })}
+            <div class="proj-list">
+                <For
+                    each=move || merged.get()
+                    key=|m| (m.project.project_root_path.clone(), m.pinned, m.hidden, m.local)
+                    children=move |m| {
+                        let root = StoredValue::new(m.project.project_root_path.clone());
+                        let name = m.project.name();
+                        let (pinned, hidden, is_local) = (m.pinned, m.hidden, m.local);
+                        let act = move |f: fn(&str, &str, bool), on: bool| {
+                            if let Some(h) = app.hosts.active_id.get_untracked() {
+                                f(&h, &root.get_value(), on);
+                            }
+                        };
+                        view! {
+                            <div class="proj-row" class:hidden=hidden>
+                                <Icon ico=Ico::Folder size=13.0 class="faint" />
+                                <div class="proj-text">
+                                    <span class="proj-name">
+                                        {name.clone()}
+                                        {is_local.then(|| view! { <span class="proj-tag">" · this device"</span> })}
+                                        {hidden.then(|| view! { <span class="proj-tag">" · hidden"</span> })}
+                                    </span>
+                                    <span class="t-mono proj-path">{paths::tilde(&m.project.project_root_path)}</span>
+                                </div>
+                                <button
+                                    class="icon-btn"
+                                    class:on=pinned
+                                    aria-label=format!("{} {name}", if pinned { "Unpin" } else { "Pin" })
+                                    on:click=move |_| act(local::pin, !pinned)
+                                >
+                                    <Icon ico=if pinned { Ico::PinOff } else { Ico::Pin } size=14.0 />
+                                </button>
+                                {if is_local {
+                                    view! {
+                                        <button
+                                            class="icon-btn"
+                                            aria-label=format!("Remove {name}")
+                                            on:click=move |_| {
+                                                if let Some(h) = app.hosts.active_id.get_untracked() {
+                                                    local::remove(&h, &root.get_value());
+                                                }
+                                            }
+                                        >
+                                            <Icon ico=Ico::X size=14.0 />
+                                        </button>
+                                    }
+                                    .into_any()
+                                } else {
+                                    view! {
+                                        <button
+                                            class="icon-btn"
+                                            class:on=hidden
+                                            aria-label=format!("{} {name}", if hidden { "Show" } else { "Hide" })
+                                            on:click=move |_| act(local::hide, !hidden)
+                                        >
+                                            <Icon ico=if hidden { Ico::Eye } else { Ico::EyeOff } size=14.0 />
+                                        </button>
+                                    }
+                                    .into_any()
+                                }}
+                            </div>
+                        }
+                    }
+                />
+                <Show when=move || merged.with(Vec::is_empty)>
+                    <span class="proj-none">{move || format!("No projects on {} yet.", host())}</span>
+                </Show>
+            </div>
+            <div class="sheet-actions">
+                <span class="sheet-foot">{move || format!("Kept on this device. {}’s own project list is unchanged.", host())}</span>
+                <Show when=move || !browsing.get()>
+                    <Button label="Add folder…" on_press=Callback::new(move |_| browsing.set(true)) />
+                </Show>
+                <Button label="Done" kind=ButtonKind::Primary on_press=Callback::new(move |_| l.close()) />
             </div>
         </Dialog>
     }

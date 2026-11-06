@@ -509,6 +509,10 @@ async fn submit(f: Form) {
     let title = Some(f.title.get_untracked().trim().to_owned()).filter(|t| !t.is_empty());
     let host = f.host_id.get_untracked();
     let res: Result<(), String> = async {
+        // A folder listed on this device only: the daemon learns of it now.
+        if projects::local::is_local(&project) {
+            projects::add_project(&c, &cwd).await?;
+        }
         if !agent {
             let r = c
                 .create_terminal(
@@ -660,6 +664,9 @@ pub fn NewSession() -> impl IntoView {
                 Ok(ps) => {
                     let ps: Vec<Project> =
                         ps.into_iter().filter(|p| p.chats != Some(true)).collect();
+                    // As this device shows the host: pins first, hidden out, local folders in.
+                    let host = f.host_id.get_untracked();
+                    let ps = untrack(|| projects::local::visible(host.as_deref(), &ps));
                     let cur = f.project_id.get_untracked();
                     if !ps.iter().any(|p| Some(&p.project_id) == cur.as_ref()) {
                         f.project_id.set(ps.first().map(|p| p.project_id.clone()));

@@ -127,3 +127,69 @@
     transform: none;
   }
 }
+
+/* ----- projects dialog (ui-next sessions/ProjectsDialog.tsx) ----- */
+.proj-eyebrow {
+  display: block;
+  margin-bottom: 8px;
+}
+.proj-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 8px;
+  border-bottom: 1px solid var(--line);
+}
+.proj-row.hidden {
+  opacity: 0.55;
+}
+.proj-row .icon-btn {
+  color: var(--faint);
+}
+.proj-row .icon-btn:hover,
+.proj-row .icon-btn.on {
+  color: var(--cyan2);
+}
+.proj-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.proj-name {
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.proj-tag {
+  font-size: 11.5px;
+  color: var(--faint);
+}
+.proj-path {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--faint);
+  direction: rtl;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.proj-none {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.proj-browse {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  margin-bottom: 10px;
+  border: 1px solid var(--line2);
+  background: var(--bg2);
+}
+.proj-browse-list {
+  max-height: 280px;
+  overflow: auto;
+}

@@ -570,3 +570,222 @@ pub async fn import_session(e: &Importable) -> Result<String, String> {
     let agent = need()?.import_agent(&req).await.map_err(err)?;
     Ok(agent["id"].as_str().unwrap_or_default().to_owned())
 }
+
+/// This device's own view of each host's project list (ui-next `sessions/localProjects.ts`),
+/// kept beside (not on) the daemon: folders pinned to the top, daemon projects hidden here, and
+/// folders listed here that the daemon does not have. Keyed by saved-host id and project root
+/// path, so it survives the daemon forgetting or re-creating a project.
+pub mod local {
+    use std::cell::Cell;
+    use std::collections::HashMap;
+
+    use leptos::prelude::*;
+    use serde::{Deserialize, Serialize};
+
+    use super::Project;
+    use crate::state::storage;
+
+    const KEY: &str = "frogg-next:local-projects";
+    pub const LOCAL_PREFIX: &str = "local:";
+
+    #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+    pub struct HostProjectPrefs {
+        #[serde(default)]
+        pub pinned: Vec<String>,
+        #[serde(default)]
+        pub hidden: Vec<String>,
+        #[serde(default)]
+        pub added: Vec<String>,
+    }
+
+    #[derive(Default, Serialize, Deserialize)]
+    struct Saved {
+        #[serde(default, rename = "byHost")]
+        by_host: HashMap<String, HostProjectPrefs>,
+    }
+
+    type ByHost = RwSignal<HashMap<String, HostProjectPrefs>>;
+
+    thread_local! {
+        static STORE: Cell<Option<ByHost>> = const { Cell::new(None) };
+    }
+
+    /// Every host's device-local prefs (reactive), loaded on first use and saved on change.
+    pub fn store() -> ByHost {
+        if let Some(s) = STORE.with(Cell::get) {
+            return s;
+        }
+        let owner = Owner::new_root(None);
+        let s = owner.with(|| {
+            let saved: Saved = storage::get_json(KEY).unwrap_or_default();
+            let s = RwSignal::new(saved.by_host);
+            Effect::new(move |prev: Option<()>| {
+                let by_host = s.get();
+                if prev.is_some() {
+                    storage::set_json(KEY, &Saved { by_host });
+                }
+            });
+            s
+        });
+        std::mem::forget(owner);
+        STORE.with(|c| c.set(Some(s)));
+        s
+    }
+
+    /// One host's prefs (reactive).
+    pub fn prefs_of(host: Option<&str>) -> HostProjectPrefs {
+        let Some(h) = host else {
+            return HostProjectPrefs::default();
+        };
+        store().with(|m| m.get(h).cloned().unwrap_or_default())
+    }
+
+    fn edit(host: &str, f: impl FnOnce(&mut HostProjectPrefs)) {
+        store().update(|m| f(m.entry(host.to_owned()).or_default()));
+    }
+
+    fn flip(list: &mut Vec<String>, root: &str, on: bool) {
+        list.retain(|x| x != root);
+        if on {
+            list.push(root.to_owned());
+        }
+    }
+
+    pub fn pin(host: &str, root: &str, on: bool) {
+        edit(host, |p| flip(&mut p.pinned, root, on));
+    }
+
+    pub fn hide(host: &str, root: &str, on: bool) {
+        edit(host, |p| flip(&mut p.hidden, root, on));
+    }
+
+    /// Lists a folder on this device only; the daemon learns of it when a session starts there.
+    pub fn add(host: &str, root: &str) {
+        edit(host, |p| {
+            flip(&mut p.added, root, true);
+            flip(&mut p.hidden, root, false);
+        });
+    }
+
+    pub fn remove(host: &str, root: &str) {
+        edit(host, |p| {
+            flip(&mut p.added, root, false);
+            flip(&mut p.pinned, root, false);
+        });
+    }
+
+    pub fn is_local(p: &Project) -> bool {
+        p.project_id.starts_with(LOCAL_PREFIX)
+    }
+
+    fn base_name(path: &str) -> String {
+        path.trim_end_matches(['/', '\\'])
+            .rsplit(['/', '\\'])
+            .next()
+            .unwrap_or_default()
+            .to_owned()
+    }
+
+    /// A folder listed on this device only, shaped like a daemon project.
+    pub fn local_project(root: &str) -> Project {
+        let base = base_name(root);
+        Project {
+            project_id: format!("{LOCAL_PREFIX}{root}"),
+            project_key: Some(format!("{LOCAL_PREFIX}{root}")),
+            project_display_name: if base.is_empty() {
+                root.to_owned()
+            } else {
+                base
+            },
+            project_custom_name: None,
+            project_root_path: root.to_owned(),
+            project_kind: Some("directory".into()),
+            chats: None,
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq)]
+    pub struct Merged {
+        pub project: Project,
+        pub pinned: bool,
+        pub hidden: bool,
+        /// Listed on this device only.
+        pub local: bool,
+    }
+
+    /// The daemon's projects merged with this device's list: pinned first (in pin order), then
+    /// the daemon's order, then folders only this device lists. Hidden ones are kept, marked.
+    pub fn merge(daemon: &[Project], prefs: &HostProjectPrefs) -> Vec<Merged> {
+        let all: Vec<Merged> = daemon
+            .iter()
+            .cloned()
+            .chain(
+                prefs
+                    .added
+                    .iter()
+                    .filter(|r| !daemon.iter().any(|p| &p.project_root_path == *r))
+                    .map(|r| local_project(r)),
+            )
+            .map(|project| Merged {
+                pinned: prefs.pinned.contains(&project.project_root_path),
+                hidden: prefs.hidden.contains(&project.project_root_path),
+                local: is_local(&project),
+                project,
+            })
+            .collect();
+        let rank = |m: &Merged| {
+            prefs
+                .pinned
+                .iter()
+                .position(|r| r == &m.project.project_root_path)
+        };
+        let mut out: Vec<Merged> = all.iter().filter(|m| m.pinned).cloned().collect();
+        out.sort_by_key(rank);
+        out.extend(all.into_iter().filter(|m| !m.pinned));
+        out
+    }
+
+    /// A host's project list as this device shows it (hidden ones left out; reactive).
+    pub fn visible(host: Option<&str>, daemon: &[Project]) -> Vec<Project> {
+        merge(daemon, &prefs_of(host))
+            .into_iter()
+            .filter(|m| !m.hidden)
+            .map(|m| m.project)
+            .collect()
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        fn p(root: &str) -> Project {
+            Project {
+                project_id: root.into(),
+                project_key: None,
+                project_display_name: root.into(),
+                project_custom_name: None,
+                project_root_path: root.into(),
+                project_kind: None,
+                chats: None,
+            }
+        }
+
+        #[test]
+        fn merge_orders_pins_then_daemon_then_local() {
+            let prefs = HostProjectPrefs {
+                pinned: vec!["/b".into(), "/a".into()],
+                hidden: vec!["/c".into()],
+                added: vec!["/x".into(), "/a".into()],
+            };
+            let m = merge(&[p("/a"), p("/b"), p("/c")], &prefs);
+            let roots: Vec<_> = m
+                .iter()
+                .map(|m| m.project.project_root_path.as_str())
+                .collect();
+            assert_eq!(roots, ["/b", "/a", "/c", "/x"]);
+            assert!(m[2].hidden);
+            assert!(m[3].local && m[3].project.project_id == "local:/x");
+            assert_eq!(base_name("/home/u/repo/"), "repo");
+        }
+    }
+}
