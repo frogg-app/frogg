@@ -110,10 +110,16 @@ pub fn summary(name: &str, d: &Value) -> Summary {
             ico: Ico::Bot,
             verb: s(d, "subAgentType").unwrap_or("Subagent").to_owned(),
             arg: s(d, "description").unwrap_or("").to_owned(),
+            // Actions are a capped tail whose indexes keep counting, so the last index is the
+            // total; an empty list (providers without a step feed) shows nothing.
             meta: d
                 .get("actions")
                 .and_then(Value::as_array)
-                .map(|a| format!("{} steps", a.len())),
+                .and_then(|a| a.last())
+                .map(|last| {
+                    let total = last.get("index").and_then(Value::as_u64).unwrap_or(0);
+                    format!("{total} steps")
+                }),
         },
         "plan" => sum(
             Ico::ListChecks,

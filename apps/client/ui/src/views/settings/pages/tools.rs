@@ -92,7 +92,7 @@ pub fn ToolsPrompts() -> impl IntoView {
 
 #[component]
 fn Skills() -> impl IntoView {
-    let supported = config::feature("skillsManagement");
+    let supported = config::feature_untracked("skillsManagement");
     let rpc = config::use_rpc(
         |c: DaemonClient| async move { ns(&c, "daemon.skills.list.request", json!({})).await },
         Signal::derive(move || supported == Some(true)),
@@ -202,7 +202,7 @@ fn SkillRow(
 
 #[component]
 fn Definitions() -> impl IntoView {
-    let supported = config::feature("providerAgentDefinitions");
+    let supported = config::feature_untracked("providerAgentDefinitions");
     let rpc = config::use_rpc(
         |c: DaemonClient| async move {
             ns(&c, "agent.provider_definitions.list.request", json!({})).await

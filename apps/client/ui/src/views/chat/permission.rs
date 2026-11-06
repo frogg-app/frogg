@@ -37,6 +37,7 @@ fn answer(
     agent_id: &str,
     request_id: &str,
     response: Value,
+    kind: ToastKind,
     done: &'static str,
     detail: String,
 ) -> bool {
@@ -47,7 +48,7 @@ fn answer(
         Ok(()) => {
             crate::state::get()
                 .toasts
-                .push(crate::shell::toast::Toast::new(ToastKind::Ok, done).detail(detail));
+                .push(crate::shell::toast::Toast::new(kind, done).detail(detail));
             true
         }
         Err(e) => {
@@ -111,6 +112,7 @@ pub fn PermissionCard(
             &a,
             &r,
             json!({ "behavior": "allow", "selectedActionId": selected }),
+            ToastKind::Ok,
             done,
             w,
         );
@@ -124,6 +126,7 @@ pub fn PermissionCard(
             &a,
             &r,
             json!({ "behavior": "deny", "message": "Denied from Frogg" }),
+            ToastKind::Info,
             done,
             w,
         );
@@ -140,6 +143,7 @@ pub fn PermissionCard(
             &a,
             &r,
             json!({ "behavior": "deny", "message": t }),
+            ToastKind::Info,
             "Reply sent",
             w,
         );
@@ -363,7 +367,7 @@ fn QuestionCard(agent_id: String, p: Value, questions: Vec<Question>) -> impl In
         .hosts
         .active_id
         .get_untracked()
-        .and_then(|h| app.agents.get(&h, &agent_id))
+        .and_then(|h| app.agents.get_untracked(&h, &agent_id))
         .map(|s| crate::state::config::provider_label(&s.agent.provider));
     let total = questions.len();
     let questions = StoredValue::new(questions);

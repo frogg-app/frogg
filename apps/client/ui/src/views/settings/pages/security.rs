@@ -88,7 +88,7 @@ fn Finding(
 
 #[component]
 pub fn Security() -> impl IntoView {
-    let supported = config::feature("deviceAccess");
+    let supported = config::feature_untracked("deviceAccess");
     let auth = config::use_rpc(
         |c: DaemonClient| async move { ns(&c, "auth.settings.get.request", json!({})).await },
         Signal::derive(move || supported != Some(false)),
@@ -142,7 +142,7 @@ pub fn Security() -> impl IntoView {
 
 #[component]
 fn Findings(settings: Value, listen: Signal<String>, on_change: Callback<()>) -> impl IntoView {
-    let has_posture = config::feature("securityPosture");
+    let has_posture = config::feature_untracked("securityPosture");
     // Remounted on every settings change, so the posture re-reads with it.
     let posture = config::use_rpc(
         |c: DaemonClient| async move { ns(&c, "daemon.get_security_posture.request", json!({})).await },
@@ -183,7 +183,7 @@ fn Findings(settings: Value, listen: Signal<String>, on_change: Callback<()>) ->
 fn FindingRow(finding: Value, listen: Signal<String>, on_change: Callback<()>) -> impl IntoView {
     let app = crate::state::get();
     let act = Action::new();
-    let can_ack = config::feature("securityAcknowledge") == Some(true);
+    let can_ack = config::feature_untracked("securityAcknowledge") == Some(true);
     let id = s(&finding, "id");
     let critical = s(&finding, "severity") == "critical";
     let fix = s(&finding, "fixAction");

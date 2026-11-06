@@ -395,7 +395,7 @@ fn TodoCard(
     let claim = todo.claims.first().map(|c| {
         let title = app
             .active_host()
-            .and_then(|h| app.agents.get(&h, &c.agent_id))
+            .and_then(|h| app.agents.get_untracked(&h, &c.agent_id))
             .map(|s| s.agent.title_or_untitled())
             .unwrap_or_else(|| c.agent_id.chars().take(8).collect());
         let more = if todo.claims.len() > 1 {
@@ -649,7 +649,7 @@ fn ClaimRow(claim: crate::state::tasks::Claim) -> impl IntoView {
     let app = state::get();
     let session = app
         .active_host()
-        .and_then(|h| app.agents.get(&h, &claim.agent_id));
+        .and_then(|h| app.agents.get_untracked(&h, &claim.agent_id));
     let title = session
         .as_ref()
         .map(|s| s.agent.title_or_untitled())

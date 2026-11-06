@@ -26,7 +26,7 @@ fn flag(v: &Value, k: &str) -> bool {
 
 #[component]
 fn DevBuilds() -> impl IntoView {
-    let supported = config::feature("daemonChannelControl");
+    let supported = config::feature_untracked("daemonChannelControl");
     let rpc = config::use_rpc(
         |c: DaemonClient| async move { ns(&c, "daemon.dev_daemon.get_status.request", json!({})).await },
         Signal::derive(move || supported == Some(true)),
@@ -67,7 +67,7 @@ fn DevBuilds() -> impl IntoView {
 #[component]
 fn DevRow(checkout: Value, status: StoredValue<Value>, reload: Callback<()>) -> impl IntoView {
     let act = Action::new();
-    let can_rebuild = config::feature("devDaemonRebuild") == Some(true);
+    let can_rebuild = config::feature_untracked("devDaemonRebuild") == Some(true);
     let cwd = s(&checkout, "cwd");
     let st = status.get_value();
     let instance = st

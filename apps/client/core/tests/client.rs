@@ -303,6 +303,40 @@ fn reconnects_with_backoff_and_ignores_stale_sockets() {
 }
 
 #[test]
+fn quick_retries_follow_a_drop_of_a_live_connection_only() {
+    let mut h = harness_with(|o| {
+        o.reconnect_base_delay_ms = 4_000;
+        o.reconnect_fast_retries = 3;
+        o.reconnect_fast_base_delay_ms = 500;
+        o.reconnect_fast_max_delay_ms = 1_000;
+    });
+    // Never connected: the first failure waits the regular base delay.
+    h.sink().close(None, "");
+    assert!(!h.client.fast_retry_pending());
+    h.clock.advance(3_999);
+    assert_eq!(h.attempts.borrow().len(), 1);
+    h.clock.advance(1);
+    assert_eq!(h.attempts.borrow().len(), 2);
+    h.open_and_greet();
+
+    // A live connection drops: 0.5 s, 1 s, 1 s (capped), then the regular backoff resumes.
+    for (n, delay) in [(3, 500), (4, 1_000), (5, 1_000)] {
+        assert!(h.client.fast_retry_pending());
+        h.sink().close(None, "");
+        h.clock.advance(delay - 1);
+        assert_eq!(h.attempts.borrow().len(), n - 1);
+        h.clock.advance(1);
+        assert_eq!(h.attempts.borrow().len(), n, "quick retry after {delay} ms");
+    }
+    assert!(!h.client.fast_retry_pending());
+    h.sink().close(None, "");
+    h.clock.advance(3_999);
+    assert_eq!(h.attempts.borrow().len(), 5);
+    h.clock.advance(1);
+    assert_eq!(h.attempts.borrow().len(), 6, "then the regular backoff");
+}
+
+#[test]
 fn connect_timeout_retries() {
     let h = harness();
     h.clock.advance(15_000);

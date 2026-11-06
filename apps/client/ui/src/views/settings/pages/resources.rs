@@ -78,7 +78,7 @@ fn local_time(iso: &str) -> String {
 
 #[component]
 pub fn ResourcesStorage() -> impl IntoView {
-    let supported = config::feature("hostResources");
+    let supported = config::feature_untracked("hostResources");
     let enabled = Signal::derive(move || supported != Some(false));
     let metrics = config::use_rpc(
         |c: DaemonClient| async move { ns(&c, "daemon.host.get_metrics.request", json!({})).await },
@@ -244,7 +244,7 @@ fn to_bytes(gib: Option<f64>) -> f64 {
 #[component]
 fn StorageAlerts() -> impl IntoView {
     let cfg = config::get();
-    let supported = config::feature("storageAlerts") == Some(true);
+    let supported = config::feature_untracked("storageAlerts") == Some(true);
     let alerts = Memo::new(move |_| cfg.at("/storage/alerts").filter(Value::is_object));
     move || {
         let a = alerts.get().filter(|_| supported)?;

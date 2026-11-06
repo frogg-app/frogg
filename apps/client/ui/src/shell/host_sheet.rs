@@ -151,7 +151,7 @@ fn AddHost() -> impl IntoView {
 fn PairForm() -> impl IntoView {
     let app = crate::state::get();
     let input = RwSignal::new(app.ui.pair_link.get_untracked().unwrap_or_default());
-    let address = RwSignal::new(String::new());
+    let address = RwSignal::new(crate::state::connection::known_endpoint().unwrap_or_default());
     let error = RwSignal::new(None::<String>);
     let busy = RwSignal::new(false);
     let verify = RwSignal::new(None::<Verify>);

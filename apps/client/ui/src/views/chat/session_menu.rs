@@ -56,8 +56,28 @@ pub async fn fork(session: &Session, boundary_message_id: Option<&str>) -> Resul
         "cwd": a.cwd,
         "title": format!("Fork of {}", a.title.clone().filter(|t| !t.trim().is_empty()).unwrap_or_else(|| "session".into())),
     });
-    if let Some(m) = &a.model {
-        config["model"] = m.clone().into();
+    // Carry the parent's model and thinking level: what the session chose, else what the
+    // provider applied (a session left on Default reports its live model only at runtime).
+    let model = a.model.clone().filter(|m| !m.is_empty()).or_else(|| {
+        a.runtime_info
+            .as_ref()
+            .and_then(|r| r.get("model"))
+            .and_then(Value::as_str)
+            .filter(|m| !m.is_empty())
+            .map(str::to_owned)
+    });
+    if let Some(m) = model {
+        config["model"] = m.into();
+    }
+    let thinking = ["thinkingOptionId", "effectiveThinkingOptionId"]
+        .iter()
+        .find_map(|k| {
+            a.raw
+                .get(*k)
+                .filter(|v| v.as_str().is_some_and(|s| !s.is_empty()))
+        });
+    if let Some(t) = thinking {
+        config["thinkingOptionId"] = t.clone();
     }
     if let Some(m) = a.raw.get("currentModeId").filter(|v| v.is_string()) {
         config["modeId"] = m.clone();

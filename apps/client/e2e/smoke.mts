@@ -15,6 +15,7 @@
 //   SMOKE_DAEMON_ROOT   checkout whose packages/server runs the daemon (default this repo)
 //   SMOKE_SHOTS         directory for screenshots of each step (optional)
 //   SMOKE_HEADED=1      watch it run
+//   SMOKE_WARN=1        print console warnings (debug builds: untracked reads, disposed signals)
 import { spawn, execFileSync, type ChildProcess } from "node:child_process";
 import {
   createReadStream,
@@ -184,6 +185,10 @@ let stepName = "load";
 function watch(page: Page) {
   page.on("console", (m) => {
     if (m.type() === "error") problems.push(`[${stepName}] console.error: ${m.text()}`);
+    // Debug builds warn about untracked reads and disposed signals; SMOKE_WARN=1 shows them.
+    if (m.type() === "warning" && process.env.SMOKE_WARN === "1") {
+      log(`console.warn: ${m.text().slice(0, 600)}`);
+    }
   });
   page.on("pageerror", (e) => problems.push(`[${stepName}] pageerror: ${e.message}`));
   page.on("crash", () => problems.push(`[${stepName}] page crashed`));

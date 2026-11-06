@@ -19,7 +19,7 @@ struct Revs(RwSignal<HashMap<String, u64>>);
 #[component]
 pub fn Plugins() -> impl IntoView {
     let app = crate::state::get();
-    let supported = config::feature("plugins");
+    let supported = config::feature_untracked("plugins");
     let installed = config::use_rpc(
         |c: DaemonClient| async move { ns(&c, "plugins.list.request", json!({})).await },
         Signal::derive(move || supported == Some(true)),
@@ -325,7 +325,7 @@ fn SettingRow(
 
 #[component]
 fn ClaudePlugins() -> impl IntoView {
-    if config::feature("claudePluginUpdates") != Some(true) {
+    if config::feature_untracked("claudePluginUpdates") != Some(true) {
         return ().into_any();
     }
     let rpc = config::use_rpc(
