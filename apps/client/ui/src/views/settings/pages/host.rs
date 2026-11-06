@@ -8,7 +8,9 @@ use serde_json::{json, Value};
 use crate::components::{Button, ButtonKind, Ico, Seg, Select, SelectOption};
 use crate::state::config::{self, ago, fmt_bytes, need, ns, s, Action};
 use crate::views::panels::hosts::access::{pairing_error_text, registered_via};
-use crate::views::panels::hosts::versions::{channel_of, compare_versions, is_next_daemon_version};
+use crate::views::panels::hosts::versions::{
+    channel_of, compare_versions, daemon_versions, is_next_daemon_version, Release, RELEASE_REPO,
+};
 use crate::views::settings::kit::*;
 
 // ----- overview -------------------------------------------------------------------------------
@@ -760,7 +762,7 @@ fn run_line(run: &Value) -> String {
 
 /// Update the active host's daemon: pick a channel or type an exact version, check, then
 /// install. Daemons without versioned self-update get the npm-era update. Failures show.
-/// The release list picker of ui-next (GitHub releases) is not ported: type a version instead.
+/// The version picker lists the repository's GitHub releases that ship this daemon's bundle.
 #[component]
 pub fn HostUpdate(version: Option<String>) -> impl IntoView {
     let runs = config::feature("daemonUpdateRuns");
@@ -799,7 +801,46 @@ pub fn HostUpdate(version: Option<String>) -> impl IntoView {
         }
     }
     let next_daemon = is_next_daemon_version(version.as_deref());
+    let releases = RwSignal::new(None::<Result<Vec<Release>, String>>);
+    if runs == Some(true) {
+        leptos::task::spawn_local(async move {
+            let r = fetch_releases().await;
+            if alive.get_value() {
+                releases.set(Some(r));
+            }
+        });
+    }
     let current = StoredValue::new(version);
+    let version_options = Memo::new(move |_| {
+        let ch = channel.get();
+        let cur = current.get_value();
+        let mut opts = vec![SelectOption::new("", format!("Latest {ch}"))];
+        if let Some(Ok(rs)) = releases.get() {
+            opts.extend(
+                daemon_versions(&rs, &ch, cur.as_deref())
+                    .into_iter()
+                    .map(|v| {
+                        let hint = [
+                            (Some(v.version.as_str())
+                                == cur.as_deref().map(|c| c.trim_start_matches('v')))
+                            .then(|| "installed".to_owned()),
+                            v.prerelease.then(|| "beta".to_owned()),
+                            v.published_at.as_deref().map(ago),
+                        ]
+                        .into_iter()
+                        .flatten()
+                        .collect::<Vec<_>>()
+                        .join(" · ");
+                        SelectOption {
+                            value: v.version.clone(),
+                            label: v.version,
+                            hint: (!hint.is_empty()).then_some(hint),
+                        }
+                    }),
+            );
+        }
+        opts
+    });
     match runs {
         None => return ().into_any(),
         Some(false) => return view! { <NpmUpdate /> }.into_any(),
@@ -882,8 +923,23 @@ pub fn HostUpdate(version: Option<String>) -> impl IntoView {
             </div>
             <div class="hu-line">
                 <span class="hu-label">"Version"</span>
-                <Input value=pin placeholder=Signal::derive(move || format!("Latest {}", channel.get())).get_untracked() mono=true />
+                {move || {
+                    let options = version_options.get();
+                    let placeholder = if releases.with(Option::is_none) { "Loading versions…" } else { "Typed version" };
+                    // A typed version that isn't listed leaves the picker on its placeholder.
+                    let picked = Signal::derive(move || pin.get().trim().to_owned());
+                    view! {
+                        <Select options=options value=picked on_change=Callback::new(move |v: String| pin.set(v)) placeholder=placeholder mono=true />
+                    }
+                }}
             </div>
+            <div class="hu-line">
+                <span class="hu-label"></span>
+                <Input value=pin placeholder="or type one" mono=true />
+            </div>
+            {move || releases.get().and_then(Result::err).map(|e| view! {
+                <span class="set-row-hint">{format!("Could not list releases ({e}). Type a version instead.")}</span>
+            })}
             {next_daemon.then(|| view! {
                 <span class="set-row-hint">"A Frogg Next daemon installs only Frogg Next (-next) releases, on either channel."</span>
             })}
@@ -957,4 +1013,41 @@ fn NpmUpdate() -> impl IntoView {
             <ErrorLine text=act.error />
         </div>
     }
+}
+
+/// The repository's recent releases (GitHub API), fetched once per app run.
+#[cfg(target_arch = "wasm32")]
+async fn fetch_releases() -> Result<Vec<Release>, String> {
+    use wasm_bindgen::JsCast;
+    use wasm_bindgen_futures::JsFuture;
+    thread_local! {
+        static CACHE: std::cell::RefCell<Option<Vec<Release>>> = const { std::cell::RefCell::new(None) };
+    }
+    if let Some(c) = CACHE.with(|c| c.borrow().clone()) {
+        return Ok(c);
+    }
+    let window = web_sys::window().ok_or("no window")?;
+    let url = format!("https://api.github.com/repos/{RELEASE_REPO}/releases?per_page=50");
+    let res = JsFuture::from(window.fetch_with_str(&url))
+        .await
+        .map_err(|_| "network error".to_owned())?
+        .dyn_into::<web_sys::Response>()
+        .map_err(|_| "bad response".to_owned())?;
+    if !res.ok() {
+        return Err(format!("GitHub releases answered HTTP {}", res.status()));
+    }
+    let text = JsFuture::from(res.text().map_err(|_| "bad body".to_owned())?)
+        .await
+        .ok()
+        .and_then(|t| t.as_string())
+        .unwrap_or_default();
+    let list: Vec<Release> = serde_json::from_str(&text).map_err(|e| e.to_string())?;
+    CACHE.with(|c| *c.borrow_mut() = Some(list.clone()));
+    Ok(list)
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+async fn fetch_releases() -> Result<Vec<Release>, String> {
+    let _ = RELEASE_REPO;
+    Err("not available off the web".to_owned())
 }
