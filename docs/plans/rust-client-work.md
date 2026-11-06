@@ -126,7 +126,7 @@ additive edits only. Sizes are S/M/L.
 - M: sub-work chips on session rows and in the status summary.
 - M: launch fields: provider feature toggles, project defaults ("Save for project"), account
   flag merge — `sessions/LaunchFields.tsx`, `launch.ts`.
-- S (done): New session name label by session type, not layout; host feature gating hints.
+- S (done): New session name label by session type, not layout. S: host feature gating hints.
 - M: modal stack: one Escape closes the top layer only; back guard counts sheets/popovers;
   hardware back on every layout — `shell/modalStack.ts`, `useHardwareBack.ts`.
 - S (done): phone layout must not rebuild the list on selection (`shell/layout.rs` phone branch).
