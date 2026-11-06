@@ -356,23 +356,28 @@ pub fn ToolCall(entry: ArcRwSignal<Entry>) -> impl IntoView {
             if open.get() { " open" } else { "" },
         )
     };
+    // The pane rebuilds only when the detail or error changes, not on every streamed update.
     let e = entry.clone();
-    let pane = move || {
+    let detail =
+        Memo::new(move |_| e.with(|e| e.item.get("detail").cloned().unwrap_or(Value::Null)));
+    let e = entry.clone();
+    let error = Memo::new(move |_| {
         e.with(|e| {
-            let d = e.item.get("detail").cloned().unwrap_or(Value::Null);
-            let err = (e.str("status") == Some("failed"))
+            (e.str("status") == Some("failed"))
                 .then(|| e.item.get("error").cloned())
                 .flatten()
                 .filter(|x| !x.is_null())
                 .map(|x| match x {
                     Value::String(s) => s,
                     other => other.to_string(),
-                });
-            view! {
-                {err.map(|m| view! { <div class="tool-err t-mono">{m}</div> })}
-                <Clamp>{body(&d)}</Clamp>
-            }
+                })
         })
+    });
+    let pane = move || {
+        view! {
+            {move || error.get().map(|m| view! { <div class="tool-err t-mono">{m}</div> })}
+            <Clamp>{move || detail.with(body)}</Clamp>
+        }
     };
     let ui = crate::state::get().ui;
     view! {
@@ -424,25 +429,83 @@ pub fn ToolCall(entry: ArcRwSignal<Entry>) -> impl IntoView {
     }
 }
 
-/// Clamps tall content behind a "Show more" fade (ui-next `chat/Clamp.tsx`).
+/// Content only this much taller than the cap shows in full: a toggle for a few lines is noise.
+const CLAMP_SLACK: i32 = 64;
+
+/// A see more / see less glide: quick for short reveals, capped for huge ones.
+fn clamp_ms(dist: i32) -> i32 {
+    (200.0 + f64::from(dist.abs()) / 8.0).min(420.0).round() as i32
+}
+
+/// Caps tall content at `BODY_CAP` with a fade and a "Show more" bar (ui-next `chat/Clamp.tsx`).
+/// The height glides open to the full content and back; a ResizeObserver remeasures as the
+/// content grows (streamed output, images loading). Content that fits renders as is.
 #[component]
 pub fn Clamp(children: Children) -> impl IntoView {
-    let more = RwSignal::new(false);
-    let tall = RwSignal::new(false);
+    use wasm_bindgen::closure::Closure;
+    use wasm_bindgen::JsCast;
+    let cap = BODY_CAP as i32;
+    let open = RwSignal::new(false);
+    let full = RwSignal::new(0i32);
+    // Animate only after the first measure: the initial layout is instant.
+    let placed = RwSignal::new(false);
     let el = NodeRef::<leptos::html::Div>::new();
+    let observer = StoredValue::new_local(None::<(web_sys::ResizeObserver, Closure<dyn FnMut()>)>);
     Effect::new(move |_| {
-        if let Some(d) = el.get() {
-            request_animation_frame(move || {
-                tall.set(d.scroll_height() as u32 > BODY_CAP + 24);
-            });
+        let Some(d) = el.get() else { return };
+        let d2 = d.clone();
+        let cb = Closure::<dyn FnMut()>::new(move || {
+            let h = d2.offset_height();
+            if full.try_get_untracked() != Some(h) {
+                let _ = full.try_set(h);
+            }
+        });
+        if let Ok(ro) = web_sys::ResizeObserver::new(cb.as_ref().unchecked_ref()) {
+            ro.observe(&d);
+            observer.set_value(Some((ro, cb)));
+        }
+        full.set(d.offset_height());
+        request_animation_frame(move || {
+            let _ = placed.try_set(true);
+        });
+    });
+    on_cleanup(move || {
+        if let Some((ro, _)) = observer.try_update_value(Option::take).flatten() {
+            ro.disconnect();
         }
     });
+    let clamps = move || full.get() > cap + CLAMP_SLACK;
+    let style = move || {
+        let f = full.get();
+        if !clamps() {
+            return "height:auto".to_owned();
+        }
+        let to = if open.get() { f } else { cap };
+        if placed.get() {
+            format!(
+                "height:{to}px;transition:height {ms}ms var(--ease)",
+                ms = clamp_ms(f - cap)
+            )
+        } else {
+            format!("height:{to}px")
+        }
+    };
     view! {
-        <div class="clamp" class:clamped=move || tall.get() && !more.get()>
-            <div class="clamp-inner" node_ref=el>{children()}</div>
-            <Show when=move || tall.get()>
-                <button class="clamp-more t-mono" on:click=move |_| more.update(|m| *m = !*m)>
-                    {move || if more.get() { "Show less" } else { "Show more" }}
+        <div class="clamp" class:open=move || open.get()>
+            <div class="clamp-clip" style=style>
+                <div class="clamp-inner" node_ref=el>{children()}</div>
+                <Show when=clamps>
+                    <div class="clamp-veil" aria-hidden="true"></div>
+                </Show>
+            </div>
+            <Show when=clamps>
+                <button
+                    class="clamp-more"
+                    aria-expanded=move || open.get().to_string()
+                    on:click=move |_| open.update(|m| *m = !*m)
+                >
+                    <Icon ico=Ico::ChevronDown size=13.0 class="clamp-chev" />
+                    <span>{move || if open.get() { "Show less" } else { "Show more" }}</span>
                 </button>
             </Show>
         </div>

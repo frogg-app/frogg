@@ -453,27 +453,49 @@
 .tool-link:hover {
   color: var(--text);
 }
-.clamp {
+.clamp-clip {
   position: relative;
-}
-.clamp.clamped .clamp-inner {
-  max-height: 320px;
   overflow: hidden;
-  -webkit-mask-image: linear-gradient(180deg, #000 75%, transparent);
-  mask-image: linear-gradient(180deg, #000 75%, transparent);
+}
+.clamp-veil {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 56px;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent 0%, var(--bg) 100%);
+  transition: opacity 260ms var(--ease);
+}
+.clamp.open .clamp-veil {
+  opacity: 0;
 }
 .clamp-more {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   width: 100%;
-  padding: 6px 12px;
-  font-size: 11px;
-  color: var(--muted);
-  text-align: center;
+  padding: 7px 12px;
+  font-size: 12px;
+  color: var(--cyan2);
   border-top: 1px solid var(--line);
+  background: var(--bg);
+  transition:
+    background-color 150ms ease-out,
+    color 150ms ease-out;
 }
 .clamp-more:hover {
   color: var(--text);
-  background: var(--wash);
+  background: var(--wash2);
+}
+.clamp-chev {
+  transition: transform 200ms var(--ease);
+}
+.clamp.open .clamp-chev {
+  transform: rotate(180deg);
+}
+.tool-img {
+  line-height: 0;
 }
 
 /* Permission and question cards */
