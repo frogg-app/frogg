@@ -85,4 +85,7 @@ web-sys = { version = "0.3", features = [
   "BlobPropertyBag",
   "HtmlAnchorElement",
   "HtmlTextAreaElement",
+  # shell/back (Android back closes sheets opened from the root).
+  "MutationObserver",
+  "MutationObserverInit",
 ] }
