@@ -277,6 +277,7 @@ fn ActiveHost(host: Host, on_back: Option<Callback<()>>) -> impl IntoView {
                         <Button
                             kind=ButtonKind::Primary
                             label=if connecting { "Retrying…" } else { "Retry" }
+                            disabled=connecting
                             on_press=Callback::new(move |_| app.conn.activate(&hid.get_value()))
                         />
                     })}
