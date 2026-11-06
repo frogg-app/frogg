@@ -571,13 +571,80 @@ pub fn on_open_url(callback: impl Fn(String) + 'static) {
 #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase", default)]
 pub struct UpdateState {
-    /// "disabled" | "up-to-date" | "available" | "error"
+    /// "disabled" | "idle" | "checking" | "up-to-date" | "available" | "downloading" | "ready"
+    /// | "error"
     pub status: String,
+    /// "auto" (the shell downloads and installs) | "download" (the user installs from the
+    /// release page).
+    pub mode: String,
     pub current_version: String,
     pub latest_version: Option<String>,
     pub release_url: String,
     pub notes: Option<String>,
+    pub progress: Option<UpdateProgress>,
     pub error: Option<String>,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase", default)]
+pub struct UpdateProgress {
+    pub percent: f64,
+    pub transferred: u64,
+    pub total: Option<u64>,
+}
+
+/// The shell's last update state, without checking.
+pub async fn update_state() -> UpdateState {
+    match invoke::<UpdateState>("update_state", ()).await {
+        Ok(state) => state,
+        Err(_) => UpdateState {
+            status: "disabled".into(),
+            current_version: env!("CARGO_PKG_VERSION").into(),
+            ..Default::default()
+        },
+    }
+}
+
+/// Downloads the found update in the background (`auto` mode) or opens its release page
+/// (`download` mode).
+pub async fn update_download() -> Result<(), String> {
+    invoke("update_download", ()).await
+}
+
+thread_local! {
+    static UPDATES: std::cell::Cell<Option<leptos::prelude::RwSignal<Option<UpdateState>>>> =
+        const { std::cell::Cell::new(None) };
+}
+
+/// The shell's update state, live (one listener for the app's lifetime). None until read.
+pub fn updates() -> leptos::prelude::RwSignal<Option<UpdateState>> {
+    use leptos::prelude::*;
+    if let Some(s) = UPDATES.with(|u| u.get()) {
+        return s;
+    }
+    // A root owner of its own: the first reader may be a page that unmounts.
+    let owner = Owner::new_root(None);
+    let s = owner.with(|| RwSignal::new(None::<UpdateState>));
+    std::mem::forget(owner);
+    UPDATES.with(|u| u.set(Some(s)));
+    on_update_state(move |st| s.set(Some(st)));
+    spawn_local(async move {
+        let st = update_state().await;
+        // An event may have landed first; keep the newer one.
+        if s.get_untracked().is_none() {
+            s.set(Some(st));
+        }
+    });
+    s
+}
+
+/// Every update state change the shell publishes (checks, progress, ready).
+pub fn on_update_state(callback: impl Fn(UpdateState) + 'static) {
+    listen("frogg://update-state", move |payload| {
+        if let Ok(s) = serde_json::from_value::<UpdateState>(payload) {
+            callback(s);
+        }
+    });
 }
 
 pub async fn update_check() -> UpdateState {

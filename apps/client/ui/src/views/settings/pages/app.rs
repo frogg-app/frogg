@@ -251,37 +251,51 @@ pub fn About() -> impl IntoView {
 }
 
 fn update_status(s: &native::UpdateState) -> String {
+    let v = s.latest_version.clone().unwrap_or_default();
     match s.status.as_str() {
         "checking" => "Checking for updates…".to_owned(),
         "up-to-date" => "Up to date".to_owned(),
-        "available" => format!(
-            "Version {} is available. Install it to update.",
-            s.latest_version.clone().unwrap_or_default()
+        "available" if s.mode == "download" => {
+            format!("Version {v} is available. Download it to update.")
+        }
+        "available" => format!("Version {v} is available. Downloading…"),
+        "downloading" => format!(
+            "Downloading {}{}",
+            s.latest_version.as_deref().unwrap_or("the update"),
+            s.progress
+                .as_ref()
+                .map(|p| format!(" · {}%", p.percent.round()))
+                .unwrap_or_default()
         ),
+        "ready" => format!("Version {v} is ready. Restart to finish updating."),
         "error" => "The last update check failed".to_owned(),
         "disabled" if native::is_tauri() => "Updates run in installed builds only".to_owned(),
-        "disabled" => "Updates install from GitHub releases in the web build".to_owned(),
-        _ => "Checks for updates on start".to_owned(),
+        "disabled" => "Install a newer build from GitHub releases to update".to_owned(),
+        _ => "Checks for updates on start and every few hours".to_owned(),
     }
 }
+
+type UpdateCall = std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), String>>>>;
 
 #[component]
 pub fn AppUpdates() -> impl IntoView {
     let app = crate::state::get();
-    let state = RwSignal::new(None::<native::UpdateState>);
-    let checking = RwSignal::new(false);
-    let installing = RwSignal::new(false);
+    let state = native::updates();
     let error = RwSignal::new(None::<String>);
-    let check = move || {
-        checking.set(true);
+    let run = move |f: fn() -> UpdateCall| {
+        error.set(None);
         spawn_local(async move {
-            let s = native::update_check().await;
-            error.set(s.error.clone());
-            state.set(Some(s));
-            checking.set(false);
+            if let Err(e) = f().await {
+                error.set(Some(e));
+            }
         });
     };
-    check();
+    let check = move || {
+        spawn_local(async move {
+            let s = native::update_check().await;
+            state.set(Some(s));
+        });
+    };
     let host = Signal::derive(move || {
         app.conn
             .active_link()
@@ -289,54 +303,43 @@ pub fn AppUpdates() -> impl IntoView {
             .unwrap_or_else(|| "No host connected".to_owned())
     });
     let online = Memo::new(move |_| app.conn.active_link().conn == Conn::Online);
+    let status = move || state.get().map(|s| s.status).unwrap_or_default();
     view! {
         <Section title="Frogg Next RS">
             <Row label="Version" hint=platform_name()>
                 <Value text=env!("CARGO_PKG_VERSION") />
             </Row>
-            <Row
-                label="App updates"
-                hint=Signal::derive(move || {
-                    if checking.get() {
-                        "Checking for updates…".to_owned()
-                    } else if installing.get() {
-                        "Installing; the app restarts when it is done…".to_owned()
-                    } else {
-                        state.get().map(|s| update_status(&s)).unwrap_or_default()
-                    }
-                })
-            >
+            <Row label="App updates" hint=Signal::derive(move || state.get().map(|s| update_status(&s)).unwrap_or_default())>
                 {move || {
-                    let available = state.get().is_some_and(|s| s.status == "available");
-                    if available {
-                        view! {
-                            <Button
-                                kind=ButtonKind::Primary
-                                label="Install and restart"
-                                disabled=installing
-                                on_press=Callback::new(move |_| {
-                                    installing.set(true);
-                                    spawn_local(async move {
-                                        if let Err(e) = native::update_install().await {
-                                            error.set(Some(e));
-                                        }
-                                        installing.set(false);
-                                    });
-                                })
-                            />
-                        }.into_any()
-                    } else {
-                        view! {
+                    let s = state.get().unwrap_or_default();
+                    match s.status.as_str() {
+                        "ready" => view! {
+                            <Button kind=ButtonKind::Primary label="Restart to update" on_press=Callback::new(move |_| run(|| Box::pin(native::update_install()))) />
+                        }.into_any(),
+                        "available" if s.mode == "download" => view! {
+                            <Button kind=ButtonKind::Primary label="Download" on_press=Callback::new(move |_| run(|| Box::pin(native::update_download()))) />
+                        }.into_any(),
+                        "available" => view! {
+                            <Button kind=ButtonKind::Primary label="Download now" on_press=Callback::new(move |_| run(|| Box::pin(native::update_download()))) />
+                        }.into_any(),
+                        _ => view! {
                             <Button
                                 label="Check for updates"
-                                disabled=Signal::derive(move || checking.get() || state.get().is_some_and(|s| s.status == "disabled"))
+                                disabled=Signal::derive(move || matches!(status().as_str(), "checking" | "downloading" | "disabled"))
                                 on_press=Callback::new(move |_| check())
                             />
-                        }.into_any()
+                        }.into_any(),
                     }
                 }}
             </Row>
-            <ErrorLine text=error />
+            <Show when=move || status() == "downloading">
+                <Block>
+                    <div class="upd-bar" role="progressbar">
+                        <div style=move || format!("width:{}%", state.get().and_then(|s| s.progress).map(|p| p.percent).unwrap_or(0.0))></div>
+                    </div>
+                </Block>
+            </Show>
+            <ErrorLine text=Signal::derive(move || error.get().or_else(|| state.get().and_then(|s| s.error))) />
             {move || state.get().and_then(|s| s.notes.clone()).filter(|n| !n.is_empty()).map(|n| view! {
                 <Block><pre class="status-lines">{n}</pre></Block>
             })}

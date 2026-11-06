@@ -131,6 +131,18 @@
   flex: 1;
 }
 
+/* App updates download progress (settings, ui-next AppUpdates.tsx). */
+.upd-bar {
+  height: 2px;
+  background: var(--line);
+  overflow: hidden;
+}
+.upd-bar > div {
+  height: 100%;
+  background: var(--cyan);
+  transition: width 0.3s ease;
+}
+
 /* Offline banner (ui-next hosts/Offline.tsx). */
 .off-banner {
   max-width: 720px;

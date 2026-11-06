@@ -15,7 +15,8 @@
 //! - `clipboard_write { text }`, `clipboard_read` → string
 //! - `take_pending_link` → the `frogg-next-rs://` link that launched or reached the app, if any;
 //!   later links arrive as the `frogg://open-url` event (payload: the url string)
-//! - `update_check` → `UpdateState`, `update_install` (desktop only)
+//! - `update_check` → `UpdateState`, `update_state` → the last one, `update_download`,
+//!   `update_install` (desktop only); changes arrive as the `frogg://update-state` event
 
 use base64::Engine as _;
 use serde::Serialize;
@@ -273,10 +274,41 @@ async fn update_install<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
     updates::install(&app).await
 }
 
+#[cfg(desktop)]
+#[tauri::command]
+fn update_state<R: Runtime>(app: AppHandle<R>) -> updates::UpdateState {
+    updates::current(&app)
+}
+
+/// `auto` mode: downloads in the background (progress on `frogg://update-state`).
+/// `download` mode: opens the release page, where the user picks the package.
+#[cfg(desktop)]
+#[tauri::command]
+async fn update_download<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
+    let s = updates::current(&app);
+    if s.mode == "download" {
+        open_external_url(&app, &s.release_url);
+        return Ok(());
+    }
+    updates::download(&app).await
+}
+
 #[cfg(mobile)]
 #[tauri::command]
 fn update_check() -> serde_json::Value {
     serde_json::json!({ "status": "disabled" })
+}
+
+#[cfg(mobile)]
+#[tauri::command]
+fn update_state() -> serde_json::Value {
+    serde_json::json!({ "status": "disabled" })
+}
+
+#[cfg(mobile)]
+#[tauri::command]
+fn update_download() -> Result<(), String> {
+    Err("updates come from the store on this platform".into())
 }
 
 #[cfg(mobile)]
@@ -336,6 +368,8 @@ pub fn run() {
             take_pending_link,
             update_check,
             update_install,
+            update_state,
+            update_download,
         ])
         .setup(|app| {
             let handle = app.handle().clone();
@@ -357,6 +391,8 @@ pub fn run() {
             // The main window shows at once; index.html paints the splash before the wasm loads.
             // A launch link goes into its `?pair=` query (and is consumed there).
             windows::create_main_window(&handle)?;
+            #[cfg(desktop)]
+            updates::start(&handle);
             Ok(())
         })
         .run(tauri::generate_context!())
