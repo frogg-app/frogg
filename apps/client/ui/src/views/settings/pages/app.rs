@@ -477,6 +477,7 @@ fn update_status(s: &native::UpdateState) -> String {
         "available" if s.mode == "download" => {
             format!("Version {v} is available. Download it to update.")
         }
+        "available" if s.mode == "apk" => format!("Version {v} is available"),
         "available" => format!("Version {v} is available. Downloading…"),
         "downloading" => format!(
             "Downloading {}{}",
@@ -486,6 +487,7 @@ fn update_status(s: &native::UpdateState) -> String {
                 .map(|p| format!(" · {}%", p.percent.round()))
                 .unwrap_or_default()
         ),
+        "ready" if s.mode == "apk" => format!("Version {v} is downloaded and verified"),
         "ready" => format!("Version {v} is ready. Restart to finish updating."),
         "error" => "The last update check failed".to_owned(),
         "disabled" if native::is_tauri() => "Updates run in installed builds only".to_owned(),
@@ -532,6 +534,9 @@ pub fn AppUpdates() -> impl IntoView {
                 {move || {
                     let s = state.get().unwrap_or_default();
                     match s.status.as_str() {
+                        "ready" if s.mode == "apk" => view! {
+                            <Button kind=ButtonKind::Primary label="Install" on_press=Callback::new(move |_| run(|| Box::pin(native::update_install()))) />
+                        }.into_any(),
                         "ready" => view! {
                             <Button kind=ButtonKind::Primary label="Restart to update" on_press=Callback::new(move |_| run(|| Box::pin(native::update_install()))) />
                         }.into_any(),

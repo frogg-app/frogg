@@ -605,7 +605,8 @@ pub struct UpdateState {
     /// | "error"
     pub status: String,
     /// "auto" (the shell downloads and installs) | "download" (the user installs from the
-    /// release page).
+    /// release page) | "apk" (Android: downloads and verifies on request, then `update_install`
+    /// opens the system installer).
     pub mode: String,
     pub current_version: String,
     pub latest_version: Option<String>,

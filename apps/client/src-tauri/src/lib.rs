@@ -29,6 +29,11 @@ use tauri_plugin_fs::FsExt;
 use tauri_plugin_notification::{NotificationExt, PermissionState};
 use tauri_plugin_opener::OpenerExt;
 
+#[cfg(target_os = "android")]
+mod android_updates;
+// Pure APK-update logic: built on Android and for host tests.
+#[cfg(any(target_os = "android", test))]
+mod apk;
 #[cfg(desktop)]
 mod updates;
 mod windows;
@@ -317,25 +322,51 @@ async fn update_download<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
     updates::download(&app).await
 }
 
-#[cfg(mobile)]
+#[cfg(target_os = "android")]
+#[tauri::command]
+async fn update_check<R: Runtime>(app: AppHandle<R>) -> android_updates::UpdateState {
+    android_updates::check(&app).await
+}
+
+#[cfg(target_os = "android")]
+#[tauri::command]
+fn update_state<R: Runtime>(app: AppHandle<R>) -> android_updates::UpdateState {
+    android_updates::current(&app)
+}
+
+/// Downloads and verifies the APK (progress on `frogg://update-state`); ends `ready`.
+#[cfg(target_os = "android")]
+#[tauri::command]
+async fn update_download<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
+    android_updates::download(&app).await
+}
+
+/// Opens the system installer on the verified APK.
+#[cfg(target_os = "android")]
+#[tauri::command]
+async fn update_install<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
+    android_updates::install(&app).await
+}
+
+#[cfg(target_os = "ios")]
 #[tauri::command]
 fn update_check() -> serde_json::Value {
     serde_json::json!({ "status": "disabled" })
 }
 
-#[cfg(mobile)]
+#[cfg(target_os = "ios")]
 #[tauri::command]
 fn update_state() -> serde_json::Value {
     serde_json::json!({ "status": "disabled" })
 }
 
-#[cfg(mobile)]
+#[cfg(target_os = "ios")]
 #[tauri::command]
 fn update_download() -> Result<(), String> {
     Err("updates come from the store on this platform".into())
 }
 
-#[cfg(mobile)]
+#[cfg(target_os = "ios")]
 #[tauri::command]
 fn update_install() -> Result<(), String> {
     Err("updates come from the store on this platform".into())
@@ -362,6 +393,11 @@ pub fn run() {
             .plugin(tauri_plugin_updater::Builder::new().build())
             .plugin(tauri_plugin_process::init())
             .manage(updates::Updates::default());
+    }
+
+    #[cfg(target_os = "android")]
+    {
+        builder = builder.plugin(android_updates::plugin());
     }
 
     builder
@@ -418,6 +454,8 @@ pub fn run() {
             windows::create_main_window(&handle)?;
             #[cfg(desktop)]
             updates::start(&handle);
+            #[cfg(target_os = "android")]
+            android_updates::start(&handle);
             Ok(())
         })
         .run(tauri::generate_context!())
