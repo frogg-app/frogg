@@ -20,12 +20,8 @@ pub fn Sheet(
 ) -> impl IntoView {
     let vp = crate::state::get().viewport;
     let p = use_presence(open, TOAST_OUT_MS.max(OVERLAY_OUT_MS));
-    let handle = window_event_listener(leptos::ev::keydown, move |ev| {
-        if open.get_untracked() && ev.key() == "Escape" {
-            on_close.run(());
-        }
-    });
-    on_cleanup(move || handle.remove());
+    // One Escape (or system back) closes only the top layer.
+    crate::shell::modal_stack::use_modal_layer(open, on_close);
     let children = StoredValue::new(children);
     let title = StoredValue::new(title);
     // Always portalled to <body>: a transformed ancestor (panels, the rail) would otherwise
@@ -88,12 +84,8 @@ pub fn Floating(
     children: ChildrenFn,
 ) -> impl IntoView {
     let p = use_presence(open, OVERLAY_OUT_MS);
-    let handle = window_event_listener(leptos::ev::keydown, move |ev| {
-        if open.get_untracked() && ev.key() == "Escape" {
-            on_close.run(());
-        }
-    });
-    on_cleanup(move || handle.remove());
+    // One Escape (or system back) closes only the top layer.
+    crate::shell::modal_stack::use_modal_layer(open, on_close);
     let children = StoredValue::new(children);
     let class = StoredValue::new(class);
     view! {

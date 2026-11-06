@@ -713,13 +713,13 @@ pub fn NewSession() -> impl IntoView {
             spawn_local(submit(f));
         }
     };
+    crate::shell::modal_stack::use_modal_layer(open, Callback::new(move |_| close()));
     let keys = window_event_listener(leptos::ev::keydown, move |ev| {
         if !open.get_untracked() {
             return;
         }
-        if ev.key() == "Escape" {
-            close();
-        } else if ev.key() == "Enter" && (ev.meta_key() || ev.ctrl_key()) {
+        // Escape is the modal stack's (shell/modal_stack.rs): it closes the top layer only.
+        if ev.key() == "Enter" && (ev.meta_key() || ev.ctrl_key()) {
             ev.prevent_default();
             create();
         }

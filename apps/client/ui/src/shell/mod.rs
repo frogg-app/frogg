@@ -6,6 +6,7 @@ pub mod home;
 pub mod host_sheet;
 pub mod keys;
 pub mod layout;
+pub mod modal_stack;
 pub mod palette;
 pub mod panel_head;
 pub mod phone_tabs;

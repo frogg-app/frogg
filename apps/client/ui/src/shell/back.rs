@@ -1,4 +1,4 @@
-//! System back on phones (the Android back button, a browser's back): the WebView's history
+//! System back on phones and Android (the Android back button, a browser's back): the WebView's history
 //! drives it. While anything sits above the root, one guard entry is kept on the history stack;
 //! a back press pops it, closes the topmost thing (palette, sheet, popover, detail view, a tab
 //! other than Sessions) and re-arms the guard. Sheets and popovers portalled into the body aren't
@@ -46,7 +46,7 @@ fn disarm() {
 
 /// Arms or drops the guard to match what is open.
 fn sync(app: AppState) {
-    if !app.viewport.phone() {
+    if !active(app) {
         return;
     }
     if can_back(app) || overlay_open() {
@@ -58,10 +58,11 @@ fn sync(app: AppState) {
 
 /// A sheet or popover portalled into the body (they close on Escape).
 fn overlay_open() -> bool {
-    web_sys::window()
-        .and_then(|w| w.document())
-        .and_then(|d| d.query_selector(".layer, .floating-catch").ok().flatten())
-        .is_some()
+    super::modal_stack::modal_open()
+        || web_sys::window()
+            .and_then(|w| w.document())
+            .and_then(|d| d.query_selector(".layer, .floating-catch").ok().flatten())
+            .is_some()
 }
 
 fn send_escape() {
@@ -76,19 +77,34 @@ fn send_escape() {
     }
 }
 
+/// Back handling runs on phone layouts and anywhere on Android (tablets, foldables, landscape),
+/// where the hardware back button exists. A desktop browser's back button is left alone.
+fn active(app: AppState) -> bool {
+    app.viewport.phone() || crate::native::platform() == crate::native::Platform::Android
+}
+
 /// Whether a back press has something to close (reactive, overlays aside).
 fn can_back(app: AppState) -> bool {
     let ui = app.ui;
     ui.palette_open.get()
         || ui.new_session_open.get()
         || ui.host_sheet_open.get()
-        || super::layout::has_phone_detail(app)
+        || super::modal_stack::depth() > 0
+        || if app.viewport.phone() {
+            super::layout::has_phone_detail(app)
+        } else {
+            ui.selected.get().is_some()
+        }
         || ui.tool.get() != Tool::Sessions
 }
 
 /// Closes the topmost thing; false at the root.
 fn go_back(app: AppState) -> bool {
     let ui = app.ui;
+    // The newest sheet or popover first, as one Escape would.
+    if super::modal_stack::close_top() {
+        return true;
+    }
     if ui.palette_open.get_untracked() {
         ui.palette_open.set(false);
         return true;
@@ -104,6 +120,18 @@ fn go_back(app: AppState) -> bool {
     if overlay_open() {
         send_escape();
         return true;
+    }
+    if !app.viewport.phone() {
+        // Wide layouts: back leaves the tool, then closes the open session.
+        if ui.tool.get_untracked() != Tool::Sessions {
+            ui.set_tool(Tool::Sessions);
+            return true;
+        }
+        if ui.selected.get_untracked().is_some() {
+            ui.select(None);
+            return true;
+        }
+        return false;
     }
     if untrack(|| super::layout::has_phone_detail(app)) {
         // Same order as the phone detail's own back buttons (layout::main_detail).
@@ -132,7 +160,7 @@ pub fn install() {
     let app = crate::state::get();
     Effect::new(move |_| {
         // Tracks the viewport and app-state overlays; the DOM check below is untracked.
-        let _ = app.viewport.phone() && can_back(app);
+        let _ = active(app) && can_back(app);
         untrack(|| sync(app));
     });
     observe_overlays(app);
@@ -141,7 +169,7 @@ pub fn install() {
             return;
         }
         GUARDED.with(|g| g.set(false));
-        if !app.viewport.phone() {
+        if !active(app) {
             return;
         }
         if go_back(app) && untrack(|| can_back(app)) {

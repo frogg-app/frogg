@@ -47,6 +47,7 @@ web-sys = { version = "0.3", features = [
   "Element",
   "HtmlElement",
   "HtmlInputElement",
+  "NodeList",
   "File",
   "FileList",
   "Blob",
