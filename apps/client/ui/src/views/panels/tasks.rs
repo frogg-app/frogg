@@ -30,10 +30,113 @@ const LIST_ORDER: [&str; 7] = [
 ];
 const ALL: &str = "__all";
 
+/// A starting point for a new to-do (ui-next `tasks/templates.ts`). The description is what an
+/// agent reads when it claims the item, so each is a prompt skeleton.
+struct Template {
+    id: &'static str,
+    label: &'static str,
+    category: &'static str,
+    priority: &'static str,
+    title: &'static str,
+    description: &'static str,
+}
+
+const TEMPLATES: [Template; 6] = [
+    Template {
+        id: "blank",
+        label: "Blank",
+        category: "",
+        priority: "medium",
+        title: "",
+        description: "",
+    },
+    Template {
+        id: "bug",
+        label: "Bug fix",
+        category: "bug",
+        priority: "high",
+        title: "Fix: ",
+        description: "## What happens\n\n## What should happen\n\n## Steps to reproduce\n1. \n\n## Done when\n- The steps above no longer reproduce it\n- A test covers the case",
+    },
+    Template {
+        id: "feature",
+        label: "Feature",
+        category: "feature",
+        priority: "medium",
+        title: "",
+        description: "## Goal\n\n## Scope\n- \n\n## Out of scope\n- \n\n## Done when\n- \n- Typecheck and tests pass",
+    },
+    Template {
+        id: "refactor",
+        label: "Refactor",
+        category: "refactor",
+        priority: "low",
+        title: "Refactor: ",
+        description: "## What to change\n\n## Why\n\n## Constraints\n- No behaviour change\n\n## Done when\n- Existing tests pass unchanged",
+    },
+    Template {
+        id: "investigate",
+        label: "Investigate",
+        category: "research",
+        priority: "medium",
+        title: "Investigate: ",
+        description: "## Question\n\n## Where to look\n- \n\n## Report back\n- Findings with file and line references\n- A recommended next step",
+    },
+    Template {
+        id: "docs",
+        label: "Docs",
+        category: "docs",
+        priority: "low",
+        title: "Document ",
+        description: "## Page or file\n\n## What it should cover\n- \n\n## Done when\n- The page matches the code",
+    },
+];
+
+/// Most urgent first; the daemon's order (most recently touched) breaks ties (ui-next
+/// `TodoBoard.tsx` `byUrgency`).
+fn by_urgency(mut items: Vec<(String, Todo)>) -> Vec<(String, Todo)> {
+    let rank = |p: &str| match p {
+        "urgent" => 0,
+        "high" => 1,
+        "medium" => 2,
+        _ => 3,
+    };
+    items.sort_by_key(|(_, t)| rank(&t.priority));
+    items
+}
+
 fn toast_err(title: String, e: String) {
     state::get()
         .toasts
         .push(Toast::new(ToastKind::Error, title).detail(e));
+}
+
+/// A move the user made (board arrows, the detail's column): a toast names the column with an
+/// Undo, so a card leaving the view is never unexplained (ui-next `tasks/moves.ts`).
+async fn move_todo(project: String, id: String, title: String, from: String, to: String) {
+    if from == to {
+        return;
+    }
+    if let Err(e) = store()
+        .set_status(project.clone(), id.clone(), to.clone())
+        .await
+    {
+        toast_err(format!("Couldn't move “{title}”"), e);
+        return;
+    }
+    let undo = move || {
+        let (p, i, back) = (project.clone(), id.clone(), from.clone());
+        spawn_local(async move {
+            if let Err(e) = store().set_status(p, i, back).await {
+                toast_err("Couldn't undo the move".into(), e);
+            }
+        });
+    };
+    state::get().toasts.push(
+        Toast::new(ToastKind::Ok, format!("Moved to {}", status_label(&to)))
+            .detail(title)
+            .action("Undo", undo),
+    );
 }
 
 fn status_tint(s: &str) -> &'static str {
@@ -180,7 +283,7 @@ fn FilterNote() -> impl IntoView {
 fn TodoList(on_new: Callback<()>) -> impl IntoView {
     let t = store();
     move || {
-        let items = t.filtered();
+        let items = by_urgency(t.filtered());
         let multi = t.scope.get().is_none();
         if items.is_empty() {
             let loading = t.loading();
@@ -252,17 +355,19 @@ fn TodoCard(
         .unwrap_or(0);
     let step = {
         let (pid, id, title) = (project.clone(), todo.id.clone(), todo.title.clone());
+        let from = todo.status.clone();
         move |by: i32| {
             let next = at as i32 + by;
             let Some(next) = (next >= 0).then(|| STATUSES.get(next as usize)).flatten() else {
                 return;
             };
-            let (pid, id, title) = (pid.clone(), id.clone(), title.clone());
-            spawn_local(async move {
-                if let Err(e) = store().set_status(pid, id, next.0.into()).await {
-                    toast_err(format!("Couldn't move “{title}”"), e);
-                }
-            });
+            spawn_local(move_todo(
+                pid.clone(),
+                id.clone(),
+                title.clone(),
+                from.clone(),
+                next.0.into(),
+            ));
         }
     };
     let step2 = step.clone();
@@ -344,7 +449,7 @@ fn TodoCard(
 fn Board() -> impl IntoView {
     let t = store();
     move || {
-        let items = t.filtered();
+        let items = by_urgency(t.filtered());
         let multi = t.scope.get().is_none();
         view! {
             <div class="pn-board">
@@ -403,6 +508,18 @@ fn NewTodoSheet(open: RwSignal<bool>) -> impl IntoView {
     let project = RwSignal::new(String::new());
     let error = RwSignal::new(None::<String>);
     let busy = RwSignal::new(false);
+    let template = RwSignal::new("blank".to_owned());
+    let category = RwSignal::new(String::new());
+    let pick = move |id: &str| {
+        let Some(x) = TEMPLATES.iter().find(|x| x.id == id) else {
+            return;
+        };
+        template.set(x.id.into());
+        title.set(x.title.into());
+        desc.set(x.description.into());
+        category.set(x.category.into());
+        priority.set(x.priority.into());
+    };
     Effect::new(move |_| {
         if open.get() {
             let first = t
@@ -415,8 +532,8 @@ fn NewTodoSheet(open: RwSignal<bool>) -> impl IntoView {
                 })
                 .unwrap_or_default();
             project.set(first);
-            title.set(String::new());
-            desc.set(String::new());
+            pick("blank");
+            status.set("backlog".into());
             error.set(None);
         }
     });
@@ -428,13 +545,17 @@ fn NewTodoSheet(open: RwSignal<bool>) -> impl IntoView {
         }
         busy.set(true);
         spawn_local(async move {
+            let cat = category.get_untracked().trim().to_owned();
             let r = t
-                .create(
+                .create_with(
                     pid,
-                    ti,
-                    desc.get_untracked(),
-                    priority.get_untracked(),
-                    status.get_untracked(),
+                    json!({
+                        "title": ti,
+                        "description": desc.get_untracked(),
+                        "priority": priority.get_untracked(),
+                        "status": status.get_untracked(),
+                        "category": (!cat.is_empty()).then_some(cat),
+                    }),
                 )
                 .await;
             busy.set(false);
@@ -457,6 +578,12 @@ fn NewTodoSheet(open: RwSignal<bool>) -> impl IntoView {
                         .collect();
                     view! { <Select options=opts value=project on_change=Callback::new(move |v| project.set(v)) placeholder="Project" /> }
                 }}
+                <span class="t-label">"Template"</span>
+                <Select
+                    options=TEMPLATES.iter().map(|x| SelectOption::new(x.id, x.label)).collect()
+                    value=template
+                    on_change=Callback::new(move |v: String| pick(&v))
+                />
                 <TextInput value=title placeholder="Title" autofocus=true on_enter=submit />
                 <textarea
                     class="pn-msg"
@@ -464,6 +591,8 @@ fn NewTodoSheet(open: RwSignal<bool>) -> impl IntoView {
                     prop:value=move || desc.get()
                     on:input=move |e| desc.set(event_target_value(&e))
                 ></textarea>
+                <span class="t-label">"Category"</span>
+                <TextInput value=category placeholder="e.g. bug, feature, docs" />
                 <div class="pn-form-row">
                     <Select
                         options=PRIORITIES.iter().map(|(v, l)| SelectOption::new(*v, *l)).collect()
@@ -504,6 +633,7 @@ fn TodoDetailSheet() -> impl IntoView {
     });
     let title = RwSignal::new(String::new());
     let desc = RwSignal::new(String::new());
+    let category = RwSignal::new(String::new());
     let error = RwSignal::new(None::<String>);
     Effect::new(move |prev: Option<Option<String>>| {
         let id = t.open.get().map(|(_, id)| id);
@@ -511,6 +641,7 @@ fn TodoDetailSheet() -> impl IntoView {
             if let Some((_, todo)) = current.get_untracked() {
                 title.set(todo.title);
                 desc.set(todo.description);
+                category.set(todo.category.unwrap_or_default());
             }
             error.set(None);
         }
@@ -521,7 +652,11 @@ fn TodoDetailSheet() -> impl IntoView {
             return;
         };
         let (ti, de) = (title.get_untracked(), desc.get_untracked());
-        if ti.trim().is_empty() || (ti == todo.title && de == todo.description) {
+        let cat = category.get_untracked().trim().to_owned();
+        let cat = (!cat.is_empty()).then_some(cat);
+        if ti.trim().is_empty()
+            || (ti == todo.title && de == todo.description && cat == todo.category)
+        {
             return;
         }
         spawn_local(async move {
@@ -529,7 +664,7 @@ fn TodoDetailSheet() -> impl IntoView {
                 .update(
                     pid,
                     todo.id,
-                    json!({ "title": ti.trim(), "description": de }),
+                    json!({ "title": ti.trim(), "description": de, "category": cat }),
                 )
                 .await
             {
@@ -540,7 +675,8 @@ fn TodoDetailSheet() -> impl IntoView {
     view! {
         <Sheet open=open on_close=Callback::new(move |_| t.open.set(None)) width=520.0>
             {move || current.get().map(|(pid, todo)| {
-                let (p1, id1) = (pid.clone(), todo.id.clone());
+                let (p1, id1, ti1, from1) =
+                    (pid.clone(), todo.id.clone(), todo.title.clone(), todo.status.clone());
                 let (p2, id2, ti2) = (pid.clone(), todo.id.clone(), todo.title.clone());
                 let (p3, id3) = (pid.clone(), todo.id.clone());
                 view! {
@@ -559,17 +695,27 @@ fn TodoDetailSheet() -> impl IntoView {
                             on:input=move |e| desc.set(event_target_value(&e))
                             on:blur=move |_| save()
                         ></textarea>
+                        <span class="t-label">"Category"</span>
+                        <input
+                            class="input"
+                            aria-label="Category"
+                            placeholder="e.g. bug, feature, docs"
+                            prop:value=move || category.get()
+                            on:input=move |e| category.set(event_target_value(&e))
+                            on:blur=move |_| save()
+                        />
                         <div class="pn-form-row">
                             <Select
                                 options=STATUSES.iter().map(|(v, l, _)| SelectOption::new(*v, *l)).collect()
                                 value=todo.status.clone()
                                 on_change=Callback::new(move |v: String| {
-                                    let (p, id) = (p1.clone(), id1.clone());
-                                    spawn_local(async move {
-                                        if let Err(e) = store().set_status(p, id, v).await {
-                                            error.set(Some(e));
-                                        }
-                                    });
+                                    spawn_local(move_todo(
+                                        p1.clone(),
+                                        id1.clone(),
+                                        ti1.clone(),
+                                        from1.clone(),
+                                        v,
+                                    ));
                                 })
                                 chip=true
                             />

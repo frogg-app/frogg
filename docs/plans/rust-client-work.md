@@ -144,15 +144,15 @@ additive edits only. Sizes are S/M/L.
   M: editor menu, tab "+" and tab context menu. S: row menu reads live changed state; revoke
   image blob URLs.
 - M: commit graph and SCM quick settings (makes the `scm*` prefs work); S: "Commit" first in
-  the More menu.
+  the More menu (**done**).
 - S: terminal wheel uses the program's mouse encoding and pointer cell; S/M: cancel drop
-  uploads; S: ASCII-only safe chars in `shell_path`.
-- M: to-do templates, category field, claim/progress lists in detail, "Moved to X" undo toast,
-  filter note detail, urgency sort.
+  uploads; S: ASCII-only safe chars in `shell_path` (**done**).
+- M: to-do templates, category field, "Moved to X" undo toast, urgency sort (**done**);
+  claim/progress lists in detail, filter note detail.
 - M: PRs Streams tab, merge split button (allowed methods, auto-merge, disabled reason), CI run
   actions (re-run, cancel, logs), live CI visuals, expandable jobs, branch/PR switcher.
 - L: multi-account usage cards; S: meter prefs (`meterTimer`, `meterSeconds`, `meterHover`,
-  `meterAfterReply`) drive refresh.
+  `meterAfterReply`) drive refresh (**done**; after-reply only while the Usage panel is open).
 - L: plugin-contributed panels and forms; M: remote-control toggle and capability chips; S:
   unlink dev plugins, update confirm with new capabilities, incompatible reason text.
 - S: companion uses the compact composer and bubble icons.
