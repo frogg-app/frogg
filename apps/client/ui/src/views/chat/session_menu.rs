@@ -31,8 +31,6 @@ thread_local! {
     static FORK_DRAFTS: RefCell<HashMap<String, ForkDraft>> = RefCell::new(HashMap::new());
 }
 
-/// Wired by the composer's initial attachments (slice 7b).
-#[allow(dead_code)]
 /// Takes the pending fork context for a new session (the composer's initial attachment).
 pub fn take_fork_draft(agent_id: &str) -> Option<ForkDraft> {
     FORK_DRAFTS.with(|d| d.borrow_mut().remove(agent_id))

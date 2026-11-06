@@ -98,3 +98,7 @@ web-sys = { version = "0.3", features = ["ResizeObserver"] }
 # views/panels/hosts (pairing QR). Own table so dependency edits never conflict.
 [target.'cfg(not(target_os = "solaris"))'.dependencies]
 qrcodegen = "1.8"
+
+# views/chat reveal (streamed text spans). Own table so feature edits never conflict; features unify.
+[target.'cfg(not(target_os = "redox"))'.dependencies]
+web-sys = { version = "0.3", features = ["Node", "Text", "CharacterData", "Performance"] }

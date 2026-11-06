@@ -13,16 +13,15 @@
 use std::cell::Cell;
 use std::collections::{HashMap, HashSet};
 
-use frogg_client_core::SendMessageOptions;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
-use serde_json::{json, Value};
+use serde_json::Value;
 
-use super::composer::{Att, AttKind};
+use super::composer::Att;
 use super::subwork::SubWork;
 use crate::components::{Button, ButtonKind, StatusGlyph};
 use crate::shell::toast::{Toast, ToastKind};
-use crate::state::timeline::{sent, Entry};
+use crate::state::timeline::Entry;
 use crate::state::{bucket_of, Agent, Bucket, Session};
 
 // ----- operations ---------------------------------------------------------------------------
@@ -96,7 +95,6 @@ pub fn op_of(agent_id: &str) -> Option<SessionOp> {
 }
 
 /// Whether an operation runs on the session now (untracked): the composer queues instead.
-#[allow(dead_code)] // composer (7b)
 pub fn busy(agent_id: &str) -> bool {
     store().ops.with_untracked(|m| m.contains_key(agent_id))
 }
@@ -107,7 +105,6 @@ pub fn queued_of(agent_id: &str) -> Option<Queued> {
 }
 
 /// Joins `text` onto what already waits, so nothing typed is lost.
-#[allow(dead_code)] // composer (7b)
 pub fn join_queued(cur: Option<&Queued>, text: &str, atts: Vec<Att>) -> Queued {
     let text = match cur.map(|q| q.text.as_str()) {
         Some(c) if !c.is_empty() && !text.is_empty() => format!("{c}\n\n{text}"),
@@ -124,7 +121,6 @@ pub fn join_queued(cur: Option<&Queued>, text: &str, atts: Vec<Att>) -> Queued {
 }
 
 /// Holds a message until the session's running operation finishes.
-#[allow(dead_code)] // composer (7b)
 pub fn queue_message(agent_id: &str, text: &str, atts: Vec<Att>) {
     store().queue.update(|m| {
         let q = join_queued(m.get(agent_id), text, atts);
@@ -144,7 +140,7 @@ pub async fn send_queued(agent_id: String) -> Result<(), String> {
         return Ok(());
     };
     drop_queued(&agent_id);
-    let res = send(&agent_id, &q.text, &q.atts).await;
+    let res = super::composer::send(&agent_id, &q.text, &q.atts).await;
     if res.is_err() {
         store().queue.update(|m| {
             m.insert(agent_id.clone(), Queued { failed: true, ..q });
@@ -174,42 +170,6 @@ fn settle_queue(agent_id: String, ok: bool) {
             super::toast_err("Message not sent", e);
         }
     });
-}
-
-/// The composer's send, for the held message (images inline, uploaded files as attachments).
-async fn send(agent_id: &str, text: &str, atts: &[Att]) -> Result<(), String> {
-    let client = crate::state::get()
-        .conn
-        .client()
-        .ok_or("Not connected to a host")?;
-    let images: Vec<Value> = atts
-        .iter()
-        .filter_map(|a| match &a.kind {
-            AttKind::Image { mime, data } => Some(json!({ "data": data, "mimeType": mime })),
-            _ => None,
-        })
-        .collect();
-    let files: Vec<Value> = atts
-        .iter()
-        .filter_map(|a| match &a.kind {
-            AttKind::File(v) => Some(v.clone()),
-            _ => None,
-        })
-        .collect();
-    let message_id = sent::new_message_id();
-    client
-        .send_message(
-            agent_id,
-            text,
-            SendMessageOptions {
-                message_id: Some(message_id),
-                images: (!images.is_empty()).then_some(Value::Array(images)),
-                attachments: (!files.is_empty()).then_some(Value::Array(files)),
-                ..Default::default()
-            },
-        )
-        .await
-        .map_err(|e| e.to_string())
 }
 
 /// Runs `fut` as the session's only operation: a sticky progress toast while it runs, then a
@@ -585,6 +545,7 @@ pub fn SessionState(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
 
     fn entry(item: Value) -> Entry {
         Entry {

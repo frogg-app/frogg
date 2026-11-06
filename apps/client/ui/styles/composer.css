@@ -1,0 +1,398 @@
+/* Composer slice (7b): clean-cut send, agent controls, context ring, slash groups, stash and
+   shell notes, the resize grip and expand toggle, question cards, streamed text reveal. */
+
+/* ----- clean-cut send ------------------------------------------------------------------ */
+.cut-send-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.cut-send {
+  --cut-bg: var(--raise);
+  --cut-line: var(--line2);
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cyan2);
+  transition:
+    --cut-line 140ms var(--ease),
+    --cut-bg 140ms var(--ease),
+    color 140ms var(--ease),
+    opacity 140ms var(--ease);
+}
+.cut-send:not(.idle):hover {
+  --cut-bg: var(--wash2);
+  --cut-line: var(--cyan2);
+  color: var(--text);
+}
+.cut-send.idle {
+  opacity: 0.55;
+  cursor: default;
+}
+.cut-send-tip {
+  position: absolute;
+  bottom: 36px;
+  right: 0;
+  padding: 4px 8px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  font-size: 11px;
+  color: var(--text);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(2px);
+  transition:
+    opacity 120ms var(--ease),
+    transform 120ms var(--ease);
+  z-index: 5;
+}
+.cut-send-wrap:hover .cut-send-tip {
+  opacity: 1;
+  transform: none;
+}
+
+/* ----- context ring -------------------------------------------------------------------- */
+.composer-bar .ctx-meter {
+  gap: 5px;
+  padding: 4px 6px;
+}
+.ctx-meter svg {
+  display: block;
+  flex-shrink: 0;
+}
+.ctx-arc {
+  transition:
+    stroke-dashoffset 420ms var(--ease),
+    stroke 200ms var(--ease);
+}
+.ctx-pct {
+  font-size: 11px;
+  color: var(--faint);
+}
+
+/* ----- slash menu ---------------------------------------------------------------------- */
+.slash {
+  max-height: 380px;
+  padding: 4px 0;
+}
+.slash-head {
+  padding: 10px 14px 4px;
+  font-size: 9.5px;
+}
+.slash .slash-opt {
+  width: calc(100% - 8px);
+  margin: 0 4px;
+  padding: 7px 10px;
+}
+.slash .slash-opt.on,
+.slash .slash-opt:hover {
+  background: color-mix(in srgb, var(--cyan) 10%, transparent);
+}
+.slash-arg {
+  color: var(--faint);
+}
+.slash .slash-desc {
+  color: var(--faint);
+}
+
+/* ----- stash and shell notes ----------------------------------------------------------- */
+.composer-note {
+  margin-bottom: 6px;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.composer-note.shell {
+  color: var(--cyan2);
+}
+
+/* ----- input size: grip, glide, mirror ------------------------------------------------- */
+.composer-grip {
+  display: flex;
+  justify-content: center;
+  align-self: center;
+  width: 64px;
+  margin: -8px auto 2px;
+  padding: 4px 18px;
+  cursor: ns-resize;
+  touch-action: none;
+}
+.composer-grip-bar {
+  width: 28px;
+  height: 3px;
+  background: var(--line2);
+  transition:
+    background-color 160ms var(--ease),
+    width 200ms var(--ease);
+}
+.composer-grip:hover .composer-grip-bar {
+  background: var(--muted);
+}
+.composer-grip.on .composer-grip-bar {
+  width: 40px;
+  background: var(--cyan2);
+}
+.composer-input-box {
+  position: relative;
+  overflow: hidden;
+  transition: height var(--glide-ms) var(--ease);
+}
+.composer-input-box.dragging {
+  transition: none;
+}
+.composer-input-box > .composer-input {
+  height: 100%;
+  max-height: none;
+}
+/* Same type and width as the input, never seen: its height is the text's own height. */
+.composer-mirror {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  visibility: hidden;
+  pointer-events: none;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 20px;
+}
+.composer.compact .composer-mirror {
+  font-size: 15px;
+}
+.composer-expand {
+  color: var(--muted);
+}
+.composer-expand:hover {
+  color: var(--text);
+}
+@media (prefers-reduced-motion: reduce) {
+  .composer-input-box {
+    transition: none;
+  }
+}
+
+/* ----- attachment chips ---------------------------------------------------------------- */
+.composer .att-chip {
+  border: 1px solid var(--line);
+  padding: 4px 8px;
+  overflow: hidden;
+}
+.composer .att-bar {
+  background: var(--mint);
+}
+.composer .att-up {
+  font-size: 10.5px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.composer-bar .icon-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ----- question card ------------------------------------------------------------------- */
+.perm.question {
+  --cut-line: color-mix(in srgb, var(--amber) 45%, transparent);
+  --cut-bg: color-mix(in srgb, var(--amber) 3%, var(--bg));
+}
+.perm.question .perm-ico {
+  color: var(--amber);
+}
+.q-kind {
+  color: var(--amber);
+  font-weight: 600;
+  font-size: 12.5px;
+}
+.q-text {
+  font-size: 15px;
+  line-height: 22px;
+  margin-top: 10px;
+}
+.perm.question .q-opts {
+  gap: 0;
+  margin: 10px -14px 0;
+}
+.perm.question .q-opt {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 18px;
+  text-align: left;
+  border-left: 0;
+  background: transparent;
+  transition: background 140ms var(--ease);
+}
+.perm.question .q-opt:hover {
+  background: var(--wash);
+}
+.perm.question .q-opt.on {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--amber) 32%, transparent),
+    color-mix(in srgb, var(--amber) 4%, transparent)
+  );
+}
+.q-mark {
+  flex-shrink: 0;
+  width: 9px;
+  height: 9px;
+  margin-top: 5px;
+  border: 1px solid var(--muted);
+  transform: rotate(45deg);
+  transition:
+    background-color 140ms var(--ease),
+    border-color 140ms var(--ease);
+}
+.q-mark.multi {
+  transform: none;
+}
+.q-opt.on .q-mark {
+  background: var(--amber);
+  border-color: var(--amber);
+}
+.q-opt-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+.perm.question .q-opt-label {
+  font-size: 14px;
+}
+.q-input {
+  margin-top: 6px;
+}
+.q-actions {
+  align-items: center;
+  margin-top: 12px;
+}
+.q-dismiss {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.q-dismiss:hover {
+  color: var(--text);
+}
+
+/* ----- streamed text reveal (textReveal pref) ------------------------------------------ */
+/* Only the 0% frame: each span animates to its own computed style (text, code, bold). */
+@keyframes rv-fade {
+  0% {
+    opacity: 0;
+    top: 3px;
+  }
+}
+@keyframes rv-blur {
+  0% {
+    opacity: 0;
+    filter: blur(6px);
+  }
+}
+@keyframes rv-slide {
+  0% {
+    opacity: 0;
+    left: -4px;
+  }
+}
+@keyframes rv-type {
+  0% {
+    opacity: 0;
+  }
+}
+@keyframes rv-glow {
+  0% {
+    color: var(--cyan2);
+    text-shadow: 0 0 10px color-mix(in srgb, var(--cyan) 95%, transparent);
+  }
+}
+@keyframes rv-wipe {
+  0% {
+    mask-position: 100% 0;
+    -webkit-mask-position: 100% 0;
+    text-shadow: 0 0 10px color-mix(in srgb, var(--cyan2) 90%, transparent);
+  }
+  100% {
+    mask-position: 0% 0;
+    -webkit-mask-position: 0% 0;
+    text-shadow: 0 0 0 transparent;
+  }
+}
+@keyframes rv-blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0;
+  }
+}
+.rv-fade {
+  position: relative;
+  animation: rv-fade 180ms var(--ease) backwards;
+}
+.rv-blur {
+  animation: rv-blur 220ms var(--ease) backwards;
+}
+.rv-slide {
+  position: relative;
+  animation: rv-slide 200ms var(--ease) backwards;
+}
+.rv-type {
+  animation: rv-type 90ms linear backwards;
+}
+.rv-glow {
+  animation: rv-glow 700ms ease-out backwards;
+}
+.rv-wipe {
+  mask-image: linear-gradient(90deg, #000 0%, #000 40%, transparent 55%, transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 40%, transparent 55%, transparent 100%);
+  mask-size: 300% 100%;
+  -webkit-mask-size: 300% 100%;
+  mask-repeat: no-repeat;
+  -webkit-mask-repeat: no-repeat;
+  animation: rv-wipe 420ms var(--ease);
+}
+/* Scramble: the real text holds the layout (transparent) under a settling noise overlay. */
+.rv-scr {
+  position: relative;
+}
+.rv-scr.rv-ghost {
+  color: transparent;
+}
+.rv-over {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  overflow: hidden;
+  white-space: pre;
+  color: var(--cyan2);
+}
+/* Caret mode: a block leads the stream, blinking once the stream pauses. */
+.rv-caret .fr-md > :last-child::after,
+.rv-caret .fr-md:empty::after {
+  content: "";
+  display: inline-block;
+  width: 0.55em;
+  height: 1.05em;
+  margin-left: 1px;
+  vertical-align: -0.15em;
+  background: var(--cyan);
+}
+.rv-caret.idle .fr-md > :last-child::after,
+.rv-caret.idle .fr-md:empty::after {
+  animation: rv-blink 1000ms linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rv {
+    animation: none !important;
+  }
+}

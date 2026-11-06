@@ -378,8 +378,21 @@ fn avatar(v: &Viewer, first: bool) -> impl IntoView {
 /// Reports this app as viewing `agent_id` and shows everyone else there. Draws nothing when
 /// nobody else has the session open, or the host does not share presence.
 #[component]
-pub fn Viewers(agent_id: String, #[prop(into)] online: Signal<bool>) -> impl IntoView {
+pub fn Viewers(
+    agent_id: String,
+    #[prop(into)] online: Signal<bool>,
+    /// True while this app's composer holds a draft: reported as "typing" instead of "viewing".
+    #[prop(optional, into)]
+    typing: Option<Signal<bool>>,
+) -> impl IntoView {
     let app = crate::state::get();
+    let state = move || {
+        if typing.is_some_and(|t| t.get_untracked()) {
+            "typing"
+        } else {
+            "viewing"
+        }
+    };
     let snapshot = RwSignal::new(Value::Null);
     let agent = StoredValue::new(agent_id);
     let target = move || json!({ "kind": "agent", "agentId": agent.get_value() });
@@ -435,7 +448,7 @@ pub fn Viewers(agent_id: String, #[prop(into)] online: Signal<bool>) -> impl Int
             let t = target();
             let failures = failures.clone();
             spawn_local(async move {
-                match c.report_presence(t, json!("viewing"), None).await {
+                match c.report_presence(t, json!(state()), None).await {
                     Ok(r) if r.error.is_none() => failures.set(0),
                     _ => failures.set(failures.get() + 1),
                 }
@@ -454,6 +467,25 @@ pub fn Viewers(agent_id: String, #[prop(into)] online: Signal<bool>) -> impl Int
             }
         });
     });
+    // Starting or clearing a draft goes out at once, not at the next heartbeat.
+    if let Some(typing) = typing {
+        Effect::new(move |prev: Option<bool>| {
+            let now = typing.get();
+            if prev.is_some_and(|p| p != now) && online.get_untracked() {
+                if let Some(c) = app
+                    .conn
+                    .client()
+                    .filter(|c| c.has_feature("sessionPresence"))
+                {
+                    let t = target();
+                    spawn_local(async move {
+                        let _ = c.report_presence(t, json!(state()), None).await;
+                    });
+                }
+            }
+            now
+        });
+    }
     on_cleanup(unsub);
     // A clock so a peer that silently vanished drops off once its entry outlives the TTL.
     let now = use_now(Signal::derive(|| (VIEWER_TTL_MS / 3.0) as u64));

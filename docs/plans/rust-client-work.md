@@ -84,9 +84,9 @@ additive edits only. Sizes are S/M/L.
   ready to review, signed out, failed) — `chat/SessionState.tsx`.
 - [done] M: composer notices (operation progress, queued message, stale cache, auto-resume) —
   `chat/Notices.tsx`.
-- [done: viewing presence; typing state needs the composer to report it] M: viewers ("also here") and typing presence — `chat/Viewers.tsx`.
+- [done: viewing and typing presence (7b reports typing)] M: viewers ("also here") and typing presence — `chat/Viewers.tsx`.
 - [done] S: full header title from the first prompt line (`chat/title.ts`); M: reveal heading (CSS rise on title change).
-- L: streaming text reveal per `textReveal` pref — `chat/TextReveal.tsx`.
+- [done (7b): `chat/reveal.rs`] L: streaming text reveal per `textReveal` pref — `chat/TextReveal.tsx`.
 - [done] M: bottom anchor on content resize (images, clamps), 24px slack — `chat/useBottomAnchor.ts`.
 - [done] S: key permission cards with `<For>` on id so live agent updates keep a half-typed reply
   (`chat/mod.rs` permission block); mount `Lightbox` once per window, not per pane; resubscribe
@@ -94,16 +94,16 @@ additive edits only. Sizes are S/M/L.
 
 **7b composer** — owns `ui/src/views/chat/{composer,permission}.rs`
 
-- M: thinking-level picker in agent controls; S: model label falls back to provider default.
-- M: slash menu groups (Commands/Skills), prefix-first sort, load-error state.
-- M: draft stash (Ctrl+S); S: `!cmd` shell-escape note behind `agentShellEscape`.
-- M: resizable/expandable composer, size per session — `chat/composerSize.ts`.
-- M: question card multi-select, "Other…", back/next, dismiss, answers keyed by `header`
+- [done] M: thinking-level picker in agent controls; S: model label falls back to provider default.
+- [done] M: slash menu groups (Commands/Skills), prefix-first sort, load-error state.
+- [done] M: draft stash (Ctrl+S); S: `!cmd` shell-escape note behind `agentShellEscape`.
+- [done: `chat/composer_size.rs`] M: resizable/expandable composer, size per session — `chat/composerSize.ts`.
+- [done; daemon reads `answers[question]` then `answers[header]`] M: question card multi-select, "Other…", back/next, dismiss, answers keyed by `header`
   (verify the daemon key) — `chat/QuestionCard.tsx`.
-- S: context meter ring with token counts; attach menu (images/files) with dedupe; offline
+- [done; attach opens the chooser straight away as ui-next does, dedupe by name+size] S: context meter ring with token counts; attach menu (images/files) with dedupe; offline
   disables attach/paste/drop; drag-highlight depth counter; drop `Uploading` chips from saved
   drafts; keep focus on send (`readonly` instead of `disabled`).
-- M: fork-context attachment (`initialAttachments`).
+- [done; also places chips, cut queue, scissors clean-cut send, typing presence] M: fork-context attachment (`initialAttachments`).
 
 **7c tools-subwork-markdown** — owns `ui/src/views/chat/{tool,subwork}.rs`,
 `apps/client/render/src/markdown`

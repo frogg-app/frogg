@@ -2,15 +2,15 @@
 //! (windowed, bottom-anchored, with load-earlier), pending permissions, the live activity line
 //! and the composer.
 
-// Placed by the composer (slice 7b); unused until then.
-#[allow(dead_code)]
 mod chips;
 mod composer;
+mod composer_size;
 mod item;
 mod lightbox;
 mod notices;
 mod permission;
 mod relay;
+mod reveal;
 pub mod session_menu;
 pub mod session_state;
 mod subwork;
@@ -348,6 +348,7 @@ pub fn Chat(
         Signal::derive(move || rows.with(|r| r.iter().map(|x| x.entry.get()).collect::<Vec<_>>()))
     };
     let phone = app.viewport.form_factor.get_untracked() == crate::theme::layout::FormFactor::Phone;
+    let typing = RwSignal::new(false);
     let host_for_detail = host.clone();
     view! {
         <div class="chat" class:phone=phone>
@@ -418,11 +419,13 @@ pub fn Chat(
                     </div>
                 </div>
                 <div class="chat-composer">
-                    <Viewers agent_id=agent_id.clone() online=online />
+                    <Viewers agent_id=agent_id.clone() online=online typing=typing />
                     <ComposerNotices session=session />
                     <Composer
                         agent_id=agent_id.clone()
                         session=session
+                        rows=all_rows
+                        typing=typing
                         online=online
                         provider=provider
                         compact=phone

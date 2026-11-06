@@ -6,6 +6,7 @@ use leptos::prelude::*;
 use serde_json::Value;
 
 use super::relay::{parse_relay, resolve_sender, split_images, Piece, Relay};
+use super::reveal::RevealReply;
 use super::tool::ToolCall;
 use crate::components::{Ico, Icon};
 use crate::state::timeline::{sent, Entry};
@@ -38,9 +39,7 @@ pub fn TimelineItem(
                     <span class="tl-diamond"></span>
                     <span class="tl-who">{move || provider.get()}</span>
                 </div>
-                <div class="tl-reply-body" class:streaming=move || streaming.get()>
-                    <Markdown text=text on_link=on_link() />
-                </div>
+                <RevealReply text=text streaming=streaming on_link=on_link() />
             </div>
         }
         .into_any(),

@@ -2,15 +2,16 @@
 //! allow, a plan to review, or a question with options. With the card focused, `a` approves and
 //! Esc denies.
 
+use std::collections::HashMap;
+
 use frogg_render::Markdown;
 use leptos::prelude::*;
-use leptos::task::spawn_local;
 use serde_json::{json, Value};
 
 use super::item::on_link;
 use super::{client_or_toast, toast_err};
 use crate::components::{Button, ButtonKind, Ico, Icon};
-use crate::shell::toast::{toast, ToastKind};
+use crate::shell::toast::ToastKind;
 
 fn s<'a>(v: &'a Value, k: &str) -> Option<&'a str> {
     v.get(k).and_then(Value::as_str)
@@ -64,12 +65,7 @@ pub fn PermissionCard(
     #[prop(optional)]
     mode: Option<String>,
 ) -> impl IntoView {
-    let questions = p
-        .get("input")
-        .and_then(|i| i.get("questions"))
-        .and_then(Value::as_array)
-        .filter(|q| !q.is_empty() && q.iter().all(|x| x.get("question").is_some()))
-        .cloned();
+    let questions = p.get("input").and_then(parse_questions);
     if s(&p, "kind") == Some("question") {
         if let Some(q) = questions {
             return view! { <QuestionCard agent_id=agent_id p=p questions=q /> }.into_any();
@@ -267,107 +263,307 @@ pub fn PermissionCard(
     .into_any()
 }
 
-/// An agent question: one question at a time, options as buttons, or a typed answer.
+/// One question of an AskUserQuestion-style request.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Question {
+    pub question: String,
+    /// The answer's key: the daemon reads `answers[question]` then `answers[header]`.
+    pub header: String,
+    pub options: Vec<(String, Option<String>)>,
+    pub multi: bool,
+    /// Offers "Other…" for a typed answer.
+    pub other: bool,
+    pub placeholder: Option<String>,
+}
+
+/// The provider's question input, or `None` when it is not one.
+pub fn parse_questions(input: &Value) -> Option<Vec<Question>> {
+    let raw = input.get("questions")?.as_array()?;
+    let mut out = Vec::new();
+    for q in raw {
+        let question = s(q, "question")?.to_owned();
+        let options: Vec<(String, Option<String>)> = q
+            .get("options")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+            .filter_map(|o| {
+                Some((
+                    s(o, "label")?.to_owned(),
+                    s(o, "description").map(str::to_owned),
+                ))
+            })
+            .collect();
+        let flag = |k: &str| q.get(k).and_then(Value::as_bool);
+        out.push(Question {
+            header: s(q, "header").unwrap_or(&question).to_owned(),
+            other: flag("allowOther") != Some(false)
+                && (flag("isOther") == Some(true) || !options.is_empty()),
+            multi: flag("multiSelect") == Some(true),
+            placeholder: s(q, "placeholder").map(str::to_owned),
+            question,
+            options,
+        });
+    }
+    (!out.is_empty()).then_some(out)
+}
+
+/// "Other…": the typed answer.
+const OTHER: i32 = -1;
+
+/// The next selection after choosing option `i` (or `OTHER`) on a question.
+pub fn choose(prev: &[i32], i: i32, multi: bool) -> Vec<i32> {
+    if !multi || i == OTHER {
+        return vec![i];
+    }
+    let base: Vec<i32> = prev.iter().copied().filter(|x| *x != OTHER).collect();
+    if base.contains(&i) {
+        base.into_iter().filter(|x| *x != i).collect()
+    } else {
+        let mut b = base;
+        b.push(i);
+        b
+    }
+}
+
+/// `answers` keyed by each question's header: picked labels joined, or the typed answer.
+pub fn build_answers(
+    questions: &[Question],
+    picks: &HashMap<usize, Vec<i32>>,
+    texts: &HashMap<usize, String>,
+) -> serde_json::Map<String, Value> {
+    let mut out = serde_json::Map::new();
+    for (n, q) in questions.iter().enumerate() {
+        let sel = picks.get(&n).cloned().unwrap_or_default();
+        let free = q.options.is_empty() || sel.contains(&OTHER);
+        let a = if free {
+            texts
+                .get(&n)
+                .map(|t| t.trim().to_owned())
+                .unwrap_or_default()
+        } else {
+            sel.iter()
+                .filter_map(|i| q.options.get(*i as usize).map(|o| o.0.clone()))
+                .collect::<Vec<_>>()
+                .join(", ")
+        };
+        out.insert(q.header.clone(), Value::String(a));
+    }
+    out
+}
+
+/// An agent question: one at a time, single or multi-select, "Other…" for a typed answer,
+/// Back/Next, and Dismiss.
 #[component]
-fn QuestionCard(agent_id: String, p: Value, questions: Vec<Value>) -> impl IntoView {
-    let id = s(&p, "id").unwrap_or("").to_owned();
+fn QuestionCard(agent_id: String, p: Value, questions: Vec<Question>) -> impl IntoView {
+    let request = s(&p, "id").unwrap_or("").to_owned();
     let input = p.get("input").cloned().unwrap_or(json!({}));
+    let app = crate::state::get();
+    let who = app
+        .hosts
+        .active_id
+        .get_untracked()
+        .and_then(|h| app.agents.get(&h, &agent_id))
+        .map(|s| crate::state::config::provider_label(&s.agent.provider));
     let total = questions.len();
     let questions = StoredValue::new(questions);
-    let step = RwSignal::new(0usize);
-    let answers = RwSignal::new(serde_json::Map::new());
-    let other = RwSignal::new(String::new());
+    let at = RwSignal::new(0usize);
+    let picks = RwSignal::new(HashMap::<usize, Vec<i32>>::new());
+    let texts = RwSignal::new(HashMap::<usize, String>::new());
     let busy = RwSignal::new(false);
-    let ctx = StoredValue::new((agent_id, id, input));
-    let pick = move |label: String| {
-        let i = step.get_untracked();
-        let q = questions.with_value(|q| s(&q[i], "question").unwrap_or("").to_owned());
-        answers.update(|a| {
-            a.insert(q, Value::String(label));
-        });
-        other.set(String::new());
-        if i + 1 < total {
-            step.set(i + 1);
+    let ctx = StoredValue::new((agent_id, request, input));
+    let q = Memo::new(move |_| questions.with_value(|q| q[at.get()].clone()));
+    let chosen = move || picks.with(|p| p.get(&at.get()).cloned().unwrap_or_default());
+    let free_only = move || q.with(|q| q.options.is_empty());
+    let other_on = move || free_only() || chosen().contains(&OTHER);
+    let answered = move || {
+        if other_on() {
+            texts.with(|t| t.get(&at.get()).is_some_and(|t| !t.trim().is_empty()))
+        } else {
+            !chosen().is_empty()
+        }
+    };
+    let last = move || at.get() + 1 == total;
+    let pick = move |i: i32| {
+        if busy.get_untracked() {
             return;
         }
-        busy.set(true);
-        let (a, r, mut input) = ctx.get_value();
-        input["answers"] = Value::Object(answers.get_untracked());
-        let Some(c) = client_or_toast() else {
-            busy.set(false);
-            return;
-        };
-        spawn_local(async move {
-            match c.respond_to_permission(
-                &a,
-                &r,
-                json!({ "behavior": "allow", "updatedInput": input }),
-            ) {
-                Ok(()) => {
-                    let _ = toast(ToastKind::Ok, "Answered");
-                }
-                Err(e) => {
-                    busy.set(false);
-                    toast_err("Could not answer", e);
-                }
-            }
+        let n = at.get_untracked();
+        let multi = q.with_untracked(|q| q.multi);
+        picks.update(|p| {
+            let next = choose(p.get(&n).map(Vec::as_slice).unwrap_or(&[]), i, multi);
+            p.insert(n, next);
         });
     };
+    let next = move || {
+        if busy.get_untracked() || !answered() {
+            return;
+        }
+        if !last() {
+            at.update(|n| *n += 1);
+            return;
+        }
+        let answers = questions.with_value(|qs| {
+            picks.with_untracked(|p| texts.with_untracked(|t| build_answers(qs, p, t)))
+        });
+        let (a, r, mut input) = ctx.get_value();
+        input["answers"] = Value::Object(answers);
+        let Some(c) = client_or_toast() else { return };
+        busy.set(true);
+        if let Err(e) = c.respond_to_permission(
+            &a,
+            &r,
+            json!({ "behavior": "allow", "updatedInput": input }),
+        ) {
+            busy.set(false);
+            toast_err("Could not send the answer", e);
+        }
+    };
+    let dismiss = move || {
+        let (a, r, _) = ctx.get_value();
+        let Some(c) = client_or_toast() else { return };
+        busy.set(true);
+        if let Err(e) = c.respond_to_permission(
+            &a,
+            &r,
+            json!({ "behavior": "deny", "message": "Dismissed by user" }),
+        ) {
+            busy.set(false);
+            toast_err("Could not dismiss", e);
+        }
+    };
+    let option = move |i: i32, label: String, hint: Option<String>| {
+        let on = move || chosen().contains(&i) || (i == OTHER && other_on());
+        let multi = q.with_untracked(|q| q.multi) && i != OTHER;
+        view! {
+            <button
+                class="q-opt"
+                class:on=on
+                role=if multi { "checkbox" } else { "radio" }
+                aria-checked=move || on().to_string()
+                disabled=move || busy.get()
+                on:click=move |_| pick(i)
+            >
+                <span class="q-mark" class:multi=multi></span>
+                <span class="q-opt-text">
+                    <span class="q-opt-label">{label}</span>
+                    {hint.map(|h| view! { <span class="q-opt-hint">{h}</span> })}
+                </span>
+            </button>
+        }
+    };
     view! {
-        <div class="perm question cut cut-stroke m-enter" style="--c:10px">
+        <div class="perm question cut cut-stroke flip m-enter" style="--c:10px">
+            <div class="perm-head">
+                <Icon ico=Ico::MessageSquare size=13.0 class="perm-ico" />
+                <span class="q-kind">
+                    {move || if total > 1 { format!("Question {} of {total}", at.get() + 1) } else { "Question".to_owned() }}
+                </span>
+                <span class="spacer"></span>
+                {who.map(|w| view! { <span class="perm-keys t-mono">{w}</span> })}
+            </div>
             {move || {
-                let i = step.get();
-                let q = questions.with_value(|q| q[i].clone());
-                let header = s(&q, "header").or(s(&q, "question")).unwrap_or("").to_owned();
-                let text = s(&q, "question").unwrap_or("").to_owned();
-                let opts: Vec<(String, Option<String>)> = q
-                    .get("options")
-                    .and_then(Value::as_array)
-                    .into_iter()
-                    .flatten()
-                    .filter_map(|o| Some((s(o, "label")?.to_owned(), s(o, "description").map(str::to_owned))))
-                    .collect();
+                let cur = q.get();
+                let n = at.get();
+                let free = cur.options.is_empty();
                 view! {
-                    <div class="perm-head">
-                        <Icon ico=Ico::MessageSquare size=13.0 class="perm-ico" />
-                        <span class="perm-tag t-label">"QUESTION"</span>
-                        <span class="perm-meta">{header}</span>
-                        <span class="spacer"></span>
-                        {(total > 1).then(|| view! { <span class="perm-keys t-mono">{format!("{} / {total}", i + 1)}</span> })}
-                    </div>
-                    <div class="perm-title t-display">{text}</div>
+                    <div class="q-text">{cur.question.clone()}</div>
                     <div class="q-opts">
-                        {opts
-                            .into_iter()
-                            .map(|(label, hint)| {
-                                let l = StoredValue::new(label.clone());
-                                view! {
-                                    <button
-                                        class="q-opt"
-                                        disabled=move || busy.get()
-                                        on:click=move |_| pick(l.get_value())
-                                    >
-                                        <span class="q-opt-label">{label}</span>
-                                        {hint.map(|h| view! { <span class="q-opt-hint">{h}</span> })}
-                                    </button>
-                                }
-                            })
+                        {cur.options
+                            .iter()
+                            .enumerate()
+                            .map(|(i, (l, h))| option(i as i32, l.clone(), h.clone()))
                             .collect_view()}
+                        {(cur.other && !free).then(|| option(OTHER, "Other…".into(), None))}
                     </div>
+                    <Show when=other_on>
+                        <input
+                            class="input field-box perm-reply q-input"
+                            placeholder=cur.placeholder.clone().unwrap_or_else(|| "Type your answer".into())
+                            autofocus=!free
+                            prop:value=move || texts.with(|t| t.get(&n).cloned().unwrap_or_default())
+                            on:input=move |ev| {
+                                let v = event_target_value(&ev);
+                                texts.update(|t| {
+                                    t.insert(n, v);
+                                });
+                            }
+                            on:keydown=move |ev| {
+                                if ev.key() == "Enter" {
+                                    ev.prevent_default();
+                                    next();
+                                }
+                            }
+                        />
+                    </Show>
                 }
             }}
-            <input
-                class="input field-box perm-reply"
-                placeholder="Or type an answer"
-                prop:value=move || other.get()
-                on:input=move |ev| other.set(event_target_value(&ev))
-                on:keydown=move |ev| {
-                    let t = other.get_untracked().trim().to_owned();
-                    if ev.key() == "Enter" && !t.is_empty() {
-                        pick(t);
-                    }
-                }
-            />
+            <div class="perm-actions q-actions">
+                <button class="q-dismiss" disabled=move || busy.get() on:click=move |_| dismiss()>
+                    "Dismiss"
+                </button>
+                <span class="spacer"></span>
+                <Show when=move || at.get() != 0>
+                    <Button
+                        label="Back"
+                        disabled=busy
+                        on_press=Callback::new(move |_| at.update(|n| *n = n.saturating_sub(1)))
+                    />
+                </Show>
+                <Button
+                    kind=ButtonKind::Primary
+                    label=Signal::derive(move || if last() { "Send answer".to_owned() } else { "Next".to_owned() })
+                    kbd="⏎"
+                    disabled=Signal::derive(move || busy.get() || !answered())
+                    on_press=Callback::new(move |_| next())
+                />
+            </div>
         </div>
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn qs() -> Vec<Question> {
+        parse_questions(&json!({"questions":[
+            {"question":"Which db?","header":"DB","options":[{"label":"pg"},{"label":"sqlite","description":"file"}]},
+            {"question":"Toppings?","header":"Top","multiSelect":true,"options":[{"label":"a"},{"label":"b"}]},
+            {"question":"Name it"}
+        ]}))
+        .unwrap()
+    }
+
+    #[test]
+    fn parses_questions() {
+        let q = qs();
+        assert_eq!(q.len(), 3);
+        assert!(q[0].other && !q[0].multi);
+        assert!(q[1].multi);
+        assert!(!q[2].other && q[2].options.is_empty());
+        assert_eq!(q[2].header, "Name it");
+        assert!(parse_questions(&json!({"questions":[{"nope":1}]})).is_none());
+        assert!(parse_questions(&json!({"questions":[]})).is_none());
+    }
+
+    #[test]
+    fn multi_select_and_other() {
+        assert_eq!(choose(&[], 1, false), vec![1]);
+        assert_eq!(choose(&[1], 0, true), vec![1, 0]);
+        assert_eq!(choose(&[1, 0], 1, true), vec![0]);
+        assert_eq!(choose(&[0], OTHER, true), vec![OTHER]);
+        assert_eq!(choose(&[OTHER], 1, true), vec![1]);
+    }
+
+    #[test]
+    fn answers_keyed_by_header() {
+        let q = qs();
+        let picks = HashMap::from([(0, vec![OTHER]), (1, vec![1, 0])]);
+        let texts = HashMap::from([(0, " mysql ".to_owned()), (2, "Frogg".to_owned())]);
+        let a = build_answers(&q, &picks, &texts);
+        assert_eq!(a["DB"], "mysql");
+        assert_eq!(a["Top"], "b, a");
+        assert_eq!(a["Name it"], "Frogg");
     }
 }
