@@ -85,6 +85,12 @@ pub struct ClientOptions {
     pub reconnect: bool,
     pub reconnect_base_delay_ms: u64,
     pub reconnect_max_delay_ms: u64,
+    /// After a drop of a connection that was up, this many quick retries run first
+    /// (`reconnect_fast_base_delay_ms`, doubling, capped at `reconnect_fast_max_delay_ms`) before
+    /// the regular backoff, so a restarting daemon comes back promptly. 0 disables them.
+    pub reconnect_fast_retries: u32,
+    pub reconnect_fast_base_delay_ms: u64,
+    pub reconnect_fast_max_delay_ms: u64,
     /// Liveness pings every 10 s once connected; two missed pongs force a reconnect.
     pub heartbeat: bool,
     /// Refuse a daemon that answers with another `serverId`.
@@ -100,6 +106,9 @@ impl Default for ClientOptions {
             reconnect: true,
             reconnect_base_delay_ms: DEFAULT_RECONNECT_BASE_DELAY_MS,
             reconnect_max_delay_ms: DEFAULT_RECONNECT_MAX_DELAY_MS,
+            reconnect_fast_retries: 0,
+            reconnect_fast_base_delay_ms: 500,
+            reconnect_fast_max_delay_ms: 4_000,
             heartbeat: true,
             expected_server_id: None,
         }
@@ -243,6 +252,8 @@ pub(crate) struct Inner {
     disposed: bool,
     should_reconnect: bool,
     reconnect_attempt: u32,
+    /// Quick retries left since the last successful connection.
+    fast_retries_left: u32,
     reconnect_timer: Option<TimerId>,
     connect_timer: Option<TimerId>,
     error_timer: Option<TimerId>,
@@ -374,6 +385,7 @@ impl DaemonClient {
                 disposed: false,
                 should_reconnect: true,
                 reconnect_attempt: 0,
+                fast_retries_left: 0,
                 reconnect_timer: None,
                 connect_timer: None,
                 error_timer: None,
@@ -416,6 +428,13 @@ impl DaemonClient {
 
     pub fn last_error(&self) -> Option<String> {
         self.inner.borrow().last_error.clone()
+    }
+
+    /// True while the next reconnect after a drop will be one of the quick retries
+    /// (see [`ClientOptions::reconnect_fast_retries`]).
+    pub fn fast_retry_pending(&self) -> bool {
+        let i = self.inner.borrow();
+        i.fast_retries_left > 0 && i.should_reconnect && i.options.reconnect
     }
 
     pub fn last_error_info(&self) -> Option<ErrorInfo> {
@@ -721,14 +740,30 @@ impl DaemonClient {
             let mut inner = self.inner.borrow_mut();
             let give_up =
                 !inner.should_reconnect || !inner.options.reconnect || inner.connector.is_none();
-            let attempt = inner.reconnect_attempt.min(20);
-            let delay = inner
-                .options
-                .reconnect_base_delay_ms
-                .saturating_mul(1u64 << attempt)
-                .min(inner.options.reconnect_max_delay_ms);
+            let fast = inner.fast_retries_left > 0;
+            let delay = if fast {
+                let o = &inner.options;
+                let n = o
+                    .reconnect_fast_retries
+                    .saturating_sub(inner.fast_retries_left)
+                    .min(20);
+                o.reconnect_fast_base_delay_ms
+                    .saturating_mul(1u64 << n)
+                    .min(o.reconnect_fast_max_delay_ms)
+            } else {
+                let attempt = inner.reconnect_attempt.min(20);
+                inner
+                    .options
+                    .reconnect_base_delay_ms
+                    .saturating_mul(1u64 << attempt)
+                    .min(inner.options.reconnect_max_delay_ms)
+            };
             if !give_up {
-                inner.reconnect_attempt += 1;
+                if fast {
+                    inner.fast_retries_left -= 1;
+                } else {
+                    inner.reconnect_attempt += 1;
+                }
             }
             (give_up, delay)
         };
@@ -996,6 +1031,7 @@ impl DaemonClient {
         {
             let mut inner = self.inner.borrow_mut();
             inner.reconnect_attempt = 0;
+            inner.fast_retries_left = inner.options.reconnect_fast_retries;
             inner.last_error_info = None;
         }
         self.set_state(ConnectionState::Connected);

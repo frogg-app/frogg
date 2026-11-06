@@ -55,6 +55,9 @@ pub struct Link {
     /// Retries stopped after the host failed to answer [`GIVE_UP_AFTER`] times in a row; only a
     /// user action (Retry, picking the host) dials again.
     pub paused: bool,
+    /// Quick retries used since the last drop of a live connection; they don't count toward
+    /// [`GIVE_UP_AFTER`].
+    pub quick: u32,
 }
 
 impl Default for Link {
@@ -67,6 +70,7 @@ impl Default for Link {
             version: None,
             error: None,
             paused: false,
+            quick: 0,
         }
     }
 }
@@ -96,6 +100,9 @@ pub const LOCAL_DAEMON: &str = "127.0.0.1:9969";
 /// A saved host that won't answer is retried more gently than core's default (1.5 s to 30 s),
 /// so a gone host doesn't fill the console with failed handshakes.
 const RECONNECT_BASE_MS: u64 = 4_000;
+/// A host that drops a live connection (daemon restart) is first retried quickly: 0.5 s, 1 s,
+/// 2 s, 4 s, then the gentle backoff above.
+const QUICK_RETRIES: u32 = 4;
 const RECONNECT_MAX_MS: u64 = 300_000;
 /// Consecutive failed dials (first try included) before retries stop until the user asks.
 pub const GIVE_UP_AFTER: u32 = 5;
@@ -201,6 +208,9 @@ fn new_client() -> DaemonClient {
         ClientOptions {
             reconnect_base_delay_ms: RECONNECT_BASE_MS,
             reconnect_max_delay_ms: RECONNECT_MAX_MS,
+            reconnect_fast_retries: QUICK_RETRIES,
+            reconnect_fast_base_delay_ms: 500,
+            reconnect_fast_max_delay_ms: 4_000,
             ..ClientOptions::default()
         },
     )
@@ -480,7 +490,13 @@ impl Connections {
                     });
                 // Synchronous with the core's reconnect decision: turning reconnect off here makes
                 // this drop the last dial until the user asks again.
-                let give_up = self.link_untracked(host_id).attempt + 1 >= GIVE_UP_AFTER;
+                // A quick retry follows a drop of a live connection; it isn't a dead-host strike.
+                let quick = self
+                    .client_of(host_id)
+                    .is_some_and(|c| c.fast_retry_pending());
+                let link = self.link_untracked(host_id);
+                let give_up =
+                    !quick && link.attempt.saturating_sub(link.quick) + 1 >= GIVE_UP_AFTER;
                 if give_up {
                     if let Some(c) = self.client_of(host_id) {
                         c.set_reconnect_enabled(false);
@@ -490,6 +506,9 @@ impl Connections {
                     l.conn = Conn::Offline;
                     l.error = error;
                     l.paused = give_up;
+                    if quick {
+                        l.quick += 1;
+                    }
                 });
             }
             Event::State(ConnectionState::Idle) => {}
@@ -522,6 +541,7 @@ impl Connections {
         self.set_link(host_id, |l| {
             l.conn = Conn::Online;
             l.attempt = 0;
+            l.quick = 0;
             l.error = None;
             l.server_name = name.clone();
             l.server_id = server_id.clone();
