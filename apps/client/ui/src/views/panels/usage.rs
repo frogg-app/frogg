@@ -10,7 +10,7 @@ use super::util::ago;
 use crate::components::{Ico, Icon};
 use crate::shell::panel_head::PanelHead;
 use crate::state::checkout::online;
-use crate::state::usage::{store, ProviderUsage};
+use crate::state::usage::{store, AccountUsage, ProviderUsage};
 use crate::state::{self, Tool};
 
 const CELLS: usize = 20;
@@ -202,8 +202,176 @@ pub fn UsagePanel() -> impl IntoView {
     }
 }
 
+const SWATCH: [&str; 5] = [
+    "var(--cyan)",
+    "var(--violet)",
+    "var(--mint)",
+    "var(--amber)",
+    "var(--coral)",
+];
+
+/// An account's identity colour: its own preference, else a stable slot by position.
+fn account_tint(a: &AccountUsage, i: usize) -> String {
+    match a.color.as_deref() {
+        Some(c @ ("cyan" | "violet" | "mint" | "amber" | "coral")) => format!("var(--{c})"),
+        _ => SWATCH[i % SWATCH.len()].to_owned(),
+    }
+}
+
+/// A provider card: its figures, or with two or more sign-ins one block per account (in
+/// columns when wide) that collapses to a one-line-per-account summary.
 #[component]
 fn ProviderCard(p: ProviderUsage) -> impl IntoView {
+    let u = store();
+    let id = p.provider_id.clone();
+    let accounts = Memo::new(move |_| u.accounts.with(|m| m.get(&id).cloned().unwrap_or_default()));
+    let open = RwSignal::new(true);
+    let p = StoredValue::new(p);
+    move || {
+        let list = accounts.get();
+        let p = p.get_value();
+        if list.is_empty() {
+            return view! {
+                <div class="pn-ucard cut flip" style="--c:10px">
+                    <div class="pn-ucard-head">
+                        <div class="pn-ucard-titles">
+                            <span class="pn-ucard-name">{p.name()}</span>
+                            {p.account_email.clone().map(|e| view! { <span class="t-mono pn-row-meta">{e}</span> })}
+                        </div>
+                        {p.plan_label.clone().map(|l| view! { <span class="pn-pill t-mono">{l}</span> })}
+                    </div>
+                    <Figures p=p quiet=true />
+                </div>
+            }
+            .into_any();
+        }
+        let n = list.len();
+        let name = p.name();
+        view! {
+            <div class="pn-ucard pn-ucard-multi cut flip" style="--c:10px">
+                <button
+                    class="pn-ucard-head pn-ucard-toggle"
+                    aria-label=move || format!("{} {}", if open.get() { "Collapse" } else { "Expand" }, name)
+                    on:click=move |_| open.update(|o| *o = !*o)
+                >
+                    <span class="pn-chev" class:open=move || open.get()><Icon ico=Ico::ChevronRight size=13.0 /></span>
+                    <span class="pn-ucard-name">{p.name()}</span>
+                    <span class="t-mono faint pn-small">{format!("{n} accounts")}</span>
+                </button>
+                {move || {
+                    let list = accounts.get();
+                    if open.get() {
+                        view! {
+                            <div class="pn-accounts">
+                                {list.into_iter().enumerate().map(|(i, a)| {
+                                    let tint = account_tint(&a, i);
+                                    view! { <AccountBlock a=a tint=tint /> }
+                                }).collect_view()}
+                            </div>
+                            <button class="pn-link t-mono pn-manage" on:click=move |_| {
+                                let app = state::get();
+                                app.ui.set_tool(Tool::Settings);
+                                app.ui.open_settings(Some("accounts".into()));
+                            }>"Manage accounts"</button>
+                        }
+                        .into_any()
+                    } else {
+                        view! { <Summary list=list /> }.into_any()
+                    }
+                }}
+            </div>
+        }
+        .into_any()
+    }
+}
+
+fn top_pct(a: &AccountUsage) -> Option<f64> {
+    a.usage
+        .as_ref()?
+        .windows
+        .iter()
+        .filter_map(|w| w.used())
+        .fold(None, |m: Option<f64>, v| Some(m.map_or(v, |m| m.max(v))))
+}
+
+fn state_word(a: &AccountUsage) -> &'static str {
+    if !a.authenticated {
+        "signed out"
+    } else if a.error.is_some() || a.usage.as_ref().is_some_and(|u| u.status == "error") {
+        "error"
+    } else {
+        "—"
+    }
+}
+
+/// The collapsed card: one line per account with its fullest window, and the overall peak.
+#[component]
+fn Summary(list: Vec<AccountUsage>) -> impl IntoView {
+    let peak = list
+        .iter()
+        .flat_map(|a| {
+            a.usage
+                .iter()
+                .flat_map(|u| u.windows.iter())
+                .filter_map(move |w| w.used().map(|p| (p, w.label.clone(), a.label())))
+        })
+        .fold(None, |m: Option<(f64, String, String)>, x| match m {
+            Some(m) if m.0 >= x.0 => Some(m),
+            _ => Some(x),
+        });
+    view! {
+        <div class="pn-usum">
+            {list.iter().enumerate().map(|(i, a)| {
+                let pct = top_pct(a);
+                view! {
+                    <div class="pn-usum-row">
+                        <span class="pn-sw" style=format!("background:{}", account_tint(a, i))></span>
+                        <span class="pn-usum-name">{a.label()}</span>
+                        {a.is_active.then(|| view! { <span class="pn-pill t-mono cyan2">"new sessions"</span> })}
+                        <span class="t-mono" style=format!("color:{}", tone_for(pct))>
+                            {pct.map(|p| format!("{}%", p.round())).unwrap_or_else(|| state_word(a).to_owned())}
+                        </span>
+                    </div>
+                }
+            }).collect_view()}
+            {peak.map(|(p, label, who)| view! {
+                <span class="t-mono pn-source">
+                    "highest "<span style=format!("color:{}", tone_for(Some(p)))>{format!("{}%", p.round())}</span>
+                    {format!(" · {label} · {who}")}
+                </span>
+            })}
+        </div>
+    }
+}
+
+/// One sign-in inside a provider card: who it is, whether it is in use, and its windows.
+#[component]
+fn AccountBlock(a: AccountUsage, tint: String) -> impl IntoView {
+    view! {
+        <div class="pn-acct">
+            <div class="pn-acct-head">
+                <span class="pn-sw" style=format!("background:{tint}")></span>
+                <span class="pn-acct-name">{a.label()}</span>
+                {a.is_active.then(|| view! { <span class="pn-pill t-mono cyan2">"new sessions"</span> })}
+                <span class="spacer"></span>
+                {a.usage.as_ref().and_then(|u| u.plan_label.clone()).map(|l| view! { <span class="t-mono faint pn-small">{l}</span> })}
+            </div>
+            {a.usage.as_ref().and_then(|u| u.account_email.clone()).map(|e| view! { <span class="t-mono pn-row-meta">{e}</span> })}
+            {(!a.authenticated).then(|| view! {
+                <div class="pn-acct-state">
+                    <span class="pn-pill t-mono coral">"signed out"</span>
+                    <span class="pn-muted pn-small">"Sign in from a terminal with this account selected."</span>
+                </div>
+            })}
+            {a.error.clone().map(|e| view! { <span class="t-mono pn-error-inline">{e}</span> })}
+            {a.usage.clone().filter(|_| a.authenticated).map(|u| view! { <Figures p=u quiet=false /> })}
+        </div>
+    }
+}
+
+/// Windows, balances and freshness for one usage read.
+#[component]
+fn Figures(p: ProviderUsage, quiet: bool) -> impl IntoView {
     let stale = p
         .fetched_at
         .as_deref()
@@ -220,16 +388,11 @@ fn ProviderCard(p: ProviderUsage) -> impl IntoView {
                 .unwrap_or_default()
         )
     });
+    let unreported = !quiet && p.status == "unavailable" && p.error.is_none();
     view! {
-        <div class="pn-ucard cut flip" style="--c:10px">
-            <div class="pn-ucard-head">
-                <div class="pn-ucard-titles">
-                    <span class="pn-ucard-name">{p.name()}</span>
-                    {p.account_email.clone().map(|e| view! { <span class="t-mono pn-row-meta">{e}</span> })}
-                </div>
-                {p.plan_label.clone().map(|l| view! { <span class="pn-pill t-mono">{l}</span> })}
-            </div>
+        <>
             {p.error.clone().map(|e| view! { <span class="t-mono pn-error-inline">{e}</span> })}
+            {unreported.then(|| view! { <span class="pn-muted pn-small">"No usage reported for this sign-in."</span> })}
             {p.windows
                 .iter()
                 .map(|w| {
@@ -267,6 +430,6 @@ fn ProviderCard(p: ProviderUsage) -> impl IntoView {
                 })
                 .collect_view()}
             {source.map(|s| view! { <span class={if stale { "t-mono pn-stale" } else { "t-mono pn-source" }}>{s}</span> })}
-        </div>
+        </>
     }
 }

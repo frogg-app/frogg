@@ -187,6 +187,63 @@
   text-overflow: ellipsis;
 }
 
+/* Usage: multi-account cards */
+.pn-ucard-toggle {
+  width: 100%;
+  justify-content: flex-start;
+  gap: 8px;
+  text-align: left;
+}
+.pn-ucard-toggle .pn-ucard-name {
+  flex: 1;
+}
+.pn-accounts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+}
+.pn-acct {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  background: var(--wash);
+  animation: pn-enter 200ms var(--ease) both;
+}
+.pn-acct-head,
+.pn-acct-state,
+.pn-usum-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.pn-acct-name,
+.pn-usum-name {
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pn-usum-name {
+  flex: 1;
+}
+.pn-sw {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  transform: rotate(45deg);
+}
+.pn-usum {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pn-manage {
+  align-self: flex-start;
+  color: var(--cyan);
+}
+
 /* Terminals: cancellable drop uploads */
 .pn-upload {
   display: flex;
