@@ -4,7 +4,9 @@
 
 mod composer;
 mod item;
+mod lightbox;
 mod permission;
+mod relay;
 mod subwork;
 mod tool;
 
@@ -298,6 +300,7 @@ pub fn Chat(
     let host_for_detail = host.clone();
     view! {
         <div class="chat" class:phone=phone>
+            <lightbox::Lightbox />
             <ChatHead session=session on_back=on_back />
             {move || match work.detail.get() {
                 Some(sub) => view! {
@@ -315,7 +318,7 @@ pub fn Chat(
             <div class="chat-main" class:hidden=move || work.detail.with(Option::is_some)>
                 <subwork::SubWorkStrip work=work />
                 <div class="chat-scroll" node_ref=scroller on:scroll=on_scroll>
-                    <div class="chat-body">
+                    <div class="chat-body" on:click=lightbox::on_image_click>
                         <Show when=can_show_earlier.clone()>
                             <button class="tl-earlier t-mono" on:click={
                                 let f = show_earlier.clone();

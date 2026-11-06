@@ -5,9 +5,10 @@ use frogg_render::Markdown;
 use leptos::prelude::*;
 use serde_json::Value;
 
+use super::relay::{parse_relay, resolve_sender, split_images, Piece, Relay};
 use super::tool::ToolCall;
 use crate::components::{Ico, Icon};
-use crate::state::timeline::Entry;
+use crate::state::timeline::{sent, Entry};
 
 /// Links in rendered markdown open outside the app.
 pub fn on_link() -> Callback<String> {
@@ -27,7 +28,10 @@ pub fn TimelineItem(
     let e = entry.clone();
     let text = Signal::derive(move || e.with(|e| e.text().to_owned()));
     match kind.as_str() {
-        "user_message" => view! { <UserBubble text=text /> }.into_any(),
+        "user_message" => {
+            let message_id = entry.with_untracked(|e| e.str("messageId").map(str::to_owned));
+            view! { <UserMessage text=text message_id=message_id /> }.into_any()
+        }
         "assistant_message" => view! {
             <div class="tl-reply m-enter">
                 <div class="tl-reply-head">
@@ -102,10 +106,128 @@ pub fn TimelineItem(
     }
 }
 
-/// The user's own turn: plain text (line breaks kept), right-aligned, cyan edge.
+/// A user turn: the user's own bubble, or a message relayed from another agent.
 #[component]
-fn UserBubble(#[prop(into)] text: Signal<String>) -> impl IntoView {
-    view! { <div class="tl-user m-enter">{move || text.get()}</div> }
+fn UserMessage(#[prop(into)] text: Signal<String>, message_id: Option<String>) -> impl IntoView {
+    let relay = Memo::new(move |_| text.with(|t| parse_relay(t)));
+    let message_id = StoredValue::new(message_id);
+    move || match relay.get() {
+        Some(r) => view! { <RelayMessage relay=r /> }.into_any(),
+        None => view! { <UserBubble text=text message_id=message_id.get_value() /> }.into_any(),
+    }
+}
+
+/// The user's own turn: plain text (line breaks kept), right-aligned, cyan edge. Images written
+/// into the text as markdown render inline; what this device attached shows under the text,
+/// pictures first, the rest (and pictures after a reload) as name chips.
+#[component]
+fn UserBubble(#[prop(into)] text: Signal<String>, message_id: Option<String>) -> impl IntoView {
+    let message_id = StoredValue::new(message_id);
+    let sent = Memo::new(move |_| {
+        message_id
+            .get_value()
+            .map(|id| sent::of(&id))
+            .unwrap_or_default()
+    });
+    let pieces = Memo::new(move |_| text.with(|t| split_images(t)));
+    let wide = move || {
+        pieces.with(|p| p.iter().any(|x| matches!(x, Piece::Img { .. })))
+            || sent.with(|s| s.iter().any(|x| x.uri.is_some()))
+    };
+    view! {
+        <div class="tl-user m-enter" class:wide=wide>
+            {move || {
+                let wide = wide();
+                pieces
+                    .get()
+                    .into_iter()
+                    .map(|p| match p {
+                        Piece::Text(t) => {
+                            let t = if wide { t.trim().to_owned() } else { t };
+                            (!t.trim().is_empty())
+                                .then(|| view! { <span class="tl-user-t">{t}</span> })
+                                .into_any()
+                        }
+                        Piece::Img { alt, src } => {
+                            match frogg_render::markdown::resolve_image(&src, None) {
+                                Some(frogg_render::markdown::ImageSource::Uri(u)) => {
+                                    view! { <img class="tl-user-img" src=u alt=alt /> }.into_any()
+                                }
+                                _ => view! {
+                                    <span class="tl-user-chip t-mono" title=src>
+                                        <Icon ico=Ico::Image size=12.0 />
+                                        <span>{if alt.is_empty() { "image".to_owned() } else { alt }}</span>
+                                    </span>
+                                }
+                                .into_any(),
+                            }
+                        }
+                    })
+                    .collect_view()
+            }}
+            {move || {
+                sent.get()
+                    .into_iter()
+                    .filter_map(|x| x.uri.clone().map(|u| (u, x.name)))
+                    .map(|(u, name)| view! { <img class="tl-user-img" src=u alt=name /> })
+                    .collect_view()
+            }}
+            {move || {
+                let chips: Vec<_> = sent.get().into_iter().filter(|x| x.uri.is_none()).collect();
+                (!chips.is_empty()).then(|| view! {
+                    <div class="tl-user-chips">
+                        {chips
+                            .into_iter()
+                            .map(|x| view! {
+                                <span class="tl-user-chip t-mono">
+                                    <Icon ico=if x.kind == "image" { Ico::Image } else { Ico::Paperclip } size=12.0 />
+                                    <span>{x.name}</span>
+                                </span>
+                            })
+                            .collect_view()}
+                    </div>
+                })
+            }}
+        </div>
+    }
+}
+
+/// Another agent talking to this one: sender chip (opens that session when it is known).
+#[component]
+fn RelayMessage(relay: Relay) -> impl IntoView {
+    let app = crate::state::get();
+    let short = relay.id.clone();
+    let sender = Memo::new(move |_| {
+        let ids: Vec<String> = app.sessions().into_iter().map(|s| s.agent.id).collect();
+        resolve_sender(&short, ids.iter().map(String::as_str))
+    });
+    let open = move |_| {
+        if let Some(id) = sender.get_untracked() {
+            app.ui.select(Some(id));
+        }
+    };
+    let label = format!("From the {} agent", relay.name);
+    view! {
+        <div class="tl-relay m-enter">
+            <button
+                class="tl-relay-from"
+                class:link=move || sender.with(Option::is_some)
+                disabled=move || sender.with(Option::is_none)
+                aria-label=move || if sender.with(Option::is_some) { format!("{label}, open its session") } else { label.clone() }
+                on:click=open
+            >
+                <Icon ico=Ico::Bot size=13.0 class="tl-relay-bot" />
+                <span class="tl-relay-label">"From"</span>
+                <span class="tl-relay-name">{relay.name.clone()}</span>
+                <span class="tl-relay-id t-mono">{relay.id.clone()}</span>
+                {relay.place.clone().map(|w| view! { <span class="tl-relay-where t-mono">{w}</span> })}
+                {move || sender.with(Option::is_some).then(|| view! { <Icon ico=Ico::ArrowUpRight size=13.0 class="tl-relay-go" /> })}
+            </button>
+            <div class="tl-relay-body">
+                <Markdown text=relay.body.clone() on_link=on_link() />
+            </div>
+        </div>
+    }
 }
 
 #[component]

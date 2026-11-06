@@ -70,6 +70,10 @@ web-sys = { version = "0.3", features = [
   "Touch",
 ] }
 
+# views/chat (lightbox, composer resize). Own table so feature edits never conflict; features unify.
+[target.'cfg(not(target_os = "plan9"))'.dependencies]
+web-sys = { version = "0.3", features = ["HtmlImageElement", "DomTokenList", "PointerEvent"] }
+
 # views/panels (terminal drops, downloads). Own table so feature edits never conflict; features unify.
 [target.'cfg(any(unix, not(unix)))'.dependencies]
 web-sys = { version = "0.3", features = [

@@ -783,7 +783,20 @@
   color: var(--muted);
 }
 .att-chip.uploading {
+  position: relative;
+  overflow: hidden;
   color: var(--faint);
+}
+.att-bar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--cyan);
+  transition: width 0.2s ease-out;
+}
+.att-up {
+  font-variant-numeric: tabular-nums;
 }
 .att-name {
   font-size: 11.5px;
@@ -886,4 +899,179 @@
 }
 .chat.phone .ctx-meter {
   display: none;
+}
+
+/* ---- Sent attachments in the user bubble ---- */
+.tl-user.wide {
+  width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  white-space: normal;
+}
+.tl-user.wide .tl-user-t {
+  white-space: pre-wrap;
+}
+.tl-user-img {
+  display: block;
+  max-width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  align-self: flex-start;
+  cursor: zoom-in;
+  border: 1px solid var(--line);
+}
+.tl-user-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  white-space: normal;
+}
+.tl-user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 4px 8px;
+  background: var(--wash);
+  font-size: 11.5px;
+  color: var(--text);
+}
+.tl-user-chip svg {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.tl-user-chip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chat-body .fr-md-img {
+  cursor: zoom-in;
+}
+
+/* ---- Relayed message (another agent talking to this one) ---- */
+.tl-relay {
+  margin-top: 14px;
+  margin-right: 10%;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--violet);
+}
+.tl-relay-from {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 7px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--wash);
+  color: var(--text);
+  text-align: left;
+  font: inherit;
+}
+.tl-relay-from.link {
+  cursor: pointer;
+}
+.tl-relay-from:disabled {
+  cursor: default;
+}
+.tl-relay-bot {
+  color: var(--violet);
+  flex-shrink: 0;
+}
+.tl-relay-label {
+  font-size: 12px;
+  color: var(--faint);
+}
+.tl-relay-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  min-width: 40px;
+  flex-shrink: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.12s ease;
+}
+.tl-relay-from.link:hover .tl-relay-name {
+  color: var(--cyan2);
+}
+.tl-relay-id {
+  font-size: 11px;
+  color: var(--violet);
+  flex-shrink: 0;
+}
+.tl-relay-where {
+  font-size: 10.5px;
+  color: var(--faint);
+  flex-shrink: 100;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+}
+.tl-relay-go {
+  color: var(--faint);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.tl-relay-from.link:hover .tl-relay-go {
+  color: var(--text);
+}
+.tl-relay-body {
+  padding: 10px 14px;
+}
+
+/* ---- Lightbox ---- */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 75;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+}
+.lightbox .scrim.blur {
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+}
+.lightbox-panel {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.lightbox-img {
+  max-width: 100%;
+  max-height: calc(100% - 28px);
+  object-fit: contain;
+}
+.lightbox-alt {
+  font-size: 11.5px;
+  color: var(--muted);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lightbox-x {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  padding: 6px;
+  display: flex;
+  background: var(--panel);
+  border: 1px solid var(--line2);
+  color: var(--muted);
+  cursor: pointer;
+}
+.lightbox-x:hover {
+  color: var(--text);
 }

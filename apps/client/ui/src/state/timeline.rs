@@ -486,6 +486,87 @@ fn stream_payload(frame: &SessionFrame, agent_id: &str) -> Option<Value> {
     (p.get("agentId").and_then(Value::as_str) == Some(agent_id)).then_some(p)
 }
 
+/// What rode along with messages this device sent (ui-next `chat/sentAttachments.ts`), keyed by
+/// the message id the daemon echoes back on the user message. The daemon keeps only the text, so
+/// without this a sent screenshot or file would vanish from the bubble. Pictures live while the
+/// app runs; across a reload only names survive (pictures would overrun web storage).
+pub mod sent {
+    use std::cell::Cell;
+
+    use leptos::prelude::*;
+    use serde::{Deserialize, Serialize};
+
+    const KEY: &str = "frogg.sent-attachments";
+    /// Messages remembered across reloads; older ones drop off first.
+    const KEEP: usize = 200;
+
+    #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+    pub struct SentAtt {
+        pub id: String,
+        /// `"image"` or `"file"`.
+        pub kind: String,
+        pub name: String,
+        /// `data:` URI, images only, while the app that sent it runs.
+        #[serde(default, skip_serializing)]
+        pub uri: Option<String>,
+    }
+
+    /// Insertion-ordered (message id, attachments).
+    type Store = RwSignal<Vec<(String, Vec<SentAtt>)>, LocalStorage>;
+
+    thread_local! {
+        static STORE: Cell<Option<Store>> = const { Cell::new(None) };
+        static SEQ: Cell<u64> = const { Cell::new(0) };
+    }
+
+    fn store() -> Store {
+        if let Some(s) = STORE.with(Cell::get) {
+            return s;
+        }
+        let saved: Vec<(String, Vec<SentAtt>)> =
+            crate::state::storage::get_json(KEY).unwrap_or_default();
+        let s = Owner::new_root(None).with(|| RwSignal::new_local(saved));
+        STORE.with(|c| c.set(Some(s)));
+        s
+    }
+
+    /// A message id unique enough to key a send (the daemon needs it unique per agent).
+    pub fn new_message_id() -> String {
+        let n = SEQ.with(|c| {
+            c.set(c.get() + 1);
+            c.get()
+        });
+        let now = js_sys::Date::now() as u64;
+        let rnd = (js_sys::Math::random() * 2f64.powi(32)) as u64;
+        format!("m-{now:x}-{n:x}-{rnd:x}")
+    }
+
+    pub fn remember(message_id: &str, list: Vec<SentAtt>) {
+        if list.is_empty() {
+            return;
+        }
+        let s = store();
+        s.update(|all| {
+            all.retain(|(id, _)| id != message_id);
+            all.push((message_id.to_owned(), list));
+            let over = all.len().saturating_sub(KEEP);
+            all.drain(..over);
+        });
+        s.with_untracked(|all| crate::state::storage::set_json(KEY, all));
+    }
+
+    /// What was sent with `message_id` (reactive).
+    pub fn of(message_id: &str) -> Vec<SentAtt> {
+        store().with(|all| {
+            all.iter()
+                .rev()
+                .find(|(id, _)| id == message_id)
+                .map(|(_, l)| l.clone())
+                .unwrap_or_default()
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
