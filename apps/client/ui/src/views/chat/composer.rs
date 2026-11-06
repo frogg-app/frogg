@@ -472,8 +472,8 @@ pub fn Composer(
         composer_size::save(&id.get_value(), s);
     };
     let measure = move || {
-        if let Some(m) = mirror.get_untracked() {
-            content.set(f64::from(m.offset_height()));
+        if let Some(m) = mirror.try_get_untracked().flatten() {
+            let _ = content.try_set(f64::from(m.offset_height()));
         }
     };
     Effect::new(move |_| {

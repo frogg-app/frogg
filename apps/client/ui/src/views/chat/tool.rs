@@ -348,7 +348,9 @@ pub fn ToolCall(entry: ArcRwSignal<Entry>) -> impl IntoView {
                 Settle::Done
             });
             set_timeout(
-                move || settle.set(Settle::None),
+                move || {
+                    let _ = settle.try_set(Settle::None);
+                },
                 std::time::Duration::from_millis(SWEEP_MS),
             );
         }

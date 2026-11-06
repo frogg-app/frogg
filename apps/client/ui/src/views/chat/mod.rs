@@ -233,14 +233,14 @@ pub fn Chat(
             perms.track();
             running.track();
             request_animation_frame(move || {
-                let Some(el) = scroller.get_untracked() else {
+                let Some(el) = scroller.try_get_untracked().flatten() else {
                     return;
                 };
                 if let Some(from_bottom) =
                     restore_from_bottom.try_update_value(Option::take).flatten()
                 {
                     el.set_scroll_top(el.scroll_height() - from_bottom);
-                } else if pinned.get_value() {
+                } else if pinned.try_get_value().unwrap_or(false) {
                     el.set_scroll_top(el.scroll_height());
                 }
             });

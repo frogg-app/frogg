@@ -423,7 +423,7 @@ pub fn RevealReply(
         let m = mode.get();
         let track = track.clone();
         request_animation_frame(move || {
-            if let Some(el) = body.get_untracked() {
+            if let Some(el) = body.try_get_untracked().flatten() {
                 pass(&el, &mut track.borrow_mut(), m);
             }
         });
