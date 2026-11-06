@@ -140,6 +140,53 @@
   color: var(--amber);
 }
 
+/* Tasks: filter note and claims */
+.pn-filter-note-on {
+  margin: 0 12px 8px;
+  padding: 6px 10px;
+  background: color-mix(in srgb, var(--cyan) 6%, transparent);
+  animation: pn-enter 200ms var(--ease) both;
+}
+.pn-filter-why {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pn-filter-note-on .pn-link {
+  color: var(--muted);
+  font-size: 12px;
+}
+.pn-filter-note-on .pn-link:hover {
+  color: var(--text);
+}
+.pn-small-text {
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.pn-claim {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: var(--wash);
+}
+.pn-claim-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.pn-claim-title {
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Terminals: cancellable drop uploads */
 .pn-upload {
   display: flex;

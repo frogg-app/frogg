@@ -181,6 +181,13 @@ pub fn TasksPanel() -> impl IntoView {
     let phone = move || app.viewport.form_factor.get() == FormFactor::Phone;
     let query = RwSignal::new(String::new());
     Effect::new(move |_| t.query.set(query.get()));
+    // "Clear filters" clears the store; mirror it back into the field.
+    Effect::new(move |_| {
+        let q = t.query.get();
+        if q != query.get_untracked() {
+            query.set(q);
+        }
+    });
     view! {
         <div class="panel pn">
             <PanelHead title="Tasks">
@@ -262,19 +269,33 @@ pub fn TasksPanel() -> impl IntoView {
 #[component]
 fn FilterNote() -> impl IntoView {
     let t = store();
+    // Says what the filters hide: the project and the text match, how many are left, and Clear
+    // (ui-next `tasks/FilterNote.tsx`).
     move || {
         let (shown, total) = t.summary();
-        let filtered = t.scope.get().is_some() || !t.query.get().trim().is_empty();
-        (filtered && shown < total).then(|| {
-            view! {
-                <div class="pn-filter-note">
-                    <span class="t-mono">{format!("{shown} of {total} shown")}</span>
-                    <button class="pn-link" on:click=move |_| {
-                        t.scope.set(None);
-                        t.query.set(String::new());
-                    }>"clear filters"</button>
-                </div>
-            }
+        let scope = t.scope.get();
+        let query = t.query.get().trim().to_owned();
+        if scope.is_none() && query.is_empty() {
+            return None;
+        }
+        let project = scope.as_ref().map(|s| {
+            t.project_name(s)
+                .unwrap_or_else(|| "one project".to_owned())
+        });
+        let why = [project, (!query.is_empty()).then(|| format!("“{query}”"))]
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>()
+            .join(" · ");
+        Some(view! {
+            <div class="pn-filter-note pn-filter-note-on">
+                <Icon ico=Ico::Filter size=12.0 class="cyan2" />
+                <span class="pn-filter-why">{format!("Showing {shown} of {total} · {why}")}</span>
+                <button class="pn-link" on:click=move |_| {
+                    t.scope.set(None);
+                    t.query.set(String::new());
+                }>"Clear filters"</button>
+            </div>
         })
     }
 }
@@ -622,6 +643,46 @@ fn NewTodoSheet(open: RwSignal<bool>) -> impl IntoView {
     }
 }
 
+/// An agent holding a to-do: its session title, heartbeat or stale note, and a link to it.
+#[component]
+fn ClaimRow(claim: crate::state::tasks::Claim) -> impl IntoView {
+    let app = state::get();
+    let session = app
+        .active_host()
+        .and_then(|h| app.agents.get(&h, &claim.agent_id));
+    let title = session
+        .as_ref()
+        .map(|s| s.agent.title_or_untitled())
+        .unwrap_or_else(|| claim.agent_id.clone());
+    let sub = if claim.stale {
+        "agent stopped · claim is stale".to_owned()
+    } else {
+        let at = claim
+            .last_heartbeat
+            .as_deref()
+            .map(super::util::ago)
+            .unwrap_or_default();
+        format!("heartbeat {at}")
+    };
+    let id = claim.agent_id.clone();
+    view! {
+        <div class="pn-claim">
+            <Icon ico=Ico::Bot size=13.0 class=if claim.stale { "faint" } else { "violet" } />
+            <div class="pn-claim-text">
+                <span class="pn-claim-title">{title}</span>
+                <span class="t-mono faint pn-small">{sub}</span>
+            </div>
+            {session.is_some().then(|| view! {
+                <button class="pn-link t-mono" on:click=move |_| {
+                    store().open.set(None);
+                    app.ui.set_tool(state::Tool::Sessions);
+                    app.ui.select(Some(id.clone()));
+                }>"Open session"</button>
+            })}
+        </div>
+    }
+}
+
 #[component]
 fn TodoDetailSheet() -> impl IntoView {
     let t = store();
@@ -755,10 +816,23 @@ fn TodoDetailSheet() -> impl IntoView {
                                 })
                             />
                         </div>
-                        {(!todo.claims.is_empty()).then(|| view! {
-                            <span class="t-mono pn-card-claim">
-                                {format!("claimed by {}", todo.claims.iter().map(|c| c.agent_id.chars().take(8).collect::<String>()).collect::<Vec<_>>().join(", "))}
+                        <span class="t-label">"Agents"</span>
+                        {todo.claims.is_empty().then(|| view! {
+                            <span class="pn-muted pn-small-text">
+                                "Unclaimed. Agents on this host pick up Ready items through the to-do tools."
                             </span>
+                        })}
+                        {todo.claims.iter().cloned().map(|c| view! { <ClaimRow claim=c /> }).collect_view()}
+                        {todo.last_progress.clone().map(|p| {
+                            let n = todo.progress_count.map(|n| format!(" · {n}")).unwrap_or_default();
+                            let at = p["at"].as_str().map(super::util::ago).unwrap_or_default();
+                            view! {
+                                <span class="t-label">{format!("Latest progress{n}")}</span>
+                                <span class="pn-muted pn-small-text">
+                                    {p["note"].as_str().unwrap_or_default().to_owned()}
+                                    <span class="t-mono faint pn-small">{format!("  {at}")}</span>
+                                </span>
+                            }
                         })}
                         {move || error.get().map(|e| view! { <span class="pn-error-inline t-mono">{e}</span> })}
                     </div>
