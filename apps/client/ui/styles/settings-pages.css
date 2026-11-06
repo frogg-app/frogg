@@ -1,0 +1,44 @@
+/* Settings pages: terminal profiles, resources, project frogg.json editors, plugins, developer. */
+
+/* A Row inside a Block (label above an editor) takes the block's padding. */
+.set-block > .set-row {
+  padding: 0;
+  border: 0;
+}
+.set-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.set-picker-sel {
+  flex: 1;
+  min-width: 200px;
+  max-width: 360px;
+}
+.set-gap {
+  margin-bottom: 20px;
+}
+.set-muted {
+  color: var(--muted);
+}
+.set-faint {
+  color: var(--faint);
+  font-size: 12px;
+}
+.set-measured {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: -14px 0 26px;
+}
+.set-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.set-select-200 {
+  width: 200px;
+}
