@@ -658,7 +658,7 @@ fn Row(
                     // Running sub-work (ui-next SubWorkChip): the active host's sessions only.
                     let n = if elsewhere { 0 } else { list::subwork::running(&id.get_value()) };
                     (n > 0).then(|| view! {
-                        <span class="t-mono sub-chip" title="Sub-agents running">
+                        <span class="t-mono sub-chip" title="Sub-work running">
                             <span class="sub-chip-mark"></span>
                             {n}
                         </span>

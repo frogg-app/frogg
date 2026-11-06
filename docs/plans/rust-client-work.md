@@ -125,8 +125,8 @@ additive edits only. Sizes are S/M/L.
   stops being offered.
 - M (done): projects dialog and device-local projects — `sessions/ProjectsDialog.tsx`,
   `localProjects.ts`.
-- M (done): sub-work chips on session rows and in the status summary (provider subagents;
-  workspace scripts not counted yet).
+- M (done): sub-work chips on session rows and in the status summary (provider subagents and
+  running workspace scripts, read through `subwork::model`).
 - M (done): launch fields: provider feature toggles, project defaults ("Save for project"),
   account flag merge — `sessions/LaunchFields.tsx`, `launch.ts`.
 - S (done): New session name label by session type, not layout. S (done): host feature gating

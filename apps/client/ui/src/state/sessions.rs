@@ -441,6 +441,49 @@ pub mod subwork {
         static STARTED: Cell<bool> = const { Cell::new(false) };
         /// Sessions already listed on the current host, and that host.
         static LISTED: RefCell<(Option<String>, HashSet<String>)> = RefCell::new((None, HashSet::new()));
+        /// Workspace id -> its scripts, and session id -> workspace id (active host).
+        static SCRIPTS: Cell<Option<RwSignal<Scripts>>> = const { Cell::new(None) };
+    }
+
+    use crate::views::chat::subwork::model::{self, ScriptSrc};
+
+    #[derive(Default)]
+    struct Scripts {
+        by_ws: HashMap<String, Vec<ScriptSrc>>,
+        ws_of: HashMap<String, String>,
+    }
+
+    fn scripts() -> RwSignal<Scripts> {
+        if let Some(s) = SCRIPTS.with(Cell::get) {
+            return s;
+        }
+        let owner = Owner::new_root(None);
+        let s = owner.with(|| RwSignal::new(Scripts::default()));
+        std::mem::forget(owner);
+        SCRIPTS.with(|c| c.set(Some(s)));
+        s
+    }
+
+    fn apply_scripts(p: &Value) {
+        let Some(ws) = p.get("workspaceId").and_then(Value::as_str) else {
+            return;
+        };
+        let Some(list) = p
+            .get("scripts")
+            .and_then(|v| serde_json::from_value::<Vec<ScriptSrc>>(v.clone()).ok())
+        else {
+            return;
+        };
+        scripts().update(|s| {
+            s.by_ws.insert(ws.to_owned(), list);
+        });
+    }
+
+    /// Running workspace scripts (the sub-work model's reading of a script's state).
+    fn running_scripts(list: &[ScriptSrc]) -> usize {
+        list.iter()
+            .filter(|sc| model::from_script("", "", sc).status == model::Status::Running)
+            .count()
     }
 
     fn store() -> RwSignal<Map> {
@@ -502,20 +545,69 @@ pub mod subwork {
                 c.unsubscribe(*id);
             }
             store().set(Map::new());
+            scripts().set(Scripts::default());
             LISTED.with(|l| *l.borrow_mut() = (host.clone(), HashSet::new()));
             let (Some(_), Some(c)) = (host, client) else {
                 return None;
             };
             let id = c.subscribe(|e| {
                 let Event::Session(f) = e else { return };
-                if f.kind != "agent.provider_subagents.update" {
+                let script = f.kind == "script_status_update";
+                if f.kind != "agent.provider_subagents.update" && !script {
                     return;
                 }
                 if let Ok(p) = f.payload::<Value>() {
-                    apply(&p);
+                    if script {
+                        apply_scripts(&p);
+                    } else {
+                        apply(&p);
+                    }
                 }
             });
             Some((c, id))
+        });
+        // List each workspace's scripts once; pushes keep them current.
+        Effect::new(move |_| {
+            let Some(c) = app.conn.client() else { return };
+            let mut ws_of = HashMap::new();
+            for s in app.sessions() {
+                if let Some(ws) = s.agent.raw.get("workspaceId").and_then(Value::as_str) {
+                    ws_of.insert(s.agent.id.clone(), ws.to_owned());
+                }
+            }
+            let fresh: HashSet<String> = ws_of
+                .values()
+                .filter(|ws| LISTED.with(|l| l.borrow_mut().1.insert(format!("ws:{ws}"))))
+                .cloned()
+                .collect();
+            scripts().update(|s| s.ws_of = ws_of);
+            for ws in fresh {
+                let c = c.clone();
+                spawn_local(async move {
+                    use frogg_client_core::protocol::inbound::{
+                        SessionMessage, WorkspaceScriptListRequest,
+                    };
+                    let rid = c.new_request_id();
+                    let msg =
+                        SessionMessage::WorkspaceScriptListRequest(WorkspaceScriptListRequest {
+                            workspace_id: ws.clone(),
+                            request_id: rid.clone(),
+                        });
+                    let Ok(f) = c.request(&rid, &msg).await else {
+                        return;
+                    };
+                    let Ok(p) = f.payload::<Value>() else { return };
+                    let Some(list) = p
+                        .get("scripts")
+                        .and_then(|v| serde_json::from_value::<Vec<ScriptSrc>>(v.clone()).ok())
+                    else {
+                        return;
+                    };
+                    scripts().update(|s| {
+                        s.by_ws.insert(ws, list);
+                    });
+                });
+            }
         });
         // List each newly running session's subagents once.
         Effect::new(move |_| {
@@ -562,8 +654,7 @@ pub mod subwork {
         });
     }
 
-    /// Running subagents of one session (reactive).
-    pub fn running(session: &str) -> usize {
+    fn running_subagents(session: &str) -> usize {
         store().with(|m| {
             m.get(session)
                 .map(|x| x.values().filter(|s| *s == "running").count())
@@ -571,8 +662,27 @@ pub mod subwork {
         })
     }
 
-    /// Running subagents across these sessions (reactive).
+    /// Running sub-work of one session: its subagents and its workspace's scripts (reactive).
+    pub fn running(session: &str) -> usize {
+        let sc = scripts().with(|s| {
+            s.ws_of
+                .get(session)
+                .and_then(|ws| s.by_ws.get(ws))
+                .map_or(0, |l| running_scripts(l))
+        });
+        running_subagents(session) + sc
+    }
+
+    /// Running sub-work across these sessions (reactive); a workspace's scripts count once.
     pub fn running_in(sessions: &[String]) -> usize {
-        sessions.iter().map(|s| running(s)).sum()
+        let subs: usize = sessions.iter().map(|s| running_subagents(s)).sum();
+        let sc = scripts().with(|s| {
+            let ws: HashSet<&String> = sessions.iter().filter_map(|id| s.ws_of.get(id)).collect();
+            ws.into_iter()
+                .filter_map(|w| s.by_ws.get(w))
+                .map(|l| running_scripts(l))
+                .sum::<usize>()
+        });
+        subs + sc
     }
 }
