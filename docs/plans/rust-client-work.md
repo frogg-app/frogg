@@ -75,20 +75,20 @@ additive edits only. Sizes are S/M/L.
 **7a chat-session** — owns `ui/src/views/chat/mod.rs`, `ui/src/views/chat/item.rs`, new
 `ui/src/views/chat/{session_menu,session_state,notices,chips}.rs`
 
-- L: session menu in the chat head (rename, fork, rewind, clean cut, detach, new window, copy
+- [done] L: session menu in the chat head (rename, fork, rewind, clean cut, detach, new window, copy
   ID, archive with unsaved-work check) — `chat/SessionMenu.tsx`.
-- L: provider chip and clean-cut flow (scissors with blocked reason, cut queue, move/cut
+- [done: `chat/chips.rs`, `session_state.rs`; composer (7b) places the chips and calls `session_state::busy`/`queue_message`] L: provider chip and clean-cut flow (scissors with blocked reason, cut queue, move/cut
   dialogs) — `chat/ProviderChip.tsx`, `cutQueue.ts`, `cleanCut.ts`, `sessionOps.ts`.
-- M: account chip (move or clean cut to another account) — `chat/AccountChip.tsx`.
-- L: session state cards (host offline + Reconnect, waiting on background work, finished,
+- [done: `chips::AccountChip`, placed by 7b] M: account chip (move or clean cut to another account) — `chat/AccountChip.tsx`.
+- [done] L: session state cards (host offline + Reconnect, waiting on background work, finished,
   ready to review, signed out, failed) — `chat/SessionState.tsx`.
-- M: composer notices (operation progress, queued message, stale cache, auto-resume) —
+- [done] M: composer notices (operation progress, queued message, stale cache, auto-resume) —
   `chat/Notices.tsx`.
-- M: viewers ("also here") and typing presence — `chat/Viewers.tsx`.
-- S: full header title from the first prompt line (`chat/title.ts`); M: reveal heading.
+- [done: viewing presence; typing state needs the composer to report it] M: viewers ("also here") and typing presence — `chat/Viewers.tsx`.
+- [done] S: full header title from the first prompt line (`chat/title.ts`); M: reveal heading (CSS rise on title change).
 - L: streaming text reveal per `textReveal` pref — `chat/TextReveal.tsx`.
-- M: bottom anchor on content resize (images, clamps), 24px slack — `chat/useBottomAnchor.ts`.
-- S: key permission cards with `<For>` on id so live agent updates keep a half-typed reply
+- [done] M: bottom anchor on content resize (images, clamps), 24px slack — `chat/useBottomAnchor.ts`.
+- [done] S: key permission cards with `<For>` on id so live agent updates keep a half-typed reply
   (`chat/mod.rs` permission block); mount `Lightbox` once per window, not per pane; resubscribe
   when the active client changes while online.
 

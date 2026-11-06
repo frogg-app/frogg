@@ -265,6 +265,15 @@ async function desktop(page: Page, url: string, pairUrl: string, home: string, t
     await page.getByText(STREAM_END).waitFor({ timeout: 40_000 });
   });
 
+  await step(page, "session state and menu", async () => {
+    // The header ⋯ lists the session actions; archive checks for unsaved work first.
+    await page.locator('[aria-label="Session actions"]').first().click();
+    await page.getByRole("button", { name: "Copy session ID" }).waitFor({ timeout: STEP_TIMEOUT });
+    await page.getByRole("button", { name: /^Archive session/ }).click();
+    await page.getByText(/leaves your lists/).waitFor({ timeout: STEP_TIMEOUT });
+    await page.keyboard.press("Escape");
+  });
+
   await step(page, "reopen from list", async () => {
     // A cold start, so the session opens from the list rather than staying mounted.
     await page.reload();
