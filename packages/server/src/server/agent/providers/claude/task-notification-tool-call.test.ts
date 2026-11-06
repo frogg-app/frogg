@@ -85,4 +85,28 @@ describe("task-notification-tool-call", () => {
 
     expect(item).toBeNull();
   });
+
+  it("ignores queue-operation records for ordinary queued prompts", () => {
+    expect(
+      mapTaskNotificationSystemRecordToToolCall({
+        type: "queue-operation",
+        operation: "enqueue",
+        content: "fix the failing test",
+      }),
+    ).toBeNull();
+    expect(
+      mapTaskNotificationSystemRecordToToolCall({ type: "queue-operation", operation: "dequeue" }),
+    ).toBeNull();
+  });
+
+  it("maps queue-operation records carrying a task notification", () => {
+    const item = mapTaskNotificationSystemRecordToToolCall({
+      type: "queue-operation",
+      operation: "enqueue",
+      content:
+        "<task-notification><task-id>bg-1</task-id><status>completed</status></task-notification>",
+    });
+    expect(item?.name).toBe("task_notification");
+    expect(item?.metadata).toMatchObject({ taskId: "bg-1" });
+  });
 });

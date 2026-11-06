@@ -183,6 +183,12 @@ function parseTaskNotificationFromSystemRecord(record: unknown): TaskNotificatio
     return null;
   }
   const rawText = toNonEmptyString(systemRecord.content);
+  // Claude Code writes `queue-operation` records for every queued prompt (enqueue/dequeue of
+  // ordinary user input, often with no content at all). Only those carrying a
+  // `<task-notification>` payload are background-task notifications.
+  if (isQueueOperation && !rawText?.includes(TASK_NOTIFICATION_MARKER)) {
+    return null;
+  }
 
   return TaskNotificationEnvelopeSchema.parse({
     messageId: toNonEmptyString(systemRecord.uuid) ?? toNonEmptyString(systemRecord.message_id),
