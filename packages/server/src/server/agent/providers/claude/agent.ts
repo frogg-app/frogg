@@ -6394,6 +6394,12 @@ function convertClaudeHistoryEntryPreamble(
   if (entry.isCompactSummary) {
     return { shortCircuit: [] };
   }
+  // Only conversation turns render. Newer Claude Code also writes bookkeeping records that carry a
+  // `message` (`api-request-blob` holds the request's system prompt and tool additions); their
+  // text must not surface as assistant replies.
+  if (entry.type !== "user" && entry.type !== "assistant") {
+    return { shortCircuit: [] };
+  }
   if (entry.type === "user" && isSyntheticHistoryUserEntry(entry)) {
     return { shortCircuit: [] };
   }

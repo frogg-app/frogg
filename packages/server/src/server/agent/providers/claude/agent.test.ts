@@ -237,6 +237,24 @@ describe("convertClaudeHistoryEntry", () => {
     expect(convertClaudeHistoryEntry(assistantNoiseEntry, mapBlocks)).toEqual([]);
   });
 
+  test("skips api-request-blob records (system prompt and tool additions)", () => {
+    const entry = {
+      type: "api-request-blob",
+      message: {
+        role: "system",
+        content: [
+          { type: "text", text: "The following tools just became available and are ready to use" },
+          { type: "tool_addition", name: "mcp__x__y" },
+        ],
+      },
+    };
+    const mapBlocks = vi
+      .fn()
+      .mockReturnValue([{ type: "assistant_message", text: "The following tools…" }]);
+    expect(convertClaudeHistoryEntry(entry, mapBlocks)).toEqual([]);
+    expect(mapBlocks).not.toHaveBeenCalled();
+  });
+
   test("skips <local-command-stdout> messages (model switch, /context, etc.)", () => {
     // Real entries from Claude Code JSONL history files
     const modelSwitch = {
