@@ -214,6 +214,22 @@ fn PairForm() -> impl IntoView {
         });
     };
     let details = move || target.get().map(|t| pairing::describe_pair_target(&t));
+    // A one-second tick for the offer countdown.
+    let (now, set_now) = signal(js_sys::Date::now());
+    if let Ok(h) = set_interval_with_handle(
+        move || {
+            let _ = set_now.try_set(js_sys::Date::now());
+        },
+        std::time::Duration::from_secs(1),
+    ) {
+        on_cleanup(move || h.clear());
+    }
+    let expired = move || {
+        details()
+            .and_then(|d| d.expires_at)
+            .and_then(|iso| countdown(&iso, now.get()))
+            .is_some_and(|e| e == "expired")
+    };
     let needs_address = move || {
         matches!(
             target.get(),
@@ -230,42 +246,143 @@ fn PairForm() -> impl IntoView {
                     <TextInput value=address placeholder="192.168.1.20:6767" mono=true on_enter=Callback::new(move |_| run(false)) />
                 </Field>
             </Show>
-            {move || details().map(|d| {
-                let check = match verify.get() {
-                    None => "checking key…".to_string(),
-                    Some(Verify::Verified(Some(_))) => "key verified".into(),
-                    Some(Verify::Verified(None)) => "key checked on connect".into(),
-                    Some(Verify::Unverified(m)) => format!("unverified: {m}"),
-                    Some(Verify::Refused(m)) => format!("refused: {m}"),
-                };
-                view! {
-                    <div class="coming cut" style="--c:8px">
-                        <Icon ico=if d.relay { Ico::Cloud } else { Ico::QrCode } size=18.0 class="cyan2" />
-                        <span class="coming-text">
-                            <span class="coming-title">{d.name.clone()}</span>
-                            <span class="coming-sub t-mono">
-                                {d.address.clone()}
-                                " · "
-                                {pairing::short_fingerprint(d.fingerprint.as_deref(), 4)}
-                                {d.role.clone().map(|r| format!(" · {r}"))}
-                            </span>
-                            <span class="coming-sub">{check}</span>
+            // ui-next `PairConfirm`: the confirm step every pairing route ends in.
+            {move || {
+                let raw = input.get();
+                let raw = raw.trim();
+                (target.get().is_none() && looks_like_link(raw)).then(|| view! {
+                    <div class="pair-confirm">
+                        <span class="pair-title">"Not a pairing link"</span>
+                        <span class="pair-note">
+                            "This link does not carry a Frogg pairing offer. Ask the host for a fresh link or code."
                         </span>
+                    </div>
+                })
+            }}
+            {move || details().map(|d| {
+                let v = verify.get();
+                let fp = match &v {
+                    Some(Verify::Verified(Some(id))) => Some(id.fingerprint.clone()),
+                    _ => d.fingerprint.clone(),
+                };
+                let fp_text = if fp.is_some() {
+                    format!("SHA256:{}", pairing::short_fingerprint(fp.as_deref(), 4))
+                } else {
+                    "shown after connecting".into()
+                };
+                let (pill, tint) = match &v {
+                    Some(Verify::Verified(_)) => ("verified", "mint"),
+                    Some(Verify::Refused(_)) => ("mismatch", "coral"),
+                    None => ("checking", "amber"),
+                    Some(Verify::Unverified(_)) => ("unverified", "amber"),
+                };
+                let role = if d.claim {
+                    "Owner (claiming this host)".to_string()
+                } else {
+                    match d.role.as_deref() {
+                        Some(r) => format!("{} (set by the host)", role_label(r)),
+                        None => "Set by the host".into(),
+                    }
+                };
+                let expires_at = d.expires_at.clone();
+                let expires = move || expires_at.as_deref().and_then(|iso| countdown(iso, now.get()));
+                let expires_line = expires.clone();
+                view! {
+                    <div class="pair-confirm">
+                        <span class="pair-title">{format!("Pair with {}?", d.name)}</span>
+                        <div class="pair-line"><span class="pair-k">"Address"</span><span class="pair-v">{d.address.clone()}</span></div>
+                        <div class="pair-line">
+                            <span class="pair-k">"Host key"</span>
+                            <span class="pair-fp">
+                                <span class="t-mono pair-fp-t">{fp_text}</span>
+                                <span class="pill t-mono" style=format!("--tint:var(--{tint})")>{pill}</span>
+                            </span>
+                        </div>
+                        <div class="pair-line"><span class="pair-k">"Your role"</span><span class="pair-v">{role}</span></div>
+                        {move || expires_line().map(|e| {
+                            let warn = e == "expired";
+                            view! {
+                                <div class="pair-line">
+                                    <span class="pair-k">"Offer expires"</span>
+                                    <span class="pair-v" class:warn=warn>{e}</span>
+                                </div>
+                            }
+                        })}
+                        {d.server_id.clone().map(|id| view! {
+                            <div class="pair-line"><span class="pair-k">"Server ID"</span><span class="pair-v t-mono">{id}</span></div>
+                        })}
+                        {match &v {
+                            Some(Verify::Refused(m)) => Some(view! { <span class="pair-err">{m.clone()}</span> }.into_any()),
+                            Some(Verify::Unverified(m)) => Some(view! { <span class="pair-note">{format!("Couldn't check the host's key yet: {m}")}</span> }.into_any()),
+                            _ => None,
+                        }}
+                        {d.relay.then(|| view! {
+                            <span class="pair-note">"Reached through the relay, end-to-end encrypted to this key. No shared network needed."</span>
+                        })}
+                        {d.can_claim.then(|| view! {
+                            <span class="pair-note">"If this host has no owner yet you can claim it instead, which makes this device its owner."</span>
+                        })}
                     </div>
                 }
             })}
             <div class="add-actions">
                 <Show when=move || details().is_some_and(|d| d.can_claim)>
-                    <Button label="Claim as owner" disabled=Signal::derive(move || busy.get()) on_press=Callback::new(move |_| run(true)) />
+                    <Button label="Claim as owner" disabled=Signal::derive(move || busy.get() || matches!(verify.get(), Some(Verify::Refused(_)))) on_press=Callback::new(move |_| run(true)) />
                 </Show>
                 <Button
                     label=Signal::derive(move || if busy.get() { "Pairing…".to_string() } else { "Pair".to_string() })
                     kind=ButtonKind::Primary
                     icon=Ico::Link2
-                    disabled=Signal::derive(move || busy.get() || matches!(verify.get(), Some(Verify::Refused(_))))
+                    disabled=Signal::derive(move || busy.get() || expired() || matches!(verify.get(), Some(Verify::Refused(_))))
                     on_press=Callback::new(move |_| run(false))
                 />
             </div>
         </div>
+    }
+}
+
+fn role_label(role: &str) -> &str {
+    match role {
+        "owner" => "Owner",
+        "operator" => "Operator",
+        "viewer" => "Viewer",
+        other => other,
+    }
+}
+
+/// Input that is plainly meant as a link (not a typed code).
+fn looks_like_link(raw: &str) -> bool {
+    raw.contains("://") || raw.starts_with("frogg:")
+}
+
+/// ui-next `useCountdown`: "in 9:41" for a future ISO time, "expired" once past.
+fn countdown(iso: &str, now_ms: f64) -> Option<String> {
+    let t = js_sys::Date::parse(iso);
+    if !t.is_finite() {
+        return None;
+    }
+    Some(countdown_from((t - now_ms) / 1000.0))
+}
+
+fn countdown_from(left_secs: f64) -> String {
+    let left = left_secs.floor() as i64;
+    if left <= 0 {
+        "expired".into()
+    } else {
+        format!("in {}:{:02}", left / 60, left % 60)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn countdown_formats() {
+        assert_eq!(countdown_from(581.4), "in 9:41");
+        assert_eq!(countdown_from(0.2), "expired");
+        assert_eq!(countdown_from(-5.0), "expired");
+        assert!(looks_like_link("https://x/pair#a"));
+        assert!(!looks_like_link("ABCD-1234"));
     }
 }

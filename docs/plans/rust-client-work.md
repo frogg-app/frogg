@@ -181,7 +181,7 @@ measure, tool settle) read through `try_*` so a late read after disposal is a no
 
 - **Done:** M: pairing QR code (pure-Rust QR), relay vs local link, copy link/code, new code, expiry
   countdown, auto-create on open — `hosts/PairDevice.tsx`, `Qr.tsx`.
-- M: pair confirm dialog with expiry, role and not-a-link states — `hosts/PairConfirm.tsx`. **Open:** lives in `shell/host_sheet.rs` (7d).
+- **Done:** M: pair confirm dialog with expiry, role and not-a-link states — `hosts/PairConfirm.tsx` (inline confirm block in `shell/host_sheet.rs`'s pairing form).
 - **Done:** M: Here now, Tailscale and Service URL cards.
 - **Done:** M: offline view: "Use this daemon" rebind, TLS toggle probe, Retry now; route latency.
 - **Done:** S: route "Use" only reconnects the active host; offline route dot; forget-route confirm;

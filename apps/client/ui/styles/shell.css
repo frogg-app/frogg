@@ -1067,3 +1067,61 @@ body.has-title-bar .root {
 .root.phone > .phone-hidden {
   display: none;
 }
+
+/* ---- Pair confirm (ui-next hosts/PairConfirm) ---- */
+.pair-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.pair-title {
+  font-size: 14px;
+  font-weight: 600;
+  padding-bottom: 6px;
+}
+.pair-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+}
+.pair-k {
+  color: var(--muted);
+  font-size: 13px;
+}
+.pair-v {
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+  font-size: 13px;
+}
+.pair-v.warn {
+  color: var(--coral);
+}
+.pair-fp {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.pair-fp-t {
+  color: var(--cyan2);
+  font-size: 11px;
+}
+.pair-note {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 18px;
+  padding-top: 8px;
+}
+.pair-err {
+  color: var(--coral);
+  font-size: 12.5px;
+  line-height: 18px;
+  padding-top: 8px;
+}
