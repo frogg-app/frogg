@@ -12,6 +12,7 @@ pub mod modal_stack;
 pub mod palette;
 pub mod panel_head;
 pub mod phone_tabs;
+pub mod popout;
 pub mod rail;
 pub mod status_bar;
 pub mod title_bar;

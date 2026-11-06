@@ -273,6 +273,33 @@ async function desktop(page: Page, url: string, pairUrl: string, home: string, t
     await page.getByText(STREAM_END).waitFor({ timeout: STEP_TIMEOUT });
   });
 
+  await step(page, "popout window", async () => {
+    // The row menu pops the session into its own window, which shows only its chat.
+    await page.locator(".srow2").filter({ hasText: title }).first().click({ button: "right" });
+    const [win] = await Promise.all([
+      page.context().waitForEvent("page"),
+      page.getByText("Open in new window", { exact: true }).click(),
+    ]);
+    watch(win);
+    await win.getByText(STREAM_END).waitFor({ timeout: STEP_TIMEOUT });
+    await win.close();
+  });
+
+  await step(page, "projects dialog", async () => {
+    // One Escape closes only the top layer (the dialog), not the page behind it.
+    await page.locator(".slist-scope").first().click();
+    await page.getByText("Manage projects…", { exact: true }).click();
+    await page
+      .getByText("Projects on this device", { exact: true })
+      .first()
+      .waitFor({ timeout: STEP_TIMEOUT });
+    await page.keyboard.press("Escape");
+    await page
+      .getByText("Projects on this device", { exact: true })
+      .first()
+      .waitFor({ state: "detached", timeout: STEP_TIMEOUT });
+  });
+
   await step(page, "settings", async () => {
     await openTool(page, "Settings");
     const items = page.locator(".set-nav-item");

@@ -15,11 +15,26 @@ use crate::views::flows;
 #[component]
 pub fn App() -> impl IntoView {
     let app = state::init();
+    // A popped-out session window (shell/popout.rs): its host first, then only its chat.
+    let popout = crate::shell::popout::route();
+    if let Some(h) = popout.as_ref().and_then(|r| r.host.clone()) {
+        if app.hosts.find_untracked(&h).is_some() {
+            app.hosts.active_id.set(Some(h));
+        }
+    }
     keys::install();
     crate::shell::back::install();
     crate::shell::keyboard::install();
     app.conn.start();
     crate::shell::toast::host_toasts(app);
+    if let Some(route) = popout {
+        return view! {
+            <TitleBar />
+            <crate::shell::popout::SessionWindow route=route />
+            <ToastHost />
+        }
+        .into_any();
+    }
     pair_links(app);
     view! {
         <TitleBar />
@@ -31,6 +46,7 @@ pub fn App() -> impl IntoView {
         <flows::onboarding::Onboarding />
         <ToastHost />
     }
+    .into_any()
 }
 
 /// Pairing links from the launch URL (`?pair=`) and from the OS while running open the host

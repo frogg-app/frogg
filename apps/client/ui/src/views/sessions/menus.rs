@@ -311,6 +311,17 @@ pub fn SessionMenu(at: RwSignal<Option<At>>, agent: RwSignal<Option<String>>) ->
             let id = id.clone();
             Entry::item("Rename…", move || l.open(Sheet::Rename(id.clone()))).icon(Ico::Pencil)
         }];
+        // Its own window (desktop shell) or tab (browser); phones have one window.
+        if !app.viewport.phone() {
+            let id = id.clone();
+            let host = host.clone();
+            out.push(
+                Entry::item("Open in new window", move || {
+                    crate::shell::popout::open(&id, Some(&host))
+                })
+                .icon(Ico::AppWindow),
+            );
+        }
         if let Some(w) = ws {
             let id2 = id.clone();
             let pinned = w.pinned_at.is_some();
