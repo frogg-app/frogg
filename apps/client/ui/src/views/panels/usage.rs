@@ -186,7 +186,7 @@ fn ProviderCard(p: ProviderUsage) -> impl IntoView {
                 .map(|w| {
                     let detail = [
                         until(w.resets_at.as_deref()),
-                        w.runs_out_at.as_deref().map(|r| format!("runs out {}", ago(r))),
+                        until(w.runs_out_at.as_deref()).map(|t| t.replacen("resets", "runs out", 1)),
                     ]
                     .into_iter()
                     .flatten()
