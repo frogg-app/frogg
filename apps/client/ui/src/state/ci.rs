@@ -33,6 +33,8 @@ pub struct Job {
     pub url: Option<String>,
     #[serde(default)]
     pub steps: Vec<Step>,
+    #[serde(default)]
+    pub attempt: Option<f64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -58,6 +60,15 @@ pub struct Run {
     pub url: Option<String>,
     #[serde(default)]
     pub jobs: Vec<Job>,
+    /// Commit title, actor, commit and re-run attempt, when the forge reports them.
+    #[serde(default)]
+    pub title: Option<String>,
+    #[serde(default)]
+    pub actor: Option<String>,
+    #[serde(default)]
+    pub sha: Option<String>,
+    #[serde(default)]
+    pub attempt: Option<f64>,
 }
 
 /// Glyph states: the five check states plus cancelled.

@@ -347,6 +347,49 @@ async function desktop(page: Page, url: string, pairUrl: string, home: string, t
     await page.locator(".pn-viewer").getByText("smoke").first().waitFor({ timeout: STEP_TIMEOUT });
   });
 
+  await step(page, "prs streams", async () => {
+    await openTool(page, "PRs & CI");
+    await page.getByRole("tab", { name: "Streams" }).click();
+    await page
+      .locator(".pn-stream-row, .pn .pn-error, .pn .pn-empty")
+      .first()
+      .waitFor({ timeout: STEP_TIMEOUT });
+  });
+
+  await step(page, "scm quick settings", async () => {
+    await openTool(page, "Source control");
+    await page.getByRole("button", { name: "Source control view settings" }).click();
+    await page.locator(".pn-quick").getByText("Branch graph").waitFor({ timeout: STEP_TIMEOUT });
+    await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: "Switch branch" }).click();
+    await page.locator(".pn-branch-row.on").waitFor({ timeout: STEP_TIMEOUT });
+    await page.keyboard.press("Escape");
+  });
+
+  await step(page, "files reopen", async () => {
+    await openTool(page, "Files");
+    await page.locator(".pn-node").getByText("README.md", { exact: true }).click();
+  });
+
+  await step(page, "files edit and save", async () => {
+    const viewer = page.locator(".pn-viewer");
+    await viewer.getByRole("tab", { name: "Edit" }).click();
+    const editor = viewer.locator("textarea.pn-editor");
+    await editor.fill("# smoke edited\n");
+    await viewer.getByText("◆ Unsaved", { exact: false }).waitFor({ timeout: STEP_TIMEOUT });
+    await viewer.getByRole("button", { name: "Save", exact: true }).click();
+    await viewer.getByText("◆ Unsaved", { exact: false }).waitFor({ state: "detached" });
+    await viewer.getByRole("tab", { name: "Source" }).click();
+    await viewer.getByText("smoke edited").first().waitFor({ timeout: STEP_TIMEOUT });
+  });
+
+  await step(page, "files search", async () => {
+    await page.getByRole("button", { name: "Search files", exact: true }).click();
+    await page.getByRole("textbox", { name: "Search files" }).fill("READ");
+    await page.locator(".pn-search-count").waitFor({ timeout: STEP_TIMEOUT });
+    await page.getByRole("button", { name: "Close search", exact: true }).click();
+  });
+
   await step(page, "terminal", async () => {
     await openTool(page, "Terminals");
     await page.getByRole("button", { name: "New terminal", exact: true }).click();

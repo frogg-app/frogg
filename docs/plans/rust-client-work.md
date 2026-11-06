@@ -149,20 +149,26 @@ additive edits only. Sizes are S/M/L.
 
 - M: file search in the Files header; L: file editing (edit mode, save/revert, dirty state);
   M: editor menu, tab "+" and tab context menu. S: row menu reads live changed state; revoke
-  image blob URLs.
+  image blob URLs (**done**).
 - M: commit graph and SCM quick settings (makes the `scm*` prefs work); S: "Commit" first in
   the More menu (**done**).
 - S: terminal wheel uses the program's mouse encoding and pointer cell; S/M: cancel drop
   uploads; S: ASCII-only safe chars in `shell_path` (**done**).
-- M: to-do templates, category field, "Moved to X" undo toast, urgency sort (**done**);
-  claim/progress lists in detail, filter note detail.
-- M: PRs Streams tab, merge split button (allowed methods, auto-merge, disabled reason), CI run
-  actions (re-run, cancel, logs), live CI visuals, expandable jobs, branch/PR switcher.
+- M: to-do templates, category field, "Moved to X" undo toast, urgency sort, claim/progress
+  lists in detail, filter note detail (**done**).
+- M: PRs Streams tab, merge split button (allowed methods, auto-merge, disabled reason), live CI
+  visuals, expandable jobs, Open logs (**done**). Re-run and cancel are not daemon RPCs (ui-next
+  only shows them when the lab registers handlers), so they stay out. Branch switcher with
+  filter, this branch's PR and the stash-and-switch step (**done**).
 - L: multi-account usage cards; S: meter prefs (`meterTimer`, `meterSeconds`, `meterHover`,
   `meterAfterReply`) drive refresh (**done**; after-reply only while the Usage panel is open).
 - L: plugin-contributed panels and forms; M: remote-control toggle and capability chips; S:
-  unlink dev plugins, update confirm with new capabilities, incompatible reason text.
-- S: companion uses the compact composer and bubble icons.
+  unlink dev plugins, update confirm with new capabilities, incompatible reason text (**done**;
+  the update confirm takes the new capabilities from the catalog because the Rust client error
+  carries only code and message).
+- S: companion uses the compact composer look and bubble icons (**done**; the composer is a
+  companion-local copy of the compact composer's markup, not the session `Composer`, which
+  needs an agent).
 
 **7f hosts-settings-native** — owns `ui/src/views/panels/hosts/**`, `ui/src/views/settings/**`,
 `ui/src/native/`, `apps/client/src-tauri/src` (not the CI workflow)

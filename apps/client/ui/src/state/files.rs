@@ -187,6 +187,9 @@ pub struct Doc {
     pub mime: String,
     pub size: u64,
     pub bytes: Vec<u8>,
+    /// For conflict-checked writes.
+    pub modified_at: Option<String>,
+    pub revision: Option<String>,
 }
 
 impl Files {
@@ -295,7 +298,66 @@ impl Files {
             mime: res.mime,
             size: res.size,
             bytes: res.bytes,
+            modified_at: res.modified_at,
+            revision: res.revision,
         })
+    }
+
+    /// Writes a text file read as `doc`; fails with a conflict when it changed on disk since
+    /// (ui-next `daemon/files.ts` `saveText`). Returns the doc as written.
+    pub async fn write(self, path: String, content: String, doc: Doc) -> Result<Doc, String> {
+        let root = self.root.get_untracked().ok_or("no folder open")?;
+        let c = get().conn.client().ok_or("not connected")?;
+        let r = c
+            .write_file(
+                &root,
+                &path,
+                &content,
+                doc.modified_at.as_deref().unwrap_or_default(),
+                doc.revision.as_deref(),
+            )
+            .await
+            .map_err(err_text)?;
+        match r["status"].as_str() {
+            Some("written") => Ok(Doc {
+                size: r["size"].as_u64().unwrap_or(content.len() as u64),
+                modified_at: r["modifiedAt"].as_str().map(str::to_owned),
+                revision: r["revision"].as_str().map(str::to_owned),
+                bytes: content.clone().into_bytes(),
+                text: Some(content),
+                ..doc
+            }),
+            Some("conflict") => Err("The file changed on disk. Reload it first.".into()),
+            _ => Err(r["error"].as_str().unwrap_or("could not save").to_owned()),
+        }
+    }
+
+    /// Fuzzy file-name search across the root (gitignore respected), names only.
+    pub async fn search(self, query: String, limit: i64) -> Result<Vec<String>, String> {
+        let root = self.root.get_untracked().ok_or("no folder open")?;
+        let c = get().conn.client().ok_or("not connected")?;
+        let r = c
+            .get_directory_suggestions(
+                &frogg_client_core::protocol::inbound::DirectorySuggestionsRequest {
+                    query,
+                    cwd: Some(root),
+                    include_files: Some(true),
+                    include_directories: Some(false),
+                    include_hidden_directories: None,
+                    match_mode: None,
+                    limit: Some(limit),
+                    request_id: String::new(),
+                },
+            )
+            .await
+            .map_err(err_text)?;
+        if let Some(e) = r.error {
+            return Err(e);
+        }
+        Ok(r.entries
+            .into_iter()
+            .map(|e| e.path.replace('\\', "/"))
+            .collect())
     }
 
     /// Reads a file whole, or zips a folder, for saving on this device: (name, mime, bytes).

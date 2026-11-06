@@ -81,8 +81,36 @@ impl ProviderUsage {
     }
 }
 
+/// One sign-in of a provider and the figures the daemon read from its config dir.
+#[derive(Debug, Clone, PartialEq)]
+pub struct AccountUsage {
+    pub id: String,
+    pub name: String,
+    pub is_active: bool,
+    pub authenticated: bool,
+    /// The account's own label colour preference.
+    pub color: Option<String>,
+    /// None when the scoped read failed outright; `error` says why.
+    pub usage: Option<ProviderUsage>,
+    pub error: Option<String>,
+}
+
+impl AccountUsage {
+    /// The display name; the implicit primary account shows as "Default".
+    pub fn label(&self) -> String {
+        if self.name.eq_ignore_ascii_case("default") || self.name.starts_with("__") {
+            "Default".into()
+        } else {
+            self.name.clone()
+        }
+    }
+}
+
 #[derive(Clone, Copy)]
 pub struct Usage {
+    /// Providers with two or more sign-ins, each read separately (keyed by provider id).
+    /// Empty for single-account providers and daemons without account-scoped usage.
+    pub accounts: RwSignal<std::collections::HashMap<String, Vec<AccountUsage>>>,
     pub providers: RwSignal<Option<Vec<ProviderUsage>>>,
     pub loading: RwSignal<bool>,
     pub error: RwSignal<Option<String>>,
@@ -101,6 +129,7 @@ thread_local! {
 fn reset(u: Usage) {
     BACKOFF.with(|b| b.set(0.0));
     u.providers.set(None);
+    u.accounts.set(Default::default());
     u.error.set(None);
     u.backoff_until.set(None);
 }
@@ -111,6 +140,7 @@ pub fn store() -> Usage {
     }
     let u = detached(
         || Usage {
+            accounts: RwSignal::new(Default::default()),
             providers: RwSignal::new(None),
             loading: RwSignal::new(false),
             error: RwSignal::new(None),
@@ -128,6 +158,64 @@ fn rate_limited(e: &str) -> bool {
         || l.contains("rate limit")
         || l.contains("rate-limit")
         || l.contains("too many requests")
+}
+
+/// Reads every account of each provider with two or more sign-ins, scoped to that account
+/// (the unscoped answer only describes a provider's primary config dir).
+async fn read_accounts(
+    c: &frogg_client_core::DaemonClient,
+    providers: &[ProviderUsage],
+    max_age: Option<u64>,
+) -> std::collections::HashMap<String, Vec<AccountUsage>> {
+    let mut out = std::collections::HashMap::new();
+    let Ok(v) = c
+        .list_provider_accounts(None)
+        .await
+        .map_err(err_text)
+        .and_then(|v| serde_json::to_value(v).map_err(err_text))
+    else {
+        return out;
+    };
+    let all = v["accounts"].as_array().cloned().unwrap_or_default();
+    for p in providers {
+        let mine: Vec<&serde_json::Value> = all
+            .iter()
+            .filter(|a| a["provider"] == p.provider_id.as_str())
+            .collect();
+        if mine.len() < 2 {
+            continue;
+        }
+        let mut list = Vec::new();
+        for a in mine {
+            let id = a["id"].as_str().unwrap_or_default().to_owned();
+            let res = c
+                .list_provider_usage(Some(&p.provider_id), Some(Some(&id)), max_age)
+                .await
+                .map_err(err_text)
+                .and_then(|v| serde_json::to_value(v).map_err(err_text));
+            let (usage, error) = match res {
+                Ok(v) => (
+                    v["providers"]
+                        .as_array()
+                        .and_then(|l| l.iter().find(|u| u["providerId"] == p.provider_id.as_str()))
+                        .and_then(|u| serde_json::from_value(u.clone()).ok()),
+                    None,
+                ),
+                Err(e) => (None, Some(e)),
+            };
+            list.push(AccountUsage {
+                id,
+                name: a["name"].as_str().unwrap_or_default().to_owned(),
+                is_active: a["isActive"].as_bool().unwrap_or(false),
+                authenticated: a["authenticated"].as_bool().unwrap_or(true),
+                color: a["preferences"]["color"].as_str().map(str::to_owned),
+                usage,
+                error,
+            });
+        }
+        out.insert(p.provider_id.clone(), list);
+    }
+    out
 }
 
 impl Usage {
@@ -167,9 +255,24 @@ impl Usage {
                                 .collect()
                         })
                         .unwrap_or_default();
+                    // COMPAT(providerUsageAccountScoped): older daemons ignore the scope, so
+                    // only per-provider figures there.
+                    let scoped = c.has_feature("providerUsageAccountScoped")
+                        && c.has_feature("providerAccounts");
+                    let mut accounts = std::collections::HashMap::new();
+                    if scoped {
+                        accounts = read_accounts(&c, &list, max_age).await;
+                    }
                     let hit = list
                         .iter()
-                        .any(|p| p.error.as_deref().is_some_and(rate_limited));
+                        .any(|p| p.error.as_deref().is_some_and(rate_limited))
+                        || accounts.values().flatten().any(|a: &AccountUsage| {
+                            a.error
+                                .as_deref()
+                                .or(a.usage.as_ref().and_then(|u| u.error.as_deref()))
+                                .is_some_and(rate_limited)
+                        });
+                    self.accounts.set(accounts);
                     let b = BACKOFF.with(|b| {
                         let next = if hit {
                             (b.get() * 2.0).clamp(BACKOFF_MIN_MS, BACKOFF_MAX_MS)

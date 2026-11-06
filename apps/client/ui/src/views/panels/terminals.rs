@@ -426,7 +426,10 @@ pub fn TerminalSurface(terminal_id: String) -> impl IntoView {
     let client = StoredValue::new_local(app.conn.client());
     let id = StoredValue::new(terminal_id.clone());
     let over = RwSignal::new(false);
-    let sending = RwSignal::new(Vec::<String>::new());
+    // Uploads in flight (id, name) and the ids the user cancelled.
+    let sending = RwSignal::new(Vec::<(u64, String)>::new());
+    let cancelled = StoredValue::new(HashSet::<u64>::new());
+    let upload_seq = StoredValue::new(0u64);
 
     let send_size = move || {
         let (rows, cols) = handle.size();
@@ -510,26 +513,44 @@ pub fn TerminalSurface(terminal_id: String) -> impl IntoView {
         let Some(c) = client.get_value() else { return };
         spawn_local(async move {
             let files = dropped_files(dt).await;
-            let names: Vec<String> = files.iter().map(|f| f.name.clone()).collect();
-            sending.update(|s| s.extend(names.iter().cloned()));
+            let batch: Vec<(u64, String)> = files
+                .iter()
+                .map(|f| {
+                    upload_seq.update_value(|s| *s += 1);
+                    (upload_seq.get_value(), f.name.clone())
+                })
+                .collect();
+            sending.update(|s| s.extend(batch.iter().cloned()));
             let mut paths = Vec::new();
-            for f in files {
+            for (f, (uid, _)) in files.into_iter().zip(batch.iter()) {
+                let uid = *uid;
+                let is_cancelled = move || {
+                    cancelled
+                        .try_with_value(|c| c.contains(&uid))
+                        .unwrap_or(true)
+                };
+                if is_cancelled() {
+                    continue;
+                }
                 let bytes = f.bytes;
                 let read = |from: u64, to: u64| bytes[from as usize..to as usize].to_vec();
                 let res = c
-                    .upload_file_stream(FileUploadInput {
-                        file_name: f.name.clone(),
-                        mime_type: if f.mime.is_empty() {
-                            "application/octet-stream".into()
-                        } else {
-                            f.mime
+                    .upload_file_stream_cancellable(
+                        FileUploadInput {
+                            file_name: f.name.clone(),
+                            mime_type: if f.mime.is_empty() {
+                                "application/octet-stream".into()
+                            } else {
+                                f.mime
+                            },
+                            size: bytes.len() as u64,
+                            modified_at: None,
+                            chunk_size: None,
+                            read: &read,
+                            on_progress: None,
                         },
-                        size: bytes.len() as u64,
-                        modified_at: None,
-                        chunk_size: None,
-                        read: &read,
-                        on_progress: None,
-                    })
+                        &is_cancelled,
+                    )
                     .await;
                 match res {
                     Ok(r) if r.error.is_none() => {
@@ -538,10 +559,17 @@ pub fn TerminalSurface(terminal_id: String) -> impl IntoView {
                         }
                     }
                     Ok(r) => upload_failed(&f.name, r.error.unwrap_or_default()),
+                    Err(frogg_client_core::Error::Cancelled) => {}
                     Err(e) => upload_failed(&f.name, e.to_string()),
                 }
+                let _ = sending.try_update(|s| s.retain(|(i, _)| *i != uid));
             }
-            sending.update(|s| s.retain(|n| !names.contains(n)));
+            let _ = sending.try_update(|s| s.retain(|(i, _)| !batch.iter().any(|(b, _)| b == i)));
+            cancelled.try_update_value(|c| {
+                for (b, _) in &batch {
+                    c.remove(b);
+                }
+            });
             let text = dropped_paths(&paths);
             if !text.is_empty() {
                 let _ = c.send_terminal_input(&id.get_value(), TerminalInput::Input(text));
@@ -569,7 +597,23 @@ pub fn TerminalSurface(terminal_id: String) -> impl IntoView {
                         view! {
                             <div class="pn-uploads">
                                 {s.into_iter()
-                                    .map(|n| view! { <div class="pn-upload t-mono">{format!("uploading {n}…")}</div> })
+                                    .map(|(uid, n)| view! {
+                                        <div class="pn-upload t-mono">
+                                            <span class="pn-upload-name">{format!("uploading {n}…")}</span>
+                                            <button
+                                                class="icon-btn"
+                                                aria-label=format!("Cancel uploading {n}")
+                                                on:click=move |_| {
+                                                    cancelled.update_value(|c| {
+                                                        c.insert(uid);
+                                                    });
+                                                    sending.update(|s| s.retain(|(i, _)| *i != uid));
+                                                }
+                                            >
+                                                <Icon ico=Ico::X size=11.0 class="faint" />
+                                            </button>
+                                        </div>
+                                    })
                                     .collect_view()}
                             </div>
                         }

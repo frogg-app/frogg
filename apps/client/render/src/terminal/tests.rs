@@ -166,3 +166,20 @@ fn snapshot_decodes_from_daemon_json() {
     assert_eq!(s.grid[0][0].fg_mode, Some(1));
     assert!(snapshot_to_ansi(&s).contains("\x1b[6 q"));
 }
+
+#[test]
+fn wheel_reports_follow_the_mouse_encoding() {
+    use vt100::MouseProtocolEncoding as E;
+    assert_eq!(mouse_wheel_bytes(true, 4, 9, E::Sgr), "\x1b[<64;10;5M");
+    assert_eq!(mouse_wheel_bytes(false, 0, 0, E::Default), "\x1b[Ma!!");
+    // X10 caps coordinates at 223; UTF-8 carries larger ones as wider characters.
+    assert_eq!(
+        mouse_wheel_bytes(true, 0, 300, E::Default),
+        "\x1b[M`\u{ff}!"
+    );
+    assert_eq!(mouse_wheel_bytes(true, 0, 300, E::Utf8), "\x1b[M`\u{14d}!");
+    // The terminal reports its encoding once the program asks for it.
+    let mut p = parser(5, 20);
+    p.process(b"\x1b[?1000h\x1b[?1006h");
+    assert_eq!(p.screen().mouse_protocol_encoding(), E::Sgr);
+}

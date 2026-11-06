@@ -45,6 +45,8 @@ pub struct Claim {
     pub agent_id: String,
     #[serde(default)]
     pub stale: bool,
+    #[serde(default)]
+    pub last_heartbeat: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -63,6 +65,8 @@ pub struct Todo {
     pub claims: Vec<Claim>,
     #[serde(default)]
     pub last_progress: Option<Value>,
+    #[serde(default)]
+    pub progress_count: Option<f64>,
 }
 
 fn medium() -> String {

@@ -9,11 +9,13 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 
 use super::util::{download_bytes, human_size, Ask, Confirm, Prompt, PromptSpec};
-use crate::components::{Brackets, Ico, Icon, Menu, MenuItem, SkeletonRows};
+use crate::components::{
+    Brackets, Button, ButtonKind, Ico, Icon, Menu, MenuItem, Seg, SkeletonRows,
+};
 use crate::shell::panel_head::PanelHead;
 use crate::shell::toast::{Toast, ToastKind};
 use crate::state::checkout::{base_name, online, session_cwd};
-use crate::state::files::{parent_of, store, Entry, Listing};
+use crate::state::files::{parent_of, store, Doc, Entry, Listing};
 use crate::state::{self};
 
 /// Double-click window that keeps a preview tab.
@@ -115,6 +117,8 @@ pub fn FilesPanel() -> impl IntoView {
     let ask = RwSignal::new(None::<Ask>);
     let prompt = RwSignal::new(None::<PromptSpec>);
     let go_to = RwSignal::new(false);
+    let searching = RwSignal::new(false);
+    let query = RwSignal::new(String::new());
     let no_root = Signal::derive(move || cwd.get().is_none());
     let branch = Memo::new(move |_| {
         if f.browse.get().is_some() {
@@ -125,6 +129,14 @@ pub fn FilesPanel() -> impl IntoView {
     view! {
         <div class="panel pn">
             <PanelHead title="Files">
+                <button class="icon-btn" aria-label="Search files" disabled=no_root
+                    class:pn-on=move || searching.get()
+                    on:click=move |_| {
+                        searching.update(|v| *v = !*v);
+                        query.set(String::new());
+                    }>
+                    <Icon ico=Ico::Search size=14.0 />
+                </button>
                 <button class="icon-btn" aria-label="New file" disabled=no_root
                     on:click=move |_| prompt.set(Some(new_entry_spec(".".into(), "file")))>
                     <Icon ico=Ico::FilePlus size=14.0 class="faint" />
@@ -172,12 +184,149 @@ pub fn FilesPanel() -> impl IntoView {
                     .into_any()
                 }
             }}
+            {move || searching.get().then(|| view! {
+                <SearchField query=query on_close=Callback::new(move |_| { searching.set(false); query.set(String::new()); }) />
+            })}
             <div class="panel-scroll">
-                {move || cwd.get().map(|_| view! { <Dir path=".".to_string() depth=0 ask=ask prompt=prompt /> })}
+                {move || {
+                    if searching.get() && !query.get().trim().is_empty() {
+                        return view! { <SearchResults query=query /> }.into_any();
+                    }
+                    cwd.get().map(|_| view! { <Dir path=".".to_string() depth=0 ask=ask prompt=prompt /> }).into_any()
+                }}
             </div>
             <Confirm ask=ask />
             <Prompt spec=prompt />
         </div>
+    }
+}
+
+const SEARCH_LIMIT: i64 = 100;
+
+/// The search field under the Files header (ui-next `tools/FileSearch.tsx`). Esc clears, then
+/// closes.
+#[component]
+fn SearchField(query: RwSignal<String>, on_close: Callback<()>) -> impl IntoView {
+    let input = NodeRef::<leptos::html::Input>::new();
+    Effect::new(move |_| {
+        if let Some(i) = input.get() {
+            let _ = i.focus();
+        }
+    });
+    view! {
+        <div class="pn-file-search">
+            <Icon ico=Ico::Search size=13.0 class="faint" />
+            <input
+                node_ref=input
+                class="pn-file-search-input"
+                aria-label="Search files"
+                placeholder="Search files by name"
+                autocapitalize="off"
+                autocomplete="off"
+                spellcheck="false"
+                prop:value=move || query.get()
+                on:input=move |e| query.set(event_target_value(&e))
+                on:keydown=move |e| {
+                    if e.key() == "Escape" {
+                        if query.get_untracked().is_empty() {
+                            on_close.run(());
+                        } else {
+                            query.set(String::new());
+                        }
+                    }
+                }
+            />
+            <button class="icon-btn" aria-label="Close search" on:click=move |_| on_close.run(())>
+                <Icon ico=Ico::X size=13.0 class="faint" />
+            </button>
+        </div>
+    }
+}
+
+/// Fuzzy file-name matches across the root, through the daemon's directory suggestions (the
+/// protocol has no content search, so names only). Debounced.
+#[component]
+fn SearchResults(query: RwSignal<String>) -> impl IntoView {
+    let app = state::get();
+    let f = store();
+    let hits = RwSignal::new(None::<Result<Vec<String>, String>>);
+    let seq = StoredValue::new(0u64);
+    Effect::new(move |_| {
+        let q = query.get().trim().to_owned();
+        f.root.track();
+        seq.update_value(|s| *s += 1);
+        let mine = seq.get_value();
+        if q.is_empty() {
+            hits.set(None);
+            return;
+        }
+        set_timeout(
+            move || {
+                if seq.try_get_value() != Some(mine) {
+                    return;
+                }
+                spawn_local(async move {
+                    let r = store().search(q, SEARCH_LIMIT).await;
+                    if seq.try_get_value() == Some(mine) {
+                        hits.set(Some(r));
+                    }
+                });
+            },
+            std::time::Duration::from_millis(120),
+        );
+    });
+    let last = StoredValue::new(0.0f64);
+    move || {
+        match hits.get() {
+        None => view! { <SkeletonRows rows=5 indent=6.0 /> }.into_any(),
+        Some(Err(e)) => view! { <div class="pn-error t-mono">{e}</div> }.into_any(),
+        Some(Ok(list)) if list.is_empty() => view! {
+            <div class="pn-empty pn-muted">{format!("No file names match “{}”.", query.get_untracked().trim())}</div>
+        }
+        .into_any(),
+        Some(Ok(list)) => {
+            let n = list.len();
+            view! {
+                <div class="t-label pn-search-count">
+                    {if n as i64 == SEARCH_LIMIT { format!("first {SEARCH_LIMIT} matches") } else { format!("{n} matches") }}
+                    " · names only"
+                </div>
+                {list
+                    .into_iter()
+                    .map(|p| {
+                        let (name, dir) = match p.rfind('/') {
+                            Some(i) => (p[i + 1..].to_owned(), p[..i].to_owned()),
+                            None => (p.clone(), String::new()),
+                        };
+                        let p2 = p.clone();
+                        let on = Memo::new(move |_| app.ui.file_path.get().as_deref() == Some(p2.as_str()));
+                        view! {
+                            <div
+                                class="pn-node"
+                                class:on=move || on.get()
+                                role="button"
+                                tabindex="0"
+                                on:click=move |_| {
+                                    let now = js_sys::Date::now();
+                                    app.ui.open_file(Some(p.clone()));
+                                    if now - last.get_value() < DOUBLE_MS {
+                                        f.pin_tab(&p);
+                                    }
+                                    last.set_value(now);
+                                }
+                            >
+                                <Brackets on=on len=6.0 />
+                                <span class="pn-muted"><Icon ico=Ico::File size=14.0 /></span>
+                                <span class="pn-node-name">{name}</span>
+                                <span class="t-mono faint pn-hit-dir">{dir}</span>
+                            </div>
+                        }
+                    })
+                    .collect_view()}
+            }
+            .into_any()
+        }
+    }
     }
 }
 
@@ -307,7 +456,7 @@ fn Node(
         last.set_value(now);
     };
     let menu = RwSignal::new(false);
-    let items = entry_menu(&e, mark.get_untracked().is_some(), ask, prompt);
+    let entry = StoredValue::new(e.clone());
     let ico = Signal::derive(move || match (dir, open.get()) {
         (false, _) => Ico::File,
         (true, true) => Ico::FolderOpen,
@@ -356,7 +505,11 @@ fn Node(
                     <Icon ico=Ico::MoreHorizontal size=13.0 class="faint" />
                 </button>
                 {move || mark.get().map(|(l, tint)| view! { <span class=format!("pn-mark t-mono {tint}")>{l}</span> })}
-                <Menu open=menu on_close=Callback::new(move |_| menu.set(false)) items=items align_right=true />
+                // Built on open, so "Discard changes" follows the live diff.
+                {move || menu.get().then(|| {
+                    let items = entry.with_value(|e| entry_menu(e, mark.get_untracked().is_some(), ask, prompt));
+                    view! { <Menu open=menu on_close=Callback::new(move |_| menu.set(false)) items=items align_right=true /> }
+                })}
             </div>
             {move || (dir && open.get()).then(|| view! { <Dir path=path.get_value() depth=depth + 1 ask=ask prompt=prompt /> })}
         </div>
@@ -507,64 +660,377 @@ fn entry_menu(
     items
 }
 
-/// The open file: tabs, a breadcrumb head and the content.
+/// An unsaved edit: the text and the doc it was made against (for conflict-checked saves).
+#[derive(Clone)]
+struct Draft {
+    doc: Doc,
+    text: String,
+}
+
+thread_local! {
+    static DRAFTS: ArcRwSignal<HashMap<String, Draft>> = ArcRwSignal::new(HashMap::new());
+}
+
+/// Unsaved edits by `root:path` (ui-next `useFileDocument` drafts), kept across tab switches.
+fn drafts() -> ArcRwSignal<HashMap<String, Draft>> {
+    DRAFTS.with(Clone::clone)
+}
+
+fn draft_key(path: &str) -> String {
+    format!(
+        "{}:{path}",
+        store().root.get_untracked().unwrap_or_default()
+    )
+}
+
+/// Whether a file has unsaved edits.
+fn has_draft(path: &str) -> bool {
+    let k = draft_key(path);
+    drafts().with_untracked(|d| d.contains_key(&k))
+}
+
+/// Closes tabs and, when the open one went, opens its neighbour.
+fn close_and_pick(closing: Vec<String>, path: &str, on: bool) {
+    let app = state::get();
+    let f = store();
+    let next = f.tabs.with_untracked(|ts| {
+        let i = ts.iter().position(|x| x == path)?;
+        let right = ts[i + 1..].iter().find(|p| !closing.contains(p));
+        let left = ts[..i].iter().rev().find(|p| !closing.contains(p));
+        right.or(left).cloned()
+    });
+    f.close_tabs(&closing);
+    if on {
+        app.ui.open_file(next);
+    }
+}
+
+/// The open file's tab strip: tab menus (keep, copy, close variants) and "+" for a new entry.
+#[component]
+fn FileTabs(
+    active: String,
+    dirty: Signal<bool>,
+    prompt: RwSignal<Option<PromptSpec>>,
+) -> impl IntoView {
+    let f = store();
+    let plus = RwSignal::new(false);
+    let parent = parent_of(&active);
+    let plus_items = {
+        let (p1, p2) = (parent.clone(), parent);
+        vec![
+            MenuItem::new("New file…", move || {
+                prompt.set(Some(new_entry_spec(p1.clone(), "file")))
+            })
+            .icon(Ico::FilePlus),
+            MenuItem::new("New folder…", move || {
+                prompt.set(Some(new_entry_spec(p2.clone(), "directory")))
+            })
+            .icon(Ico::FolderPlus),
+        ]
+    };
+    let active = StoredValue::new(active);
+    // One tab menu for the strip, outside its scroller so it isn't clipped.
+    let bar = NodeRef::<leptos::html::Div>::new();
+    let tab_menu = RwSignal::new(None::<(Vec<MenuItem>, f64)>);
+    let open_menu = Callback::new(move |(items, x): (Vec<MenuItem>, f64)| {
+        let left = bar
+            .get_untracked()
+            .map(|b| b.get_bounding_client_rect().left())
+            .unwrap_or(0.0);
+        tab_menu.set(Some((items, (x - left).max(0.0))));
+    });
+    let menu_open = Signal::derive(move || tab_menu.with(Option::is_some));
+    view! {
+        <div class="pn-tabs" node_ref=bar>
+            {move || tab_menu.get().map(|(items, x)| view! {
+                <div class="pn-tab-menu" style=format!("left:{x}px")>
+                    <Menu open=menu_open on_close=Callback::new(move |_| tab_menu.set(None)) items=items />
+                </div>
+            })}
+            <div class="pn-tabs-in">
+                {move || {
+                    f.tabs
+                        .get()
+                        .into_iter()
+                        .map(|t| {
+                            let on = active.with_value(|a| *a == t);
+                            let preview = f.preview.get().as_deref() == Some(t.as_str());
+                            view! { <FileTab path=t on=on preview=preview dirty=Signal::derive(move || on && dirty.get()) open_menu=open_menu /> }
+                        })
+                        .collect_view()
+                }}
+            </div>
+            <div class="pn-rel">
+                <button class="icon-btn pn-tab-plus" aria-label="New tab" on:click=move |_| plus.set(true)>
+                    <Icon ico=Ico::Plus size=13.0 class="faint" />
+                </button>
+                <Menu open=plus on_close=Callback::new(move |_| plus.set(false)) items=plus_items align_right=true />
+            </div>
+        </div>
+    }
+}
+
+#[component]
+fn FileTab(
+    path: String,
+    on: bool,
+    preview: bool,
+    dirty: Signal<bool>,
+    open_menu: Callback<(Vec<MenuItem>, f64)>,
+) -> impl IntoView {
+    let app = state::get();
+    let f = store();
+    let el = NodeRef::<leptos::html::Div>::new();
+    let path = StoredValue::new(path);
+    let unsaved = Memo::new(move |_| {
+        drafts().track();
+        path.with_value(|p| has_draft(p))
+    });
+    let items = move || {
+        let p = path.get_value();
+        let tabs = f.tabs.get_untracked();
+        let any_draft = tabs.iter().any(|t| has_draft(t));
+        let idx = tabs.iter().position(|t| *t == p).unwrap_or(0);
+        let abs = f
+            .root
+            .get_untracked()
+            .map(|r| format!("{}/{}", r.trim_end_matches('/'), p))
+            .unwrap_or_else(|| p.clone());
+        let mut items = Vec::new();
+        if preview {
+            let p = p.clone();
+            items.push(MenuItem::new("Keep open", move || f.pin_tab(&p)));
+        }
+        items.push(
+            MenuItem::new("Copy path", move || frogg_render::code::copy_text(&abs)).icon(Ico::Copy),
+        );
+        let p2 = p.clone();
+        items.push(MenuItem::new("Copy relative path", move || {
+            frogg_render::code::copy_text(&p2)
+        }));
+        if !unsaved.get_untracked() {
+            let p2 = p.clone();
+            items.push(
+                MenuItem::new("Close", move || close_and_pick(vec![p2.clone()], &p2, on))
+                    .hint("⌘W"),
+            );
+        }
+        if tabs.len() > 1 && !any_draft {
+            let others: Vec<String> = tabs.iter().filter(|t| **t != p).cloned().collect();
+            let p2 = p.clone();
+            items.push(MenuItem::new("Close others", move || {
+                f.close_tabs(&others);
+                app.ui.open_file(Some(p2.clone()));
+            }));
+        }
+        if idx + 1 < tabs.len() && !any_draft {
+            let right: Vec<String> = tabs[idx + 1..].to_vec();
+            let p2 = p.clone();
+            items.push(MenuItem::new("Close tabs to the right", move || {
+                f.close_tabs(&right);
+                if !on {
+                    app.ui.open_file(Some(p2.clone()));
+                }
+            }));
+        }
+        items
+    };
+    let show = move || {
+        let x = el
+            .get_untracked()
+            .map(|e| e.get_bounding_client_rect().left())
+            .unwrap_or(0.0);
+        open_menu.run((items(), x));
+    };
+    let name = path.with_value(|p| base_name(p));
+    view! {
+        <div
+            class="pn-tab"
+            class:on=on
+            node_ref=el
+            on:contextmenu=move |ev| {
+                ev.prevent_default();
+                show();
+            }
+        >
+            <button
+                class="pn-tab-name"
+                class:preview=preview
+                on:click=move |_| app.ui.open_file(Some(path.get_value()))
+                on:dblclick=move |_| f.pin_tab(&path.get_value())
+            >
+                <Icon ico=Ico::File size=12.0 class=if on { "cyan2" } else { "faint" } />
+                <span>{name.clone()}</span>
+            </button>
+            {move || dirty.get().then(|| view! { <span class="pn-tab-dirty"></span> })}
+            <button
+                class="icon-btn pn-tab-more"
+                aria-label=format!("{name} tab actions")
+                on:click=move |_| show()
+            >
+                <Icon ico=Ico::MoreHorizontal size=12.0 class="faint" />
+            </button>
+            <button
+                class="icon-btn"
+                aria-label=format!("Close {name}")
+                disabled=move || unsaved.get()
+                on:click=move |_| {
+                    let p = path.get_value();
+                    close_and_pick(vec![p.clone()], &p, on);
+                }
+            >
+                <Icon ico=Ico::X size=11.0 class="faint" />
+            </button>
+        </div>
+    }
+}
+
+/// The open file: tabs, a breadcrumb head, Source/Edit modes with save and revert, and the
+/// content (ui-next `tools/FileViewer.tsx`).
 #[component]
 pub fn FileViewer(
     path: String,
     #[prop(optional_no_strip)] on_back: Option<Callback<()>>,
 ) -> impl IntoView {
-    let app = state::get();
     let f = store();
-    // Single click previews; the tab bar lists every open file.
+    // Single click previews unless the user pins every opened file.
     f.preview_tab(&path);
-    let tabs = move || {
-        f.tabs
-            .get()
-            .into_iter()
-            .map(|t| {
-                let on = app.ui.file_path.get().as_deref() == Some(t.as_str());
-                let preview = f.preview.get().as_deref() == Some(t.as_str());
-                let (t1, t2, t3) = (t.clone(), t.clone(), t.clone());
-                view! {
-                    <div class="pn-tab" class:on=on>
-                        <button
-                            class="pn-tab-name"
-                            class:preview=preview
-                            on:click=move |_| app.ui.open_file(Some(t1.clone()))
-                            on:dblclick=move |_| f.pin_tab(&t2)
-                        >
-                            <Icon ico=Ico::File size=12.0 class=if on { "cyan2" } else { "faint" } />
-                            <span>{base_name(&t)}</span>
-                        </button>
-                        <button
-                            class="icon-btn"
-                            aria-label="Close tab"
-                            on:click=move |_| {
-                                let next = f.tabs.with_untracked(|ts| {
-                                    let i = ts.iter().position(|x| *x == t3);
-                                    i.and_then(|i| ts.get(i + 1).or_else(|| i.checked_sub(1).and_then(|j| ts.get(j))).cloned())
-                                });
-                                f.close_tabs(std::slice::from_ref(&t3));
-                                if on {
-                                    app.ui.open_file(next);
-                                }
-                            }
-                        >
-                            <Icon ico=Ico::X size=11.0 class="faint" />
-                        </button>
-                    </div>
-                }
-            })
-            .collect_view()
-    };
-    let doc = LocalResource::new({
-        let path = path.clone();
-        move || {
-            let path = path.clone();
-            f.root.track();
-            async move { store().read(path).await }
+    if state::get().prefs.get_untracked::<bool>("autoPinTabs") {
+        f.pin_tab(&path);
+    }
+    let mode = RwSignal::new("source".to_owned());
+    let generation = RwSignal::new(0u32);
+    let saving = RwSignal::new(false);
+    let save_error = RwSignal::new(None::<String>);
+    let ask = RwSignal::new(None::<Ask>);
+    let prompt = RwSignal::new(None::<PromptSpec>);
+    let more = RwSignal::new(false);
+    let path_s = StoredValue::new(path.clone());
+    let key = Memo::new(move |_| {
+        format!(
+            "{}:{}",
+            f.root.get().unwrap_or_default(),
+            path_s.get_value()
+        )
+    });
+    let doc = LocalResource::new(move || {
+        f.root.track();
+        generation.track();
+        let path = path_s.get_value();
+        async move { store().read(path).await }
+    });
+    let draft = Memo::new(move |_| {
+        let k = key.get();
+        drafts().with(|d| d.get(&k).map(|x| x.text.clone()))
+    });
+    let dirty = Signal::derive(move || draft.with(Option::is_some));
+    // Editing a preview keeps it.
+    Effect::new(move |_| {
+        if dirty.get() || mode.get() == "edit" {
+            f.pin_tab(&path_s.get_value());
         }
     });
+    let revert = move || {
+        let k = key.get_untracked();
+        drafts().update(|d| {
+            d.remove(&k);
+        });
+        save_error.set(None);
+    };
+    let edit = move |text: String| {
+        let k = key.get_untracked();
+        let base = drafts()
+            .with_untracked(|d| d.get(&k).map(|x| x.doc.clone()))
+            .or_else(|| doc.get_untracked().and_then(|d| d.ok()));
+        let Some(base) = base else { return };
+        if base.text.as_deref() == Some(text.as_str()) {
+            revert();
+            return;
+        }
+        drafts().update(|d| {
+            d.insert(k, Draft { doc: base, text });
+        });
+    };
+    let save = move || {
+        let k = key.get_untracked();
+        let Some(d) = drafts().with_untracked(|m| m.get(&k).cloned()) else {
+            return;
+        };
+        if saving.get_untracked() {
+            return;
+        }
+        saving.set(true);
+        save_error.set(None);
+        spawn_local(async move {
+            let r = store()
+                .write(path_s.get_value(), d.text.clone(), d.doc)
+                .await;
+            saving.set(false);
+            match r {
+                Ok(written) => {
+                    // Keep newer typing made while the write was in flight.
+                    drafts().update(|m| {
+                        let same = m.get(&k).map(|x| x.text == d.text);
+                        match same {
+                            Some(true) => {
+                                m.remove(&k);
+                            }
+                            Some(false) => {
+                                if let Some(x) = m.get_mut(&k) {
+                                    x.doc = written;
+                                }
+                            }
+                            None => {}
+                        }
+                    });
+                    generation.update(|g| *g += 1);
+                }
+                Err(e) => save_error.set(Some(e)),
+            }
+        });
+    };
+    let discard = move || {
+        ask.set(Some(
+            Ask::new(
+                "Discard unsaved edits?",
+                "Your edits to this file will be removed from the editor.",
+                "Discard edits",
+                revert,
+            )
+            .danger(),
+        ))
+    };
+    // ⌘S / Ctrl+S saves while there is something to save.
+    let handle = window_event_listener(leptos::ev::keydown, move |ev| {
+        if (ev.meta_key() || ev.ctrl_key())
+            && ev.key().eq_ignore_ascii_case("s")
+            && dirty.get_untracked()
+        {
+            ev.prevent_default();
+            save();
+        }
+    });
+    on_cleanup(move || handle.remove());
+    let more_items = move || {
+        let p = path_s.get_value();
+        let p2 = p.clone();
+        let mut items = vec![
+            MenuItem::new("Download", move || download_entry(p.clone(), false)).icon(Ico::Download),
+            MenuItem::new("Copy relative path", move || {
+                frogg_render::code::copy_text(&p2)
+            }),
+        ];
+        let busy = saving.get_untracked();
+        if !dirty.get_untracked() && !busy {
+            items.push(MenuItem::new("Reload from disk", move || {
+                generation.update(|g| *g += 1)
+            }));
+        }
+        if dirty.get_untracked() && !busy {
+            items.push(MenuItem::new("Discard unsaved edits…", discard).danger());
+        }
+        items
+    };
     let crumbs = {
         let parent = parent_of(&path);
         if parent == "." {
@@ -574,11 +1040,10 @@ pub fn FileViewer(
         }
     };
     let name = base_name(&path);
-    let p_dl = path.clone();
-    let p_copy = path.clone();
+    let text = Memo::new(move |_| doc.get().and_then(|d| d.ok()).and_then(|d| d.text));
     view! {
         <div class="detail pn-viewer">
-            {on_back.is_none().then(|| view! { <div class="pn-tabs">{tabs}</div> })}
+            {on_back.is_none().then(|| view! { <FileTabs active=path.clone() dirty=dirty prompt=prompt /> })}
             <div class="pn-viewer-head">
                 <div class="pn-viewer-titles">
                     {(!crumbs.is_empty()).then(|| view! { <span class="pn-crumbs t-mono">{crumbs.clone()}</span> })}
@@ -588,7 +1053,7 @@ pub fn FileViewer(
                                 <Icon ico=Ico::ChevronLeft size=18.0 class="cyan2" />
                             </button>
                         })}
-                        <span class="t-display pn-viewer-title">{name}</span>
+                        <span class="t-display pn-viewer-title">{name.clone()}</span>
                         {move || {
                             doc.get()
                                 .and_then(|d| d.ok())
@@ -597,34 +1062,100 @@ pub fn FileViewer(
                     </div>
                 </div>
                 <span class="spacer"></span>
-                <button class="icon-btn" aria-label="Copy path" on:click=move |_| frogg_render::code::copy_text(&p_copy)>
-                    <Icon ico=Ico::Copy size=14.0 class="faint" />
+                {move || text.with(Option::is_some).then(|| view! {
+                    <Seg
+                        options=vec![("source".into(), "Source".into()), ("edit".into(), "Edit".into())]
+                        value=mode
+                        on_change=Callback::new(move |v| mode.set(v))
+                    />
+                })}
+                {move || dirty.get().then(|| view! {
+                    <Button label="Revert" disabled=saving on_press=Callback::new(move |_| discard()) />
+                })}
+                {move || (mode.get() == "edit").then(|| view! {
+                    <Button
+                        kind=ButtonKind::Primary
+                        label=Signal::derive(move || if saving.get() { "Saving…".to_owned() } else { "Save".to_owned() })
+                        disabled=Signal::derive(move || !dirty.get() || saving.get())
+                        on_press=Callback::new(move |_| save())
+                    />
+                })}
+                <button class="icon-btn" aria-label="Download file" on:click=move |_| download_entry(path_s.get_value(), false)>
+                    <Icon ico=Ico::Download size=15.0 class="faint" />
                 </button>
-                <button class="icon-btn" aria-label="Download" on:click=move |_| download_entry(p_dl.clone(), false)>
-                    <Icon ico=Ico::Download size=14.0 class="faint" />
-                </button>
-                <button class="icon-btn" aria-label="Reload" on:click=move |_| doc.refetch()>
-                    <Icon ico=Ico::RefreshCw size=14.0 class="faint" />
-                </button>
+                <div class="pn-rel">
+                    <button class="icon-btn" aria-label="Editor actions" on:click=move |_| more.set(true)>
+                        <Icon ico=Ico::MoreHorizontal size=16.0 class="faint" />
+                    </button>
+                    {move || more.get().then(|| view! {
+                        <Menu open=more on_close=Callback::new(move |_| more.set(false)) items=more_items() align_right=true />
+                    })}
+                </div>
             </div>
+            {move || save_error.get().map(|e| view! { <div class="pn-error t-mono pn-save-error">{e}</div> })}
             <div class="pn-viewer-body">
                 {move || match doc.get() {
                     None => view! { <SkeletonRows rows=10 icon=false /> }.into_any(),
                     Some(Err(e)) => view! { <div class="pn-error t-mono">{e}</div> }.into_any(),
-                    Some(Ok(d)) => render_doc(&path, d).into_any(),
+                    Some(Ok(d)) if d.text.is_some() && mode.get() == "edit" => {
+                        let initial = draft.get_untracked().or(d.text).unwrap_or_default();
+                        view! {
+                            <textarea
+                                class="pn-editor t-mono"
+                                spellcheck="false"
+                                autocapitalize="off"
+                                autocomplete="off"
+                                aria-label="File contents"
+                                prop:value=initial
+                                on:input=move |e| edit(event_target_value(&e))
+                            ></textarea>
+                        }
+                        .into_any()
+                    }
+                    Some(Ok(mut d)) => {
+                        if let Some(t) = draft.get() {
+                            d.text = Some(t);
+                        }
+                        render_doc(&path_s.get_value(), d).into_any()
+                    }
                 }}
             </div>
+            <div class="pn-viewer-status">
+                <span class="t-mono pn-mode-chip" class:edit=move || mode.get() == "edit">
+                    {move || if mode.get() == "edit" { "EDIT" } else { "VIEW" }}
+                </span>
+                <span class="t-mono faint">
+                    {move || {
+                        draft
+                            .get()
+                            .or_else(|| text.get())
+                            .map(|t| format!("{} lines", t.split('\n').count()))
+                            .unwrap_or_default()
+                    }}
+                </span>
+                <span class="spacer"></span>
+                {move || dirty.get().then(|| view! {
+                    <span class="t-mono pn-unsaved">"◆ Unsaved · save or revert before closing"</span>
+                })}
+            </div>
+            <Confirm ask=ask />
+            <Prompt spec=prompt />
         </div>
     }
 }
 
-fn render_doc(path: &str, d: crate::state::files::Doc) -> impl IntoView {
+fn render_doc(path: &str, d: Doc) -> impl IntoView {
     if let Some(text) = d.text {
         let lang = path.to_owned();
         return view! { <Code code=text lang=lang line_numbers=true /> }.into_any();
     }
     if d.kind == "image" {
         let url = blob_url(&d.bytes, &d.mime);
+        // The blob lives only as long as the image on screen.
+        let revoke = url.clone();
+        on_cleanup(move || {
+            let _ = web_sys::Url::revoke_object_url(&revoke);
+        });
         return view! { <div class="pn-image"><img src=url alt=base_name(path) /></div> }
             .into_any();
     }
