@@ -20,6 +20,7 @@ pub fn App() -> impl IntoView {
     app.conn.start();
     host_toasts(app);
     pair_links(app);
+    native::alerts::install();
     view! {
         <TitleBar />
         <Shell />

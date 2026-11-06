@@ -10,7 +10,7 @@
 //! - `set_window_theme { colors: { bg, faint, accent, symbols } }`
 //! - `open_session_window { sessionId, hostId? }` → bool
 //! - `open_external { url }` (http/https/mailto only)
-//! - `notify { title, body? }`
+//! - `notify { title, body?, sound? }`, `notify_permission` → bool (asks when undecided)
 //! - `pick_files { multiple }` → `[{ name, mime, size, base64 }]`
 //! - `clipboard_write { text }`, `clipboard_read` → string
 //! - `take_pending_link` → the `frogg-next-rs://` link that launched or reached the app, if any;
@@ -154,18 +154,35 @@ fn notify<R: Runtime>(
     app: AppHandle<R>,
     title: String,
     body: Option<String>,
+    sound: Option<bool>,
 ) -> Result<(), String> {
-    let n = app.notification();
-    if n.permission_state().ok() != Some(PermissionState::Granted)
-        && n.request_permission().ok() != Some(PermissionState::Granted)
-    {
+    if !notify_permission(app.clone()) {
         return Err("notifications not permitted".into());
     }
-    let mut b = n.builder().title(title);
+    let mut b = app.notification().builder().title(title);
     if let Some(body) = body {
         b = b.body(body);
     }
+    if sound == Some(true) {
+        b = b.sound(DEFAULT_SOUND);
+    }
     b.show().map_err(|e| e.to_string())
+}
+
+/// The platform's default notification sound, by the name the notification plugin expects.
+#[cfg(target_os = "macos")]
+const DEFAULT_SOUND: &str = "NSUserNotificationDefaultSoundName";
+#[cfg(target_os = "windows")]
+const DEFAULT_SOUND: &str = "Default";
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+const DEFAULT_SOUND: &str = "message-new-instant";
+
+/// Whether notifications are allowed, asking the OS (the Android 13+ prompt) when undecided.
+#[tauri::command]
+fn notify_permission<R: Runtime>(app: AppHandle<R>) -> bool {
+    let n = app.notification();
+    n.permission_state().ok() == Some(PermissionState::Granted)
+        || n.request_permission().ok() == Some(PermissionState::Granted)
 }
 
 #[derive(Serialize)]
@@ -312,6 +329,7 @@ pub fn run() {
             open_session_window,
             open_external,
             notify,
+            notify_permission,
             pick_files,
             clipboard_write,
             clipboard_read,

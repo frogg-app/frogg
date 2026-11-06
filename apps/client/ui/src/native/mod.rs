@@ -46,6 +46,8 @@
 
 #![allow(dead_code)] // The API is for other streams; not all of it is called yet.
 
+pub mod alerts;
+
 use leptos::task::spawn_local;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
@@ -324,10 +326,32 @@ pub fn open_external(url: &str) {
 
 /// Shows an OS notification (asks for permission the first time).
 pub fn notify(title: &str, body: Option<&str>) {
+    notify_with(title, body, false);
+}
+
+/// Asks for notification permission now (call from a user gesture, e.g. a settings toggle).
+/// Returns whether notifications are allowed.
+pub async fn notify_permission() -> bool {
+    if is_tauri() {
+        return invoke::<bool>("notify_permission", ())
+            .await
+            .unwrap_or(false);
+    }
+    use web_sys::{Notification, NotificationPermission};
+    if Notification::permission() == NotificationPermission::Default {
+        if let Ok(p) = Notification::request_permission() {
+            let _ = JsFuture::from(p).await;
+        }
+    }
+    Notification::permission() == NotificationPermission::Granted
+}
+
+/// As [`notify`], with the platform's default sound when `sound` (web: `silent` otherwise).
+pub fn notify_with(title: &str, body: Option<&str>, sound: bool) {
     if is_tauri() {
         fire(
             "notify",
-            serde_json::json!({ "title": title, "body": body }),
+            serde_json::json!({ "title": title, "body": body, "sound": sound }),
         );
         return;
     }
@@ -346,6 +370,7 @@ pub fn notify(title: &str, body: Option<&str>) {
         if let Some(body) = body {
             options.set_body(&body);
         }
+        options.set_silent(Some(!sound));
         let _ = Notification::new_with_options(&title, &options);
     });
 }

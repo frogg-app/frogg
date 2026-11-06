@@ -431,6 +431,9 @@ pub fn Notifications() -> impl IntoView {
             </div>
         </Section>
         <Section title="This device">
+            <Row label="OS notifications" hint="Desktop and push alerts while Frogg isn't focused">
+                <NotifyPermission />
+            </Row>
             <Row label="Play sound"><PrefToggle key="playSound" /></Row>
             <Row label="Quiet hours" hint="Hold desktop and push; Inbox still records">
                 <TextField
@@ -448,6 +451,32 @@ pub fn Notifications() -> impl IntoView {
                 />
             </Row>
         </Section>
+    }
+}
+
+/// Whether OS notifications are allowed on this device, with a button to ask.
+#[component]
+fn NotifyPermission() -> impl IntoView {
+    let allowed = RwSignal::new(None::<bool>);
+    let check = move || {
+        leptos::task::spawn_local(async move {
+            allowed.set(Some(crate::native::notify_permission().await));
+        });
+    };
+    // The web reads the state without prompting; the shell asks the OS when undecided.
+    if crate::native::is_tauri() {
+        check();
+    } else {
+        allowed.set(Some(
+            web_sys::Notification::permission() == web_sys::NotificationPermission::Granted,
+        ));
+    }
+    move || {
+        match allowed.get() {
+        Some(true) => view! { <Pill text="allowed" tint="mint" /> }.into_any(),
+        _ => view! { <Button label="Allow notifications" on_press=Callback::new(move |_| check()) /> }
+            .into_any(),
+    }
     }
 }
 
