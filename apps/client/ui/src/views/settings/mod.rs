@@ -93,7 +93,7 @@ pub const PAGES: &[Page] = &[
         Scope::You,
         true,
     ),
-    page("voice", "Voice & Companion", Ico::Bot, Scope::You, false),
+    page("voice", "Voice & Companion", Ico::Bot, Scope::You, true),
     page(
         "providers",
         "Providers & models",
@@ -115,14 +115,14 @@ pub const PAGES: &[Page] = &[
         "Context & clean cut",
         Ico::Scissors,
         Scope::Agents,
-        false,
+        true,
     ),
     page(
         "tools",
         "Tools, skills & prompts",
         Ico::Wrench,
         Scope::Agents,
-        false,
+        true,
     ),
     page(
         "overview",
@@ -138,7 +138,7 @@ pub const PAGES: &[Page] = &[
         Scope::Host,
         true,
     ),
-    page("security", "Security", Ico::Lock, Scope::Host, false),
+    page("security", "Security", Ico::Lock, Scope::Host, true),
     page(
         "automation",
         "Automation",
@@ -146,7 +146,7 @@ pub const PAGES: &[Page] = &[
         Scope::Host,
         true,
     ),
-    page("labels", "Session labels", Ico::Tag, Scope::Host, false),
+    page("labels", "Session labels", Ico::Tag, Scope::Host, true),
     page(
         "terminals",
         "Terminal profiles",

@@ -67,9 +67,8 @@ Release wasm size at the time of writing: about 5.1 MB raw, 1.9 MB gzip.
 
 ## Known gaps
 
-- Settings pages not built yet are hidden from the list: Voice & Companion, Context & clean cut,
-  Tools/skills/prompts, Security, Session labels, Terminal profiles, Resources & storage, the
-  Project pages (Worktrees, Scripts, CI, Generated text), Plugins and Developer.
+- Settings pages not built yet are hidden from the list: Terminal profiles, Resources & storage,
+  the Project pages (Worktrees, Scripts, CI, Generated text), Plugins and Developer.
 - Android back: a sheet or popover opened from the root screen isn't closed by back (it leaves
   the app); everywhere else back closes the topmost view first.
 - Cancelling an upload ends the stream early instead of aborting it on the daemon.
