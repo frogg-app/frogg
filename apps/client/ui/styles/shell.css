@@ -1062,3 +1062,8 @@ button.sb-seg:hover {
 body.has-title-bar .root {
   top: 32px;
 }
+
+/* Phone: the tab list stays mounted under a pushed detail. */
+.root.phone > .phone-hidden {
+  display: none;
+}

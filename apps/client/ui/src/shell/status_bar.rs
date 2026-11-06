@@ -42,7 +42,7 @@ pub fn StatusBar() -> impl IntoView {
                 <Logo size=12.0 motion="none".to_string() />
                 <span class="sb-brand-t">"frogg"</span>
             </div>
-            <button class="sb-seg" on:click=move |_| app.ui.host_sheet_open.set(true)>
+            <button class="sb-seg" on:click=move |_| app.ui.set_tool(Tool::Hosts)>
                 <span class=move || format!("dot {}", link.get().conn.id())></span>
                 <span class="sb-t">{host_label}</span>
             </button>

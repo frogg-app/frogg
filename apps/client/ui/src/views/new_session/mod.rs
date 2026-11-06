@@ -823,10 +823,10 @@ pub fn NewSession() -> impl IntoView {
 
 /// A labelled row: label left and control right on wide layouts, stacked on phones.
 #[component]
-fn Row(#[prop(into)] label: String, phone: bool, children: Children) -> impl IntoView {
+fn Row(#[prop(into)] label: Signal<String>, phone: bool, children: Children) -> impl IntoView {
     view! {
         <div class=if phone { "ns-field phone" } else { "ns-field" }>
-            <span class="ns-label">{label}</span>
+            <span class="ns-label">{move || label.get()}</span>
             <div class="ns-body">{children()}</div>
         </div>
     }
@@ -1100,7 +1100,7 @@ fn Fields(f: Form, phone: bool) -> impl IntoView {
             </div>
         </Show>
         <Show when=move || phone || !f.agent()>
-            <Row label=if phone { "Title" } else { "Name" } phone=phone>
+            <Row label=Signal::derive(move || if f.agent() { "Title" } else { "Name" }.to_string()) phone=phone>
                 <input
                     class="input ns-name"
                     class:wide=!phone

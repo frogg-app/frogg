@@ -155,13 +155,31 @@ pub fn Shell() -> impl IntoView {
             && app.prefs.flag("terminalListHidden")
     };
 
+    let phone = Memo::new(move |_| ff.get() == FormFactor::Phone);
+    // A tool this host or device stops offering (Companion gated off, terminals merged into
+    // Sessions) falls back to Sessions rather than leaving a dead pane.
+    Effect::new(move |_| {
+        let t = ui.tool.get();
+        // Only once online: the Companion gate reads server_info, unknown while connecting.
+        let online = app.conn.active_link().conn == crate::state::Conn::Online;
+        if online && !super::tools::shown(&app, t) {
+            ui.set_tool(Tool::Sessions);
+        }
+    });
     move || {
-        if ff.get() == FormFactor::Phone {
-            let pushed = has_phone_detail(app);
+        if phone.get() {
+            // The tab's list stays mounted (hidden) under a pushed detail, so opening and
+            // closing a session keeps its scroll and doesn't rebuild every row.
+            let pushed = Memo::new(move |_| has_phone_detail(app));
             view! {
                 <div class="root phone">
-                    <div class="fill">{move || if has_phone_detail(app) { detail().into_any() } else { side().into_any() }}</div>
-                    {(!pushed).then(|| view! { <PhoneTabs /> })}
+                    <div class="fill" class:phone-hidden=move || pushed.get()>{side}</div>
+                    <Show when=move || pushed.get()>
+                        <div class="fill">{detail}</div>
+                    </Show>
+                    <Show when=move || !pushed.get()>
+                        <PhoneTabs />
+                    </Show>
                 </div>
             }
             .into_any()

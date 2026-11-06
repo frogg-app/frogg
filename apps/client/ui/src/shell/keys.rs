@@ -84,7 +84,7 @@ fn answer_selected(allow: bool) -> bool {
 }
 
 /// ⌃`: a terminal in the active checkout, opened in the main pane.
-fn new_terminal() {
+pub(super) fn new_terminal() {
     let Some(cwd) = crate::state::checkout::active_cwd() else {
         return;
     };

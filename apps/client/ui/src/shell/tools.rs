@@ -124,13 +124,28 @@ pub fn shown_groups(app: &AppState) -> [Vec<ToolMeta>; 3] {
     out
 }
 
-/// Rail / tab badges: sessions needing you, and needs + failed on the inbox.
+/// Rail / tab badges per the `railBadge` pref: "attention" counts sessions needing you (and
+/// needs + failed on the inbox), "unread" counts every unread session, "none" shows nothing.
 pub fn badge(app: &AppState, tool: Tool) -> Option<usize> {
-    let b = app.agents.buckets(app.active_host().as_deref());
-    let n = match tool {
-        Tool::Sessions => b.needs,
-        Tool::Inbox => b.needs + b.failed,
-        _ => 0,
+    let mode = app.prefs.text("railBadge");
+    let n = match mode.as_str() {
+        "none" => 0,
+        "unread" => match tool {
+            Tool::Sessions | Tool::Inbox => app
+                .sessions()
+                .iter()
+                .filter(|s| s.agent.requires_attention == Some(true))
+                .count(),
+            _ => 0,
+        },
+        _ => {
+            let b = app.agents.buckets(app.active_host().as_deref());
+            match tool {
+                Tool::Sessions => b.needs,
+                Tool::Inbox => b.needs + b.failed,
+                _ => 0,
+            }
+        }
     };
     (n > 0).then_some(n)
 }

@@ -32,6 +32,7 @@ fn items(q: &str) -> Vec<Item> {
     let app = crate::state::get();
     let ui = app.ui;
     let mut list = Vec::new();
+    // Newest first by `updatedAt`, as ui-next: `sessions()` already sorts that way.
     for s in app.sessions() {
         let id = s.agent.id.clone();
         list.push(Item {
@@ -71,7 +72,17 @@ fn items(q: &str) -> Vec<Item> {
         "New terminal",
         None,
         Some("⌃`"),
-        Callback::new(move |_| ui.set_tool(Tool::Terminals)),
+        Callback::new(move |_| {
+            ui.set_tool(Tool::Terminals);
+            super::keys::new_terminal();
+        }),
+    ));
+    list.push(cmd(
+        "onboarding",
+        "Getting started",
+        Some("walkthrough"),
+        None,
+        Callback::new(move |_| crate::state::onboarding::get().open(None)),
     ));
     list.push(cmd(
         "hosts",
