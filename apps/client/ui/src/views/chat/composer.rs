@@ -49,6 +49,42 @@ pub struct Att {
 struct Draft {
     text: String,
     atts: Vec<Att>,
+    /// A draft set aside with Ctrl+S; it comes back after the next send.
+    stash: Option<Stash>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Stash {
+    pub text: String,
+    pub atts: Vec<Att>,
+}
+
+/// Uploads stream into the live composer only: a saved draft keeps what has landed.
+fn settled(atts: &[Att]) -> Vec<Att> {
+    atts.iter()
+        .filter(|a| !matches!(a.kind, AttKind::Uploading(_)))
+        .cloned()
+        .collect()
+}
+
+/// "Stashed “first line” · back after you send · Ctrl+S to restore now".
+pub fn stash_note(s: &Stash) -> String {
+    let first = s.text.lines().next().unwrap_or("").trim();
+    let what = if first.is_empty() {
+        let n = s.atts.len();
+        format!("{n} attachment{}", if n == 1 { "" } else { "s" })
+    } else if first.chars().count() > 48 {
+        format!("“{}…”", first.chars().take(48).collect::<String>())
+    } else {
+        format!("“{first}”")
+    };
+    format!("Stashed {what} · back after you send · Ctrl+S to restore now")
+}
+
+/// A `!cmd` typed (the host runs it as a shell command).
+pub fn is_shell_escape(text: &str) -> bool {
+    let mut t = text.trim_start().chars();
+    t.next() == Some('!') && t.next().is_some_and(|c| !c.is_whitespace())
 }
 
 thread_local! {
@@ -325,6 +361,7 @@ pub fn Composer(
     }
     let text = RwSignal::new(draft.text);
     let atts = RwSignal::new(draft.atts);
+    let stash = RwSignal::new(draft.stash);
     let sending = RwSignal::new(false);
     let drop_over = RwSignal::new(false);
     let commands = RwSignal::new(None::<Vec<Command>>);
@@ -338,7 +375,8 @@ pub fn Composer(
     Effect::new(move |_| {
         let d = Draft {
             text: text.get(),
-            atts: atts.get(),
+            atts: atts.with(|a| settled(a)),
+            stash: stash.get(),
         };
         DRAFTS.with(|m| m.borrow_mut().insert(id.get_value(), d));
     });
@@ -437,6 +475,45 @@ pub fn Composer(
         }
     };
 
+    // A stashed draft comes back once the message it made way for has gone.
+    let restore = move || {
+        let s = stash.get_untracked();
+        stash.set(None);
+        match s {
+            Some(s) => {
+                text.set(s.text);
+                atts.set(s.atts);
+            }
+            None => {
+                text.set(String::new());
+                atts.set(Vec::new());
+            }
+        }
+    };
+    // Ctrl+S, as in Claude Code: set the draft aside, or swap it with the one set aside. Files
+    // still uploading stay put, since their upload lands on the composer's current list.
+    let toggle_stash = move || {
+        let t = text.get_untracked();
+        let (uploading, keep): (Vec<Att>, Vec<Att>) = atts
+            .get_untracked()
+            .into_iter()
+            .partition(|a| matches!(a.kind, AttKind::Uploading(_)));
+        let cur = (!t.is_empty() || !keep.is_empty()).then_some(Stash {
+            text: t,
+            atts: keep,
+        });
+        let prev = stash.get_untracked();
+        if cur.is_none() && prev.is_none() {
+            return;
+        }
+        let (pt, mut pa) = prev.map(|p| (p.text, p.atts)).unwrap_or_default();
+        pa.extend(uploading);
+        text.set(pt);
+        atts.set(pa);
+        stash.set(cur);
+        hi.set(0);
+        slash_closed.set(false);
+    };
     let submit = move |cut: bool| {
         let t = text.get_untracked().trim().to_owned();
         let list = atts.get_untracked();
@@ -457,8 +534,7 @@ pub fn Composer(
         // A move or clean cut is rewriting the conversation: hold the message until it lands.
         if cut || session_state::busy(&agent) {
             session_state::queue_message(&agent, &t, list);
-            text.set(String::new());
-            atts.set(Vec::new());
+            restore();
             if cut && !session_state::busy(&agent) {
                 let a = agent.clone();
                 session_state::run_session_op(
@@ -473,8 +549,7 @@ pub fn Composer(
         spawn_local(async move {
             match send(&agent, &t, &list).await {
                 Ok(()) => {
-                    text.set(String::new());
-                    atts.set(Vec::new());
+                    restore();
                 }
                 Err(e) => toast_err("Message not sent", e),
             }
@@ -503,6 +578,15 @@ pub fn Composer(
 
     let on_key = move |ev: leptos::ev::KeyboardEvent| {
         let k = ev.key();
+        if (ev.ctrl_key() || ev.meta_key())
+            && !ev.alt_key()
+            && !ev.shift_key()
+            && k.eq_ignore_ascii_case("s")
+        {
+            ev.prevent_default();
+            toggle_stash();
+            return;
+        }
         let m = matches.get_untracked();
         if slash_query.get_untracked().is_some() && !m.is_empty() {
             match k.as_str() {
@@ -614,6 +698,21 @@ pub fn Composer(
                 on:dragleave=move |_| drop_over.set(false)
                 on:drop=on_drop
             >
+                {move || stash.get().map(|s| view! {
+                    <div class="composer-note t-mono">{stash_note(&s)}</div>
+                })}
+                {move || {
+                    let cwd = session.with(|s| s.as_ref().map(|s| s.agent.cwd.clone()))?;
+                    (online.get()
+                        && atts.with(Vec::is_empty)
+                        && text.with(|t| is_shell_escape(t))
+                        && session_state::has_feature("agentShellEscape"))
+                    .then(|| view! {
+                        <div class="composer-note shell t-mono">
+                            {format!("Shell command · runs in {cwd}; the output goes to the agent with your next message")}
+                        </div>
+                    })
+                }}
                 <Show when=move || !atts.with(Vec::is_empty)>
                     <div class="att-chips">
                         <For
@@ -1029,6 +1128,30 @@ mod tests {
             .collect();
         assert_eq!(names, ["review", "preview", "reset", "review-pr"]);
         assert!(match_commands(&all, "zzz").is_empty());
+    }
+
+    #[test]
+    fn stash_and_shell_notes() {
+        let s = Stash {
+            text: "fix the bug\nmore".into(),
+            atts: vec![],
+        };
+        assert_eq!(
+            stash_note(&s),
+            "Stashed “fix the bug” · back after you send · Ctrl+S to restore now"
+        );
+        let s = Stash {
+            text: String::new(),
+            atts: vec![Att {
+                id: 1,
+                name: "a.png".into(),
+                kind: AttKind::File(Value::Null),
+            }],
+        };
+        assert!(stash_note(&s).starts_with("Stashed 1 attachment ·"));
+        assert!(is_shell_escape("  !ls -la"));
+        assert!(!is_shell_escape("! ls"));
+        assert!(!is_shell_escape("hi !ls"));
     }
 
     #[test]
