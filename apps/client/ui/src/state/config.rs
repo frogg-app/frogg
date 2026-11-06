@@ -352,7 +352,9 @@ where
         tick: RwSignal::new(0),
     };
     let alive = StoredValue::new(true);
-    on_cleanup(move || alive.set_value(false));
+    on_cleanup(move || {
+        let _ = alive.try_set_value(false);
+    });
     let load = StoredValue::new_local(load);
     Effect::new(move |prev_host: Option<Option<String>>| {
         let host = app.hosts.active_id.get();
@@ -372,7 +374,9 @@ where
         let tick = rpc.tick.get_untracked();
         spawn_local(async move {
             let res = f(client).await;
-            if !alive.get_value() || rpc.tick.get_untracked() != tick {
+            // The owner may be gone (page left mid-request): its values are disposed then.
+            if !alive.try_get_value().unwrap_or(false) || rpc.tick.try_get_untracked() != Some(tick)
+            {
                 return;
             }
             match res {
@@ -389,7 +393,7 @@ where
     if let Some(ms) = poll_ms {
         if let Ok(h) = set_interval_with_handle(
             move || {
-                if alive.get_value() {
+                if alive.try_get_value().unwrap_or(false) {
                     rpc.reload();
                 }
             },

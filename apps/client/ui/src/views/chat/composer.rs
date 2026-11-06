@@ -90,7 +90,7 @@ fn attach(files: Vec<PickedFile>, atts: RwSignal<Vec<Att>>) {
             continue;
         }
         let Some(client) = client_or_toast() else {
-            return;
+            continue;
         };
         let progress = RwSignal::new(0.0);
         atts.update(|a| {

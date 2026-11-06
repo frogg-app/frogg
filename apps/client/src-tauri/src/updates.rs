@@ -153,7 +153,8 @@ pub async fn install<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
         .pending
         .lock()
         .unwrap()
-        .take()
+        // Keep it stored: a failed download can then be retried without checking again.
+        .clone()
         .ok_or("no update to install; check first")?;
     update
         .download_and_install(|_, _| {}, || {})

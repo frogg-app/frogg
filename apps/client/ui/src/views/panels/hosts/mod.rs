@@ -233,12 +233,14 @@ fn ActiveHost(host: Host, on_back: Option<Callback<()>>) -> impl IntoView {
     let online = Memo::new(move |_| app.conn.active_link().conn == Conn::Online);
     let metrics = RwSignal::new(None::<Value>);
     let alive = StoredValue::new(true);
-    on_cleanup(move || alive.set_value(false));
+    on_cleanup(move || {
+        let _ = alive.try_set_value(false);
+    });
     let read = move || {
         let Ok(c) = config::need() else { return };
         spawn_local(async move {
             if let Ok(v) = ns(&c, "daemon.host.get_metrics.request", json!({})).await {
-                if alive.get_value() {
+                if alive.try_get_value().unwrap_or(false) {
                     metrics.set(v.get("metrics").cloned());
                 }
             }
@@ -253,7 +255,7 @@ fn ActiveHost(host: Host, on_back: Option<Callback<()>>) -> impl IntoView {
     });
     if let Ok(h) = set_interval_with_handle(
         move || {
-            if alive.get_value() && online.get_untracked() {
+            if alive.try_get_value().unwrap_or(false) && online.get_untracked() {
                 read();
             }
         },
@@ -277,6 +279,7 @@ fn ActiveHost(host: Host, on_back: Option<Callback<()>>) -> impl IntoView {
                         <Button
                             kind=ButtonKind::Primary
                             label=if connecting { "Retrying…" } else { "Retry" }
+                            disabled=connecting
                             on_press=Callback::new(move |_| app.conn.activate(&hid.get_value()))
                         />
                     })}

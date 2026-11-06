@@ -66,3 +66,109 @@ Then parity: walk `apps/ui-next/PARITY.md`, the lab entries, and the remaining p
 Parity walk (PARITY.md, lab entries, screenshot comparison per area), performance against the
 gates in rust-client.md, release integration (attach Rust client artifacts to `-next.N`
 releases), docs.
+
+### Wave 7 (parity gaps, parallel)
+
+From the parity audit against `apps/ui-next`. Each slice owns its paths; shared files take
+additive edits only. Sizes are S/M/L.
+
+**7a chat-session** — owns `ui/src/views/chat/mod.rs`, `ui/src/views/chat/item.rs`, new
+`ui/src/views/chat/{session_menu,session_state,notices,chips}.rs`
+
+- L: session menu in the chat head (rename, fork, rewind, clean cut, detach, new window, copy
+  ID, archive with unsaved-work check) — `chat/SessionMenu.tsx`.
+- L: provider chip and clean-cut flow (scissors with blocked reason, cut queue, move/cut
+  dialogs) — `chat/ProviderChip.tsx`, `cutQueue.ts`, `cleanCut.ts`, `sessionOps.ts`.
+- M: account chip (move or clean cut to another account) — `chat/AccountChip.tsx`.
+- L: session state cards (host offline + Reconnect, waiting on background work, finished,
+  ready to review, signed out, failed) — `chat/SessionState.tsx`.
+- M: composer notices (operation progress, queued message, stale cache, auto-resume) —
+  `chat/Notices.tsx`.
+- M: viewers ("also here") and typing presence — `chat/Viewers.tsx`.
+- S: full header title from the first prompt line (`chat/title.ts`); M: reveal heading.
+- L: streaming text reveal per `textReveal` pref — `chat/TextReveal.tsx`.
+- M: bottom anchor on content resize (images, clamps), 24px slack — `chat/useBottomAnchor.ts`.
+- S: key permission cards with `<For>` on id so live agent updates keep a half-typed reply
+  (`chat/mod.rs` permission block); mount `Lightbox` once per window, not per pane; resubscribe
+  when the active client changes while online.
+
+**7b composer** — owns `ui/src/views/chat/{composer,permission}.rs`
+
+- M: thinking-level picker in agent controls; S: model label falls back to provider default.
+- M: slash menu groups (Commands/Skills), prefix-first sort, load-error state.
+- M: draft stash (Ctrl+S); S: `!cmd` shell-escape note behind `agentShellEscape`.
+- M: resizable/expandable composer, size per session — `chat/composerSize.ts`.
+- M: question card multi-select, "Other…", back/next, dismiss, answers keyed by `header`
+  (verify the daemon key) — `chat/QuestionCard.tsx`.
+- S: context meter ring with token counts; attach menu (images/files) with dedupe; offline
+  disables attach/paste/drop; drag-highlight depth counter; drop `Uploading` chips from saved
+  drafts; keep focus on send (`readonly` instead of `disabled`).
+- M: fork-context attachment (`initialAttachments`).
+
+**7c tools-subwork-markdown** — owns `ui/src/views/chat/{tool,subwork}.rs`,
+`apps/client/render/src/markdown`
+
+- M: host-relative images (`HostImage`, `ImageRoot`) in markdown and image tool rows.
+- S: markdown tables with inline-markdown cells and measured widths — `markdown/MdTable.tsx`.
+- S: `Clamp` remeasures on resize (ResizeObserver) and animates; tool pane body not rebuilt per
+  streamed chunk.
+- L: full sub-work model (background commands, workflows, ports, to-dos, nesting) and strip
+  (tone roll-up, "+N more", elapsed, port chips) — `subwork/*`.
+- M: sub-work detail live status, links, scroll anchor, refetch on reconnect.
+
+**7d sessions-shell** — owns `ui/src/views/sessions/**`, `ui/src/views/new_session/**`,
+`ui/src/shell/**`, `ui/src/state/{sessions,projects,ui}.rs`
+
+- M: merged terminals in the sessions list (`sessions/merged.tsx`); S: fall back to Sessions
+  when the current tool stops being offered.
+- M: projects dialog and device-local projects — `sessions/ProjectsDialog.tsx`,
+  `localProjects.ts`.
+- M: sub-work chips on session rows and in the status summary.
+- M: launch fields: provider feature toggles, project defaults ("Save for project"), account
+  flag merge — `sessions/LaunchFields.tsx`, `launch.ts`.
+- S: New session name label by session type, not layout; host feature gating hints.
+- M: modal stack: one Escape closes the top layer only; back guard counts sheets/popovers;
+  hardware back on every layout — `shell/modalStack.ts`, `useHardwareBack.ts`.
+- S: phone layout must not rebuild the list on selection (`shell/layout.rs` phone branch).
+- S: palette "New terminal" creates one; "Getting started"; sessions by `updatedAt`.
+- S: status-bar host segment opens Hosts; `railBadge` pref honoured.
+- M: home composer reuses the full composer.
+- M: phone keyboard frame and tab hiding while the keyboard is up.
+- M: error boundary screen; M: popout single-session window.
+- M: toast history log, live toast updates, accurate pause, variants; host toasts with Retry.
+
+**7e panels** — owns `ui/src/views/panels/{files,scm,terminals,tasks,search,prs,usage,plugins,companion,util}.rs`,
+`apps/client/render/src/terminal`
+
+- M: file search in the Files header; L: file editing (edit mode, save/revert, dirty state);
+  M: editor menu, tab "+" and tab context menu. S: row menu reads live changed state; revoke
+  image blob URLs.
+- M: commit graph and SCM quick settings (makes the `scm*` prefs work); S: "Commit" first in
+  the More menu.
+- S: terminal wheel uses the program's mouse encoding and pointer cell; S/M: cancel drop
+  uploads; S: ASCII-only safe chars in `shell_path`.
+- M: to-do templates, category field, claim/progress lists in detail, "Moved to X" undo toast,
+  filter note detail, urgency sort.
+- M: PRs Streams tab, merge split button (allowed methods, auto-merge, disabled reason), CI run
+  actions (re-run, cancel, logs), live CI visuals, expandable jobs, branch/PR switcher.
+- L: multi-account usage cards; S: meter prefs (`meterTimer`, `meterSeconds`, `meterHover`,
+  `meterAfterReply`) drive refresh.
+- L: plugin-contributed panels and forms; M: remote-control toggle and capability chips; S:
+  unlink dev plugins, update confirm with new capabilities, incompatible reason text.
+- S: companion uses the compact composer and bubble icons.
+
+**7f hosts-settings-native** — owns `ui/src/views/panels/hosts/**`, `ui/src/views/settings/**`,
+`ui/src/native/`, `apps/client/src-tauri/src` (not the CI workflow)
+
+- M: pairing QR code (pure-Rust QR), relay vs local link, copy link/code, new code, expiry
+  countdown, auto-create on open — `hosts/PairDevice.tsx`, `Qr.tsx`.
+- M: pair confirm dialog with expiry, role and not-a-link states — `hosts/PairConfirm.tsx`.
+- M: Here now, Tailscale and Service URL cards.
+- M: offline view: "Use this daemon" rebind, TLS toggle probe, Retry now; route latency.
+- S: route "Use" only reconnects the active host; offline route dot; forget-route confirm;
+  restart daemon in host detail.
+- M: OS notifications on finish/permission honouring delivery, sound and quiet-hours prefs.
+- M: accounts move between hosts; usage & limits page controls; app usage-stats opt-in; bug
+  report attach/save. S: session order setting; device role select.
+- L: design options live preview.
+- M: app updates download mode with progress and periodic checks; L: Android APK updater.

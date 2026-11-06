@@ -311,7 +311,9 @@ fn HostAccounts(host: Host, named: bool) -> impl IntoView {
     let error = RwSignal::new(None::<String>);
     let tick = RwSignal::new(0u32);
     let alive = StoredValue::new(true);
-    on_cleanup(move || alive.set_value(false));
+    on_cleanup(move || {
+        let _ = alive.try_set_value(false);
+    });
     Effect::new(move |_| {
         tick.track();
         if conn.get() != Conn::Online {
@@ -322,7 +324,7 @@ fn HostAccounts(host: Host, named: bool) -> impl IntoView {
         };
         spawn_local(async move {
             let r = load_accounts(c).await;
-            if !alive.get_value() {
+            if !alive.try_get_value().unwrap_or(false) {
                 return;
             }
             match r {
