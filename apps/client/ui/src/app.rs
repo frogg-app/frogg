@@ -16,6 +16,7 @@ use crate::views::flows;
 pub fn App() -> impl IntoView {
     let app = state::init();
     keys::install();
+    crate::shell::back::install();
     app.conn.start();
     host_toasts(app);
     pair_links(app);
@@ -34,18 +35,25 @@ pub fn App() -> impl IntoView {
 /// Pairing links from the launch URL (`?pair=`) and from the OS while running open the host
 /// sheet's pairing form for confirmation (ui-next `offerPairLink`).
 fn pair_links(app: state::AppState) {
-    let offer = move |url: String| {
-        app.ui.pair_link.set(Some(url));
-        app.ui.host_sheet_open.set(true);
-    };
-    if let Some(url) = native::launch().pair {
-        offer(url);
-    }
-    native::on_open_url(move |url| {
-        if frogg_client_core::pairing::is_pair_url(&url) {
-            offer(url);
+    // A pairing link offers the host; a share link (Android share sheet) starts a session.
+    let route = move |url: String| {
+        if let Some(text) = native::share_text(&url) {
+            app.ui.set_new_session(true, Some(text));
+        } else if frogg_client_core::pairing::is_pair_url(&url) {
+            app.ui.pair_link.set(Some(url));
+            app.ui.host_sheet_open.set(true);
         }
-    });
+    };
+    // The launch link rides in the `?pair=` query, whatever kind it is.
+    if let Some(url) = native::launch().pair {
+        if native::share_text(&url).is_some() {
+            route(url);
+        } else {
+            app.ui.pair_link.set(Some(url));
+            app.ui.host_sheet_open.set(true);
+        }
+    }
+    native::on_open_url(route);
 }
 
 /// The active host dropping or coming back raises a toast (ui-next `HostToasts.tsx`, reduced).

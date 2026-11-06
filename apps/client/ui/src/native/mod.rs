@@ -480,6 +480,45 @@ pub fn listen(event: &'static str, callback: impl Fn(serde_json::Value) + 'stati
 
 /// Calls `callback` with each `frogg-next-rs://` link the OS hands the running app, starting
 /// with one still pending from before the UI loaded. The launch link is in [`launch`]`().pair`.
+/// The text of a `frogg-next-rs://share?text=…` link: the Android shell turns a share
+/// (ACTION_SEND) from another app into one. None for any other link.
+pub fn share_text(url: &str) -> Option<String> {
+    let rest = url
+        .strip_prefix("frogg-next-rs://share")
+        .or_else(|| url.strip_prefix("frogg-next-rs:share"))?;
+    let query = rest.strip_prefix('/').unwrap_or(rest).strip_prefix('?')?;
+    query
+        .split('&')
+        .find_map(|kv| kv.strip_prefix("text="))
+        .map(percent_decode)
+        .filter(|t| !t.trim().is_empty())
+}
+
+fn percent_decode(s: &str) -> String {
+    let bytes = s.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        match bytes[i] {
+            b'%' if i + 2 < bytes.len() => {
+                let hex = std::str::from_utf8(&bytes[i + 1..i + 3]).ok();
+                match hex.and_then(|h| u8::from_str_radix(h, 16).ok()) {
+                    Some(b) => {
+                        out.push(b);
+                        i += 3;
+                        continue;
+                    }
+                    None => out.push(b'%'),
+                }
+            }
+            b'+' => out.push(b' '),
+            b => out.push(b),
+        }
+        i += 1;
+    }
+    String::from_utf8_lossy(&out).into_owned()
+}
+
 pub fn on_open_url(callback: impl Fn(String) + 'static) {
     if !is_tauri() {
         return;
@@ -528,4 +567,27 @@ pub async fn update_check() -> UpdateState {
 /// Installs the update the last check found and restarts (desktop only).
 pub async fn update_install() -> Result<(), String> {
     invoke("update_install", ()).await
+}
+
+#[cfg(test)]
+mod share_tests {
+    use super::share_text;
+
+    #[test]
+    fn reads_share_links() {
+        assert_eq!(
+            share_text("frogg-next-rs://share?text=fix%20the%20bug%E2%9C%93+now").as_deref(),
+            Some("fix the bug\u{2713} now")
+        );
+        assert_eq!(
+            share_text("frogg-next-rs://share/?a=1&text=hi").as_deref(),
+            Some("hi")
+        );
+        assert_eq!(share_text("frogg-next-rs://share?text=").as_deref(), None);
+        assert_eq!(share_text("frogg-next-rs://pair?x=1"), None);
+        assert_eq!(
+            share_text("frogg-next-rs://share?text=100%").as_deref(),
+            Some("100%")
+        );
+    }
 }
