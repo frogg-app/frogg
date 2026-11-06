@@ -737,7 +737,25 @@
   align-items: center;
   gap: 8px;
   margin-top: 6px;
-  flex-wrap: wrap;
+}
+.composer-bar > * {
+  flex-shrink: 0;
+}
+/* Model and mode chips give way (ellipsis) so Send never wraps onto its own line. */
+.composer-bar > .composer-ctl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.composer-ctl > .select-wrap {
+  min-width: 0;
+  flex: 0 1 auto;
+}
+.composer-ctl .select.chip {
+  max-width: 100%;
+  min-width: 0;
 }
 .composer-bar .icon-btn {
   color: var(--muted);
