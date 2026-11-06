@@ -333,6 +333,12 @@
   align-self: flex-start;
 }
 
+/* Companion: the compact composer */
+.pn-companion-composer .composer {
+  flex: 1;
+  min-width: 0;
+}
+
 /* Terminals: cancellable drop uploads */
 .pn-upload {
   display: flex;
