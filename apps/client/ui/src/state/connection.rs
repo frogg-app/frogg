@@ -315,6 +315,7 @@ impl Connections {
     }
 
     /// Link state of a host (reactive).
+    #[track_caller]
     pub fn link(&self, host_id: &str) -> Link {
         self.links
             .with(|l| l.get(host_id).cloned())
@@ -325,9 +326,27 @@ impl Connections {
     }
 
     /// Link state of the active host (reactive).
+    #[track_caller]
     pub fn active_link(&self) -> Link {
         match self.hosts.active_id.get() {
             Some(id) => self.link(&id),
+            None => Link {
+                conn: Conn::Offline,
+                ..Link::default()
+            },
+        }
+    }
+
+    /// [`Self::active_link`] for component setup and handlers (no tracking context).
+    pub fn active_link_untracked(&self) -> Link {
+        match self.hosts.active_id.get_untracked() {
+            Some(id) => self
+                .links
+                .with_untracked(|l| l.get(&id).cloned())
+                .unwrap_or_else(|| Link {
+                    conn: Conn::Offline,
+                    ..Link::default()
+                }),
             None => Link {
                 conn: Conn::Offline,
                 ..Link::default()

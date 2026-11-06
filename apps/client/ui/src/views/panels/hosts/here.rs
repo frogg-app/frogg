@@ -118,7 +118,8 @@ pub fn HereNow(owner: bool, role: Option<String>) -> impl IntoView {
 fn DeviceLine(d: Value, owner: bool, done: Callback<()>) -> impl IntoView {
     let current = d.get("current") == Some(&Value::Bool(true));
     let connected = d.get("connected") == Some(&Value::Bool(true));
-    let can_roles = config::feature("deviceRoleManagement") == Some(true) && owner && !current;
+    let can_roles =
+        config::feature_untracked("deviceRoleManagement") == Some(true) && owner && !current;
     let id = StoredValue::new(s(&d, "id"));
     let name = s(&d, "name");
     let role = s(&d, "role");

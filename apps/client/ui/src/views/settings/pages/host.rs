@@ -101,7 +101,7 @@ pub fn HostOverview() -> impl IntoView {
 
 #[component]
 fn WebClient() -> impl IntoView {
-    let supported = config::feature("webUiControl") == Some(true);
+    let supported = config::feature_untracked("webUiControl") == Some(true);
     if !supported {
         return ().into_any();
     }
@@ -219,7 +219,7 @@ fn an(word: &str) -> &'static str {
 
 #[component]
 pub fn DevicesAccess() -> impl IntoView {
-    let supported = config::feature("deviceAccess");
+    let supported = config::feature_untracked("deviceAccess");
     let role = config::caller_role();
     let owner = role.as_deref().map(|r| r == "owner").unwrap_or(true);
     let devices = config::use_rpc(
@@ -416,7 +416,8 @@ fn DeviceRow(device: Value, on_change: Callback<()>) -> impl IntoView {
     let act = Action::new();
     let current = device.get("current") == Some(&Value::Bool(true));
     let owner = config::caller_role().is_none_or(|r| r == "owner");
-    let can_roles = config::feature("deviceRoleManagement") == Some(true) && owner && !current;
+    let can_roles =
+        config::feature_untracked("deviceRoleManagement") == Some(true) && owner && !current;
     let name = RwSignal::new(None::<String>);
     let draft = RwSignal::new(String::new());
     let id = StoredValue::new(s(&device, "id"));
@@ -527,7 +528,7 @@ pub fn Automation() -> impl IntoView {
 pub fn DaemonUpdates() -> impl IntoView {
     let app = crate::state::get();
     let cfg = config::get();
-    let runs = config::feature("daemonUpdateRuns") == Some(true);
+    let runs = config::feature_untracked("daemonUpdateRuns") == Some(true);
     let status = config::use_rpc(
         |c: DaemonClient| async move { ns(&c, "daemon.get_status.request", json!({})).await },
         Signal::derive(|| true),
@@ -766,7 +767,7 @@ fn run_line(run: &Value) -> String {
 /// The version picker lists the repository's GitHub releases that ship this daemon's bundle.
 #[component]
 pub fn HostUpdate(version: Option<String>) -> impl IntoView {
-    let runs = config::feature("daemonUpdateRuns");
+    let runs = config::feature_untracked("daemonUpdateRuns");
     let channel = RwSignal::new(channel_of(version.as_deref()).to_owned());
     let pin = RwSignal::new(String::new());
     let check = RwSignal::new(None::<Value>);

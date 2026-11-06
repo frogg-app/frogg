@@ -77,10 +77,26 @@ pub fn need() -> Result<DaemonClient, String> {
         .ok_or_else(|| "Host offline. Reconnect first.".to_owned())
 }
 
-/// `server_info.features.<name>` on the active host; None while it is not online.
+/// `server_info.features.<name>` on the active host; None while it is not online. Reactive on
+/// the link; use [`feature_untracked`] in component setup and handlers.
+#[track_caller]
 pub fn feature(name: &str) -> Option<bool> {
     let app = super::get();
     if app.conn.active_link().conn != Conn::Online {
+        return None;
+    }
+    Some(
+        app.conn
+            .client()
+            .map(|c| c.has_feature(name))
+            .unwrap_or(false),
+    )
+}
+
+/// [`feature`] read once, outside a tracking context (component setup, handlers).
+pub fn feature_untracked(name: &str) -> Option<bool> {
+    let app = super::get();
+    if app.conn.active_link_untracked().conn != Conn::Online {
         return None;
     }
     Some(

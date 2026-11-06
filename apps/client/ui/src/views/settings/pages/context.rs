@@ -174,7 +174,7 @@ fn Override(provider: String) -> impl IntoView {
 #[component]
 fn AddOverride(taken: Vec<String>) -> impl IntoView {
     let cfg = config::get();
-    let options: Vec<SelectOption> = provider_entries()
+    let options: Vec<SelectOption> = untrack(provider_entries)
         .iter()
         .map(|e| s(e, "provider"))
         .filter(|p| !taken.contains(p))
