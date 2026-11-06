@@ -128,6 +128,20 @@ fn query_endpoint() -> Option<String> {
         })
 }
 
+/// The daemon address the page already knows: `?daemon=`, else the active direct host's
+/// endpoint. Prefills forms that need a host address (pair by code).
+pub fn known_endpoint() -> Option<String> {
+    query_endpoint().or_else(|| {
+        crate::state::get()
+            .hosts
+            .active_id
+            .get_untracked()
+            .and_then(|id| crate::state::get().hosts.find_untracked(&id))
+            .filter(|h| !h.is_relay())
+            .map(|h| h.endpoint)
+    })
+}
+
 /// True when `GET /api/health` on the page's origin answers JSON, i.e. a daemon served the page.
 #[cfg(target_arch = "wasm32")]
 async fn origin_is_daemon() -> bool {
