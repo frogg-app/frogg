@@ -925,7 +925,20 @@ pub fn FileViewer(
         let k = key.get();
         drafts().with(|d| d.get(&k).map(|x| x.text.clone()))
     });
-    let dirty = Signal::derive(move || draft.with(Option::is_some));
+    // A draft counts only while it differs from the file on disk (typing back to the original,
+    // or a reload that caught up with the draft, leaves nothing to revert or save).
+    let dirty = Signal::derive(move || {
+        draft.with(|d| {
+            d.as_ref().is_some_and(|t| {
+                doc.with(|r| {
+                    r.as_ref()
+                        .and_then(|r| r.as_ref().ok())
+                        .and_then(|d| d.text.as_deref())
+                        != Some(t.as_str())
+                })
+            })
+        })
+    });
     // Editing a preview keeps it.
     Effect::new(move |_| {
         if dirty.get() || mode.get() == "edit" {
@@ -1076,7 +1089,7 @@ pub fn FileViewer(
                     />
                 })}
                 {move || dirty.get().then(|| view! {
-                    <Button label="Revert" disabled=saving on_press=Callback::new(move |_| discard()) />
+                    <Button label="Revert" disabled=Signal::derive(move || !dirty.get() || saving.get()) on_press=Callback::new(move |_| discard()) />
                 })}
                 {move || (mode.get() == "edit").then(|| view! {
                     <Button
