@@ -319,3 +319,11 @@
   font-size: 11px;
   color: var(--faint);
 }
+
+/* ----- phone keyboard frame (ui-next shell/KeyboardFrame.tsx): --kb is the overlap ----- */
+.kb-up .root.phone {
+  padding-bottom: var(--kb, 0px);
+}
+.kb-up .layer {
+  bottom: var(--kb, 0px);
+}

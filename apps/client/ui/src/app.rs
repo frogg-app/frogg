@@ -17,6 +17,7 @@ pub fn App() -> impl IntoView {
     let app = state::init();
     keys::install();
     crate::shell::back::install();
+    crate::shell::keyboard::install();
     app.conn.start();
     crate::shell::toast::host_toasts(app);
     pair_links(app);

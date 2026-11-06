@@ -5,6 +5,7 @@ pub mod back;
 pub mod crash;
 pub mod home;
 pub mod host_sheet;
+pub mod keyboard;
 pub mod keys;
 pub mod layout;
 pub mod modal_stack;
