@@ -119,19 +119,19 @@ additive edits only. Sizes are S/M/L.
 **7d sessions-shell** — owns `ui/src/views/sessions/**`, `ui/src/views/new_session/**`,
 `ui/src/shell/**`, `ui/src/state/{sessions,projects,ui}.rs`
 
-- M: merged terminals in the sessions list (`sessions/merged.tsx`); S: fall back to Sessions
-  when the current tool stops being offered.
+- M: merged terminals in the sessions list (`sessions/merged.tsx`); S (done): fall back to
+  Sessions when the current tool stops being offered.
 - M: projects dialog and device-local projects — `sessions/ProjectsDialog.tsx`,
   `localProjects.ts`.
 - M: sub-work chips on session rows and in the status summary.
 - M: launch fields: provider feature toggles, project defaults ("Save for project"), account
   flag merge — `sessions/LaunchFields.tsx`, `launch.ts`.
-- S: New session name label by session type, not layout; host feature gating hints.
+- S (done): New session name label by session type, not layout; host feature gating hints.
 - M: modal stack: one Escape closes the top layer only; back guard counts sheets/popovers;
   hardware back on every layout — `shell/modalStack.ts`, `useHardwareBack.ts`.
-- S: phone layout must not rebuild the list on selection (`shell/layout.rs` phone branch).
-- S: palette "New terminal" creates one; "Getting started"; sessions by `updatedAt`.
-- S: status-bar host segment opens Hosts; `railBadge` pref honoured.
+- S (done): phone layout must not rebuild the list on selection (`shell/layout.rs` phone branch).
+- S (done): palette "New terminal" creates one; "Getting started"; sessions by `updatedAt`.
+- S (done): status-bar host segment opens Hosts; `railBadge` pref honoured.
 - M: home composer reuses the full composer.
 - M: phone keyboard frame and tab hiding while the keyboard is up.
 - M: error boundary screen; M: popout single-session window.
