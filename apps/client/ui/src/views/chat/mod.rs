@@ -131,6 +131,10 @@ pub fn Chat(
         let h = host.clone();
         Memo::new(move |_| app.agents.get(&h, &id.get_value()))
     };
+    tool::provide_image_root(
+        host.clone(),
+        Signal::derive(move || session.with(|s| s.as_ref().map(|s| s.agent.cwd.clone()))),
+    );
     let online = Memo::new(move |_| app.conn.active_link().conn == Conn::Online);
     let provider = Memo::new(move |_| {
         session

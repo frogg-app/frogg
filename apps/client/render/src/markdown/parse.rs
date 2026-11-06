@@ -528,3 +528,58 @@ pub fn resolve_image(src: &str, cwd: Option<&str>) -> Option<ImageSource> {
         path: p.strip_prefix("./").unwrap_or(&p).into(),
     })
 }
+
+// ---- table column widths (ui-next `MdTable.tsx`) ---------------------------------------------
+
+const MIN_COL: f64 = 56.0;
+const MAX_COL: f64 = 300.0;
+const CHAR_PX: f64 = 7.4;
+const CELL_PAD: f64 = 24.0;
+
+/// Column widths in px from each column's longest cell, so wrapped rows still line up across
+/// columns. The table grows them proportionally to fill the reply and scrolls when wider.
+pub fn column_widths(head: &[Vec<Inline>], rows: &[Vec<Vec<Inline>>]) -> Vec<u32> {
+    let ncols = rows.iter().map(Vec::len).fold(head.len(), usize::max);
+    let len = |cell: Option<&Vec<Inline>>| cell.map_or(0, |i| plain_text(i).chars().count());
+    (0..ncols)
+        .map(|c| {
+            let longest = rows
+                .iter()
+                .map(|r| len(r.get(c)))
+                .fold(len(head.get(c)), usize::max);
+            (longest as f64 * CHAR_PX + CELL_PAD)
+                .clamp(MIN_COL, MAX_COL)
+                .round() as u32
+        })
+        .collect()
+}
+
+// ---- data URLs ---------------------------------------------------------------------------------
+
+const B64: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+/// Standard padded base64.
+pub fn base64(bytes: &[u8]) -> String {
+    let mut out = String::with_capacity(bytes.len().div_ceil(3) * 4);
+    for chunk in bytes.chunks(3) {
+        let b = [
+            chunk[0],
+            chunk.get(1).copied().unwrap_or(0),
+            chunk.get(2).copied().unwrap_or(0),
+        ];
+        let n = (u32::from(b[0]) << 16) | (u32::from(b[1]) << 8) | u32::from(b[2]);
+        for i in 0..4 {
+            if i <= chunk.len() {
+                out.push(B64[((n >> (18 - 6 * i)) & 63) as usize] as char);
+            } else {
+                out.push('=');
+            }
+        }
+    }
+    out
+}
+
+/// A `data:` URL for an image's bytes.
+pub fn data_url(mime: &str, bytes: &[u8]) -> String {
+    format!("data:{mime};base64,{}", base64(bytes))
+}

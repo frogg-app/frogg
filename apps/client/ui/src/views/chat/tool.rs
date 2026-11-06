@@ -2,6 +2,7 @@
 //! its pane (command output, the file read, the edit's diff, search hits, a fetched page, a plan,
 //! a subagent's log). Running calls carry a beam; a live settle draws the tick and sweeps once.
 
+use frogg_render::markdown::{HostImage, ImageRoot, MAX_IMAGE_BYTES};
 use frogg_render::{diff_texts, parse_unified, Code, DiffView, Markdown};
 use leptos::prelude::*;
 use serde_json::Value;
@@ -147,6 +148,38 @@ pub fn summary(name: &str, d: &Value) -> Summary {
     }
 }
 
+/// Makes host files in markdown and image tool rows load through `host`'s daemon, relative paths
+/// from the session's `cwd` (ui-next `ImageRoot`). Call once in the chat pane.
+pub fn provide_image_root(host: String, cwd: Signal<Option<String>>) {
+    let scope = host.clone();
+    ImageRoot::provide(
+        cwd,
+        Signal::derive(move || scope.clone()),
+        move |cwd, path| {
+            let c = crate::state::get().conn.client_of(&host);
+            Box::pin(async move {
+                let c = c.ok_or_else(|| "Not connected".to_owned())?;
+                let r = c
+                    .read_file(&cwd, &path, Some(MAX_IMAGE_BYTES as u64))
+                    .await
+                    .map_err(|e| e.to_string())?;
+                if r.size > MAX_IMAGE_BYTES as u64 {
+                    return Err("Image too large to preview".into());
+                }
+                Ok((r.mime, r.bytes))
+            })
+        },
+    );
+}
+
+/// A picture the agent looked at shows as the picture, not its bytes.
+fn is_image_file(path: &str) -> bool {
+    let lower = path.to_ascii_lowercase();
+    [".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg"]
+        .iter()
+        .any(|e| lower.ends_with(e))
+}
+
 fn pre(text: &str) -> AnyView {
     let text = if text.len() > PRE_MAX_CHARS {
         let mut cut = PRE_MAX_CHARS;
@@ -187,6 +220,10 @@ pub fn body(d: &Value) -> AnyView {
             .into_any(),
             None => ().into_any(),
         },
+        "read" if is_image_file(path) => {
+            let src = path.to_owned();
+            view! { <div class="tool-pad tool-img"><HostImage src=src alt="" /></div> }.into_any()
+        }
         "read" | "write" => s(d, "content")
             .map(|c| code(c, path))
             .unwrap_or_else(|| ().into_any()),
