@@ -189,5 +189,5 @@ measure, tool settle) read through `try_*` so a late read after disposal is a no
 - **Done:** M: OS notifications on finish/permission honouring delivery, sound and quiet-hours prefs.
 - **Done:** M: accounts move between hosts; usage & limits page controls; app usage-stats opt-in; bug
   report attach/save. S: session order setting; device role select.
-- **Partly done:** L: design options live preview (button, logo, toast previews; shape, state, sub-work and reveal previews still missing).
+- **Done:** L: design options live preview (button, logo, toast, shape, state card, sub-work, text and heading reveal; `settings/pages/design_previews.rs`).
 - **Done:** M: app updates download mode with progress and periodic checks. [done: `src-tauri/src/{apk,android_updates}.rs`, `UpdaterPlugin.kt`; mode "apk", sha256 from the asset digest or SHA256SUMS] L: Android APK updater.

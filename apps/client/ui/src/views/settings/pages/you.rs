@@ -540,6 +540,11 @@ fn design_preview(key: &str) -> Option<AnyView> {
             }
             .into_any(),
         ),
+        "shapeLang" => Some(view! { <super::design_previews::ShapePreview /> }.into_any()),
+        "stateStyle" => Some(view! { <super::design_previews::StateCards /> }.into_any()),
+        "subworkStyle" => Some(view! { <super::design_previews::SubWorkPreview /> }.into_any()),
+        "textReveal" => Some(view! { <super::design_previews::StreamPreview /> }.into_any()),
+        "headingReveal" => Some(view! { <super::design_previews::HeadingPreview /> }.into_any()),
         _ => None,
     }
 }
@@ -637,7 +642,7 @@ const DESIGN: &[(&str, &str, Opts)] = &[
     ),
 ];
 
-/// Prototype picks kept on this device (ui-next `DesignOptions.tsx`, without the live previews).
+/// Prototype picks kept on this device, each with its live preview (ui-next `DesignOptions.tsx`).
 #[component]
 pub fn DesignOptions() -> impl IntoView {
     let prefs = crate::state::get().prefs;

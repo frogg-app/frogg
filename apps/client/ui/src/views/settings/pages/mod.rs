@@ -4,6 +4,7 @@ pub mod agents;
 pub mod app;
 pub mod ci;
 pub mod context;
+pub mod design_previews;
 pub mod developer;
 pub mod host;
 pub mod labels;

@@ -542,6 +542,31 @@ pub fn SessionState(
     move || card.get().map(|c| frame(c, app.prefs.text("stateStyle")))
 }
 
+/// The real state card around fixed sample copy (Settings → Design options preview);
+/// `failed` picks the failure sample, else "ready to review". Remount to replay its entry.
+#[component]
+pub fn StatePreview(#[prop(optional)] failed: bool) -> impl IntoView {
+    let prefs = crate::state::get().prefs;
+    let card = if failed {
+        Card {
+            kind: Kind::Failed,
+            title: "Session failed".into(),
+            detail: "Error: provider exited with code 1".into(),
+            mono: true,
+            action: None,
+        }
+    } else {
+        Card {
+            kind: Kind::Review,
+            title: "Ready to review".into(),
+            detail: "Review the changes or send a follow-up below.".into(),
+            mono: false,
+            action: None,
+        }
+    };
+    move || frame(card.clone(), prefs.text("stateStyle"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

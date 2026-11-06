@@ -10,10 +10,10 @@ mod lightbox;
 mod notices;
 mod permission;
 mod relay;
-mod reveal;
+pub(crate) mod reveal;
 pub mod session_menu;
 pub mod session_state;
-mod subwork;
+pub(crate) mod subwork;
 mod tool;
 
 use frogg_client_core::DaemonClient;
