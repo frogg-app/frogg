@@ -29,6 +29,8 @@ pub fn App() -> impl IntoView {
         <flows::signin::SignInDialog />
         <flows::onboarding::Onboarding />
         <ToastHost />
+        // One image viewer per window (chat panes share it).
+        <crate::views::chat::Lightbox />
     }
 }
 

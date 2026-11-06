@@ -2,11 +2,17 @@
 //! (windowed, bottom-anchored, with load-earlier), pending permissions, the live activity line
 //! and the composer.
 
+// Placed by the composer (slice 7b); unused until then.
+#[allow(dead_code)]
+mod chips;
 mod composer;
 mod item;
 mod lightbox;
+mod notices;
 mod permission;
 mod relay;
+pub mod session_menu;
+pub mod session_state;
 mod subwork;
 mod tool;
 
@@ -21,7 +27,12 @@ use crate::state::timeline::{self, Entry};
 use crate::state::{bucket_of, Bucket, Conn};
 
 pub use composer::Composer;
+// For the composer's agent controls (slice 7b places them).
+#[allow(unused_imports)]
+pub use chips::{AccountChip, ProviderChip};
 pub use item::TimelineItem;
+pub use lightbox::Lightbox;
+pub use notices::{ComposerNotices, Viewers};
 pub use permission::PermissionCard;
 
 /// Rows rendered at first; "Show earlier" widens the window before asking the host for more.
@@ -29,6 +40,8 @@ const WINDOW: usize = 120;
 const WINDOW_STEP: usize = 100;
 /// Within this distance of the bottom the view follows new content.
 const PIN_PX: i32 = 48;
+/// Within this many px of the end a resize keeps the view at the end.
+const SLACK_PX: i32 = 24;
 
 const PARENT_LABEL: &str = "frogg.parent-agent-id";
 
@@ -148,6 +161,9 @@ pub fn Chat(
         let host = host.clone();
         Effect::new(move |_| {
             let on = online.get();
+            // A host switch or a new route swaps the client: listen on the new one.
+            app.hosts.active_id.track();
+            let _ = app.conn.active_link().server_id;
             drop_listeners();
             if !on {
                 return;
@@ -226,6 +242,46 @@ pub fn Chat(
             });
         });
     }
+    // Content that grows after layout (images loading, clamps opening) and a viewport that
+    // shrinks (composer growing, keyboard up) keep the distance from the end; within SLACK of
+    // the end the view stays pinned (ui-next `useBottomAnchor`).
+    {
+        use wasm_bindgen::closure::Closure;
+        use wasm_bindgen::JsCast;
+        let last = StoredValue::new((0i32, 0i32));
+        let observer =
+            StoredValue::new_local(None::<(web_sys::ResizeObserver, Closure<dyn FnMut()>)>);
+        Effect::new(move |_| {
+            let Some(el) = scroller.get() else { return };
+            let body = el.first_element_child();
+            let el2 = el.clone();
+            let cb = Closure::<dyn FnMut()>::new(move || {
+                let (h, content) = (el2.client_height(), el2.scroll_height());
+                let (ph, pc) = last.get_value();
+                if ph != 0 && (h != ph || content != pc) {
+                    let gap = (pc - ph - el2.scroll_top()).max(0);
+                    if gap <= SLACK_PX || pinned.get_value() {
+                        el2.set_scroll_top(content);
+                    } else if h != ph {
+                        el2.set_scroll_top((content - h - gap).max(0));
+                    }
+                }
+                last.set_value((el2.client_height(), el2.scroll_height()));
+            });
+            if let Ok(ro) = web_sys::ResizeObserver::new(cb.as_ref().unchecked_ref()) {
+                ro.observe(&el);
+                if let Some(b) = body {
+                    ro.observe(&b);
+                }
+                observer.set_value(Some((ro, cb)));
+            }
+        });
+        on_cleanup(move || {
+            if let Some((ro, _)) = observer.try_update_value(Option::take).flatten() {
+                ro.disconnect();
+            }
+        });
+    }
     let show_earlier = {
         let tl = tl.clone();
         move || {
@@ -282,26 +338,16 @@ pub fn Chat(
             }
         })
     };
-    let last_error = move || {
-        session.get().and_then(|s| {
-            (s.agent.status == "error")
-                .then(|| {
-                    s.agent
-                        .raw
-                        .get("lastError")
-                        .and_then(Value::as_str)
-                        .map(str::to_owned)
-                })
-                .flatten()
-        })
+    let loaded_for_state = tl.loaded.clone();
+    let all_rows = {
+        let rows = tl.rows.clone();
+        Signal::derive(move || rows.with(|r| r.iter().map(|x| x.entry.get()).collect::<Vec<_>>()))
     };
-
     let phone = app.viewport.form_factor.get_untracked() == crate::theme::layout::FormFactor::Phone;
     let host_for_detail = host.clone();
     view! {
         <div class="chat" class:phone=phone>
-            <lightbox::Lightbox />
-            <ChatHead session=session on_back=on_back />
+            <ChatHead session=session on_back=on_back rows=all_rows />
             {move || match work.detail.get() {
                 Some(sub) => view! {
                     <subwork::SubWorkDetail
@@ -344,35 +390,32 @@ pub fn Chat(
                                 view! { <TimelineItem entry=r.entry provider=provider streaming=streaming /> }
                             }
                         />
-                        {move || {
-                            let mode = session.get().and_then(|s| {
-                                let cur = s.agent.raw.get("currentModeId")?.as_str()?.to_owned();
-                                s.agent.raw.get("availableModes")?.as_array()?.iter()
-                                    .find(|m| m.get("id").and_then(Value::as_str) == Some(cur.as_str()))?
-                                    .get("label")?.as_str().map(str::to_owned)
-                            });
-                            perms
-                                .get()
-                                .into_iter()
-                                .map(|p| {
-                                    let mode = mode.clone();
-                                    match mode {
-                                        Some(m) => view! { <PermissionCard agent_id=id.get_value() p=p mode=m /> }.into_any(),
-                                        None => view! { <PermissionCard agent_id=id.get_value() p=p /> }.into_any(),
-                                    }
-                                })
-                                .collect_view()
-                        }}
-                        {move || last_error().map(|e| view! {
-                            <div class="tl-state cut cut-stroke" style="--c:8px">
-                                <StatusGlyph bucket=Bucket::Failed size=7.0 />
-                                <span>{e}</span>
-                            </div>
-                        })}
+                        // Keyed on the request id, so a live agent update keeps a half-typed reply.
+                        <For
+                            each=move || perms.get()
+                            key=|p| p.get("id").and_then(Value::as_str).unwrap_or_default().to_owned()
+                            children=move |p| {
+                                let mode = session.get_untracked().and_then(|s| {
+                                    let cur = s.agent.raw.get("currentModeId")?.as_str()?.to_owned();
+                                    s.agent.raw.get("availableModes")?.as_array()?.iter()
+                                        .find(|m| m.get("id").and_then(Value::as_str) == Some(cur.as_str()))?
+                                        .get("label")?.as_str().map(str::to_owned)
+                                });
+                                match mode {
+                                    Some(m) => view! { <PermissionCard agent_id=id.get_value() p=p mode=m /> }.into_any(),
+                                    None => view! { <PermissionCard agent_id=id.get_value() p=p /> }.into_any(),
+                                }
+                            }
+                        />
                         {thinking}
+                        <Show when=move || !running.get() && loaded_for_state.get()>
+                            <session_state::SessionState session=session online=online rows=all_rows work=work />
+                        </Show>
                     </div>
                 </div>
                 <div class="chat-composer">
+                    <Viewers agent_id=agent_id.clone() online=online />
+                    <ComposerNotices session=session />
                     <Composer
                         agent_id=agent_id.clone()
                         session=session
@@ -390,7 +433,23 @@ pub fn Chat(
 fn ChatHead(
     session: Memo<Option<crate::state::Session>>,
     on_back: Option<Callback<()>>,
+    rows: Signal<Vec<Entry>>,
 ) -> impl IntoView {
+    // The whole first prompt line when the title is the daemon's cut-off prefix of it.
+    let first_prompt = Memo::new(move |_| {
+        rows.with(|r| {
+            r.iter()
+                .find(|e| e.kind() == "user_message")
+                .map(|e| e.text().to_owned())
+        })
+    });
+    let header = Memo::new(move |_| {
+        let title = session
+            .get()
+            .map(|s| s.agent.title_or_untitled())
+            .unwrap_or_else(|| "Session".into());
+        session_state::header_title(&title, first_prompt.get().as_deref())
+    });
     let app = crate::state::get();
     let crumb = move || {
         session.get().map(|s| {
@@ -443,9 +502,13 @@ fn ChatHead(
                         <Icon ico=Ico::ArrowLeft size=18.0 />
                     </button>
                 })}
-                <span class="t-display chat-title">
-                    {move || session.get().map(|s| s.agent.title_or_untitled()).unwrap_or_else(|| "Session".into())}
-                </span>
+                {move || {
+                    // Rebuilt only when the text changes, so the reveal plays once per title.
+                    let full = header.get();
+                    let tip = full.clone();
+                    view! { <span class="t-display chat-title chat-title-reveal" title=tip>{full}</span> }
+                }}
+                <session_menu::SessionMenu session=session rows=rows />
             </div>
             <div class="chat-sub">
                 <StatusGlyph bucket=bucket size=7.0 />
