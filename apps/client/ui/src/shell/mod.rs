@@ -2,13 +2,17 @@
 //! layouts per form factor, navigation chrome and the overlays every screen shares.
 
 pub mod back;
+pub mod crash;
 pub mod home;
 pub mod host_sheet;
+pub mod keyboard;
 pub mod keys;
 pub mod layout;
+pub mod modal_stack;
 pub mod palette;
 pub mod panel_head;
 pub mod phone_tabs;
+pub mod popout;
 pub mod rail;
 pub mod status_bar;
 pub mod title_bar;

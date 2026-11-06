@@ -253,7 +253,9 @@ pub fn ScopeMenu(at: RwSignal<Option<At>>) -> impl IntoView {
                 .hint(format!("{} · {host}", plural(all, "session")))
                 .on(scope == "all"),
         ];
-        for p in d.projects.get() {
+        let daemon: Vec<_> = d.projects.get();
+        let host_id = crate::state::get().hosts.active_id.get();
+        for p in crate::state::projects::local::visible(host_id.as_deref(), &daemon) {
             let n = counts.get(&p.project_id).copied().unwrap_or(0);
             out.push(
                 Entry::item(p.name(), set(p.project_id.clone()))
@@ -273,6 +275,7 @@ pub fn ScopeMenu(at: RwSignal<Option<At>>) -> impl IntoView {
                 .on(scope == "archived"),
             Entry::Sep,
             Entry::item("Add project…", move || l.open(Sheet::AddProject)).icon(Ico::FolderPlus),
+            Entry::item("Manage projects…", move || l.open(Sheet::Projects)).icon(Ico::Folder),
             Entry::item("Import conversations…", move || l.open(Sheet::Import)).icon(Ico::Upload),
         ]);
         out
@@ -308,6 +311,17 @@ pub fn SessionMenu(at: RwSignal<Option<At>>, agent: RwSignal<Option<String>>) ->
             let id = id.clone();
             Entry::item("Rename…", move || l.open(Sheet::Rename(id.clone()))).icon(Ico::Pencil)
         }];
+        // Its own window (desktop shell) or tab (browser); phones have one window.
+        if !app.viewport.phone() {
+            let id = id.clone();
+            let host = host.clone();
+            out.push(
+                Entry::item("Open in new window", move || {
+                    crate::shell::popout::open(&id, Some(&host))
+                })
+                .icon(Ico::AppWindow),
+            );
+        }
         if let Some(w) = ws {
             let id2 = id.clone();
             let pinned = w.pinned_at.is_some();

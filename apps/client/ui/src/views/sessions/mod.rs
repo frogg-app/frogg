@@ -7,6 +7,7 @@ pub mod folder;
 pub mod history;
 pub mod inbox;
 pub mod menus;
+pub mod merged;
 pub mod sheets;
 pub mod summary;
 
@@ -330,6 +331,7 @@ pub fn SessionList() -> impl IntoView {
     let app = crate::state::get();
     let d = projects::get();
     let l = list::get();
+    list::subwork::watch();
     let q = RwSignal::new(String::new());
     let needle = Memo::new(move |_| q.get().trim().to_lowercase());
     let m = Memo::new(move |_| model(&needle.get()));
@@ -419,6 +421,17 @@ pub fn SessionList() -> impl IntoView {
                 view! {
                     <Show when=move || !chats()>
                         <summary::StatusSummary counts=Signal::derive(move || m.with(|m| m.counts.clone())) />
+                        {move || {
+                            let ids: Vec<String> = m.with(|m| m.groups.iter().flat_map(|g| g.list.iter()).filter(|x| x.host.is_none()).map(|x| x.s.agent.id.clone()).collect());
+                            let n = list::subwork::running_in(&ids);
+                            (n > 0).then(|| view! {
+                                <div class="sub-caption m-enter">
+                                    <span class="sub-chip-mark"></span>
+                                    <span class="t-mono sub-caption-n">{n}</span>
+                                    <span class="sub-caption-t">{if n == 1 { "sub-process running" } else { "sub-processes running" }}</span>
+                                </div>
+                            })
+                        }}
                     </Show>
                     <div class="slist-filter cut" style="--c:5px">
                         <input
@@ -476,6 +489,9 @@ pub fn SessionList() -> impl IntoView {
                         />
                         <Show when=move || m.with(|m| m.groups.is_empty())>
                             <span class="slist-none">"Nothing matches."</span>
+                        </Show>
+                        <Show when=move || !chats()>
+                            <merged::MergedTerminals needle=q />
                         </Show>
                     </div>
                 }
@@ -638,6 +654,16 @@ fn Row(
                     }}
                 </span>
                 {move || ws().and_then(|w| w.pinned_at).map(|_| view! { <Icon ico=Ico::Pin size=11.0 class="faint" /> })}
+                {move || {
+                    // Running sub-work (ui-next SubWorkChip): the active host's sessions only.
+                    let n = if elsewhere { 0 } else { list::subwork::running(&id.get_value()) };
+                    (n > 0).then(|| view! {
+                        <span class="t-mono sub-chip" title="Sub-agents running">
+                            <span class="sub-chip-mark"></span>
+                            {n}
+                        </span>
+                    })
+                }}
                 <span class="t-mono srow2-time">{move || ago(&it().s.agent.updated_at)}</span>
             </div>
             <div class="srow2-meta">

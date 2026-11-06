@@ -55,10 +55,11 @@ fn move_selection(down: bool) {
 /// Whether a sheet or popover is up (they portal `.layer` / `.floating-catch` into the body); its
 /// own Escape handler closes it, so bare keys must not also act.
 fn overlay_open() -> bool {
-    web_sys::window()
-        .and_then(|w| w.document())
-        .and_then(|d| d.query_selector(".layer, .floating-catch").ok().flatten())
-        .is_some()
+    super::modal_stack::modal_open()
+        || web_sys::window()
+            .and_then(|w| w.document())
+            .and_then(|d| d.query_selector(".layer, .floating-catch").ok().flatten())
+            .is_some()
 }
 
 /// A / Esc answer the selected session's first pending permission; true when handled. A question

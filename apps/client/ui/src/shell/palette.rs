@@ -145,6 +145,11 @@ pub fn Palette() -> impl IntoView {
         q.set(String::new());
         cursor.set(0);
     };
+    super::modal_stack::use_modal_layer_in(
+        open.into(),
+        Callback::new(move |_| close()),
+        Some(input),
+    );
     let pick = move |i: Option<Item>| {
         if let Some(i) = i {
             close();

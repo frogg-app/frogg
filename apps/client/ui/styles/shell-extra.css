@@ -1,0 +1,347 @@
+/* Sessions shell (wave 7d): crash page, toast history, merged terminals, keyboard frame. */
+
+/* ----- crash page (ui-next shell/ErrorBoundary.tsx) ----- */
+.crash {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  z-index: 1000;
+}
+.crash-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px 24px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.crash-eyebrow {
+  animation: crash-glitch 180ms var(--ease, ease) both;
+}
+.crash-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 600;
+  animation: crash-rise 220ms var(--ease, ease) 40ms both;
+}
+.crash-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px;
+  overflow: auto;
+}
+.crash-mark {
+  width: 18px;
+  height: 16px;
+  background: var(--coral);
+  animation: crash-snap 260ms var(--ease, ease) 60ms both;
+}
+.crash-msg {
+  margin: 0;
+  max-width: 460px;
+  color: var(--muted);
+  text-align: center;
+  line-height: 21px;
+  animation: crash-rise 220ms var(--ease, ease) 120ms both;
+}
+.crash-trace {
+  max-width: 100%;
+  margin: 0;
+  padding: 10px 14px;
+  background: var(--panel);
+  font-size: 11.5px;
+  line-height: 19px;
+  white-space: pre-wrap;
+  animation: crash-slide 240ms var(--ease, ease) 170ms both;
+}
+.crash-acts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  animation: crash-rise 200ms var(--ease, ease) 220ms both;
+}
+@keyframes crash-glitch {
+  0% {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+  30% {
+    opacity: 1;
+    transform: translateX(3px);
+  }
+  45% {
+    opacity: 0.3;
+    transform: translateX(-2px);
+  }
+  60% {
+    opacity: 1;
+    transform: translateX(1px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes crash-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes crash-snap {
+  0% {
+    opacity: 0;
+    transform: scale(1.3);
+    box-shadow: 0 0 0 0 rgba(240, 113, 120, 0.8);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(0.96);
+    box-shadow: 0 0 18px 6px rgba(240, 113, 120, 0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(240, 113, 120, 0);
+  }
+}
+@keyframes crash-slide {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scaleY(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ----- projects dialog (ui-next sessions/ProjectsDialog.tsx) ----- */
+.proj-eyebrow {
+  display: block;
+  margin-bottom: 8px;
+}
+.proj-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 8px;
+  border-bottom: 1px solid var(--line);
+}
+.proj-row.hidden {
+  opacity: 0.55;
+}
+.proj-row .icon-btn {
+  color: var(--faint);
+}
+.proj-row .icon-btn:hover,
+.proj-row .icon-btn.on {
+  color: var(--cyan2);
+}
+.proj-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.proj-name {
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.proj-tag {
+  font-size: 11.5px;
+  color: var(--faint);
+}
+.proj-path {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--faint);
+  direction: rtl;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.proj-none {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.proj-browse {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  margin-bottom: 10px;
+  border: 1px solid var(--line2);
+  background: var(--bg2);
+}
+.proj-browse-list {
+  max-height: 280px;
+  overflow: auto;
+}
+
+/* ----- launch fields (ui-next sessions/LaunchFields.tsx) ----- */
+.ns-save {
+  display: flex;
+  justify-content: flex-end;
+  min-height: 18px;
+}
+.ns-save-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.ns-save-link:hover {
+  color: var(--text);
+}
+.ns-save-link.off {
+  color: var(--faint);
+  cursor: default;
+}
+.ns-save-note {
+  font-size: 12px;
+  color: var(--faint);
+}
+
+/* ----- sub-work chips (ui-next subwork/views.tsx SubWorkChip, Caption.tsx) ----- */
+.sub-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 5px;
+  font-size: 10.5px;
+  color: var(--cyan2);
+  border: 1px solid var(--line2);
+}
+.sub-chip-mark {
+  width: 6px;
+  height: 6px;
+  background: var(--cyan2);
+  transform: rotate(45deg);
+  animation: sub-pulse 1.4s ease-in-out infinite;
+}
+.sub-caption {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px 8px;
+}
+.sub-caption-n {
+  font-size: 11.5px;
+  color: var(--cyan2);
+}
+.sub-caption-t {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+@keyframes sub-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* ----- toast log in the Inbox (ui-next toast/ToastLog.tsx) ----- */
+.toast-log-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px 6px;
+}
+.toast-log-count {
+  font-size: 10.5px;
+  color: var(--faint);
+}
+.toast-log-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: 11.5px;
+  color: var(--faint);
+  cursor: pointer;
+}
+.toast-log-link:hover {
+  color: var(--text);
+}
+.toast-log-more {
+  padding: 10px 16px;
+}
+.toast-log-row {
+  margin: 0 8px;
+  padding: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.toast-log-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.toast-log-ok {
+  width: 7px;
+  height: 7px;
+  background: var(--mint);
+}
+.toast-log-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.toast-log-when {
+  font-size: 10.5px;
+  color: var(--faint);
+}
+.toast-log-detail {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 3px 0 0 15px;
+  font-size: 11px;
+  color: var(--faint);
+}
+
+/* ----- phone keyboard frame (ui-next shell/KeyboardFrame.tsx): --kb is the overlap ----- */
+.kb-up .root.phone {
+  padding-bottom: var(--kb, 0px);
+}
+.kb-up .layer {
+  bottom: var(--kb, 0px);
+}
+
+/* ----- popped-out session window (ui-next shell/SessionWindow.tsx) ----- */
+.popout-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.popout-hint {
+  font-size: 12.5px;
+  color: var(--faint);
+}
+.ns-gate-hint {
+  font-size: 12px;
+  color: var(--faint);
+}

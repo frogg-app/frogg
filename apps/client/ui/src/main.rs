@@ -14,6 +14,6 @@ mod theme;
 mod views;
 
 fn main() {
-    console_error_panic_hook::set_once();
+    shell::crash::install();
     leptos::mount::mount_to_body(app::App);
 }

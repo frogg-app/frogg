@@ -177,7 +177,8 @@ pub fn Shell() -> impl IntoView {
                     <Show when=move || pushed.get()>
                         <div class="fill">{detail}</div>
                     </Show>
-                    <Show when=move || !pushed.get()>
+                    // Tabs step aside while the keyboard is up (ui-next useKeyboardVisible).
+                    <Show when=move || !pushed.get() && !super::keyboard::keyboard_up()>
                         <PhoneTabs />
                     </Show>
                 </div>
