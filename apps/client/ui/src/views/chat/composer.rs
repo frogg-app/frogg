@@ -250,9 +250,51 @@ pub(super) async fn send(agent_id: &str, text: &str, atts: &[Att]) -> Result<(),
 }
 
 #[derive(Clone, Debug, PartialEq)]
-struct Command {
-    name: String,
-    description: String,
+pub struct Command {
+    pub name: String,
+    pub description: String,
+    pub argument_hint: Option<String>,
+    pub skill: bool,
+}
+
+impl Command {
+    fn from_value(c: &Value) -> Option<Self> {
+        let s = |k: &str| c.get(k).and_then(Value::as_str);
+        Some(Command {
+            name: s("name")?.to_owned(),
+            description: s("description").unwrap_or("").to_owned(),
+            argument_hint: s("argumentHint")
+                .filter(|h| !h.is_empty())
+                .map(str::to_owned),
+            skill: s("kind") == Some("skill"),
+        })
+    }
+}
+
+/// Prefix matches first, then name or description matches; commands before skills; at most 40.
+pub fn match_commands(all: &[Command], q: &str) -> Vec<Command> {
+    let q = q.to_lowercase();
+    let mut scored: Vec<(u8, u8, &Command)> = all
+        .iter()
+        .filter_map(|c| {
+            let n = c.name.to_lowercase();
+            let rank = if n.starts_with(&q) {
+                0
+            } else if n.contains(&q) || c.description.to_lowercase().contains(&q) {
+                1
+            } else {
+                return None;
+            };
+            Some((u8::from(c.skill), rank, c))
+        })
+        .collect();
+    // Stable: equal keys keep the host's order.
+    scored.sort_by_key(|(k, r, _)| (*k, *r));
+    scored
+        .into_iter()
+        .take(40)
+        .map(|(_, _, c)| c.clone())
+        .collect()
 }
 
 #[component]
@@ -286,6 +328,7 @@ pub fn Composer(
     let sending = RwSignal::new(false);
     let drop_over = RwSignal::new(false);
     let commands = RwSignal::new(None::<Vec<Command>>);
+    let command_error = RwSignal::new(false);
     let hi = RwSignal::new(0usize);
     let slash_closed = RwSignal::new(false);
     let input = NodeRef::<leptos::html::Textarea>::new();
@@ -346,36 +389,33 @@ pub fn Composer(
         let q = t.strip_prefix('/')?;
         (!q.contains(char::is_whitespace) && !slash_closed.get()).then(|| q.to_owned())
     });
+    let requested = StoredValue::new(false);
     Effect::new(move |_| {
-        if slash_query.get().is_none() || commands.with_untracked(Option::is_some) {
+        if slash_query.get().is_none() || requested.get_value() {
             return;
         }
-        commands.set(Some(Vec::new()));
         let Some(c) = crate::state::get().conn.client() else {
             return;
         };
+        requested.set_value(true);
         let agent = id.get_value();
         spawn_local(async move {
-            let list = c
+            let res = c
                 .list_commands(&agent, None)
                 .await
-                .ok()
-                .and_then(|r| serde_json::to_value(r).ok())
-                .and_then(|v| v.get("commands").cloned())
-                .and_then(|v| v.as_array().cloned())
-                .unwrap_or_default()
-                .into_iter()
-                .filter_map(|c| {
-                    Some(Command {
-                        name: c.get("name")?.as_str()?.to_owned(),
-                        description: c
-                            .get("description")
-                            .and_then(Value::as_str)
-                            .unwrap_or("")
-                            .to_owned(),
-                    })
-                })
-                .collect();
+                .map_err(|e| e.to_string())
+                .and_then(|r| serde_json::to_value(r).map_err(|e| e.to_string()));
+            let list = match res {
+                Ok(v) if v.get("error").is_none_or(Value::is_null) => v
+                    .get("commands")
+                    .and_then(Value::as_array)
+                    .map(|a| a.iter().filter_map(Command::from_value).collect())
+                    .unwrap_or_default(),
+                _ => {
+                    command_error.set(true);
+                    Vec::new()
+                }
+            };
             commands.set(Some(list));
         });
     });
@@ -383,16 +423,11 @@ pub fn Composer(
         let Some(q) = slash_query.get() else {
             return Vec::new();
         };
-        let q = q.to_lowercase();
-        let mut m: Vec<Command> = commands
-            .get()
-            .unwrap_or_default()
-            .into_iter()
-            .filter(|c| c.name.to_lowercase().contains(&q))
-            .collect();
-        m.sort_by_key(|c| !c.name.to_lowercase().starts_with(&q));
-        m.truncate(40);
-        m
+        commands.with(|c| {
+            c.as_deref()
+                .map(|c| match_commands(c, &q))
+                .unwrap_or_default()
+        })
     });
     let pick = move |c: Command| {
         text.set(format!("/{} ", c.name));
@@ -524,30 +559,47 @@ pub fn Composer(
                 <div class="slash floating up m-pop-up">
                     {move || {
                         let m = matches.get();
-                        if commands.with(|c| c.as_ref().is_some_and(Vec::is_empty)) && m.is_empty() {
-                            return view! { <div class="slash-empty t-label">"no commands"</div> }.into_any();
+                        if commands.with(Option::is_none) {
+                            return view! { <div class="slash-empty t-label">"loading commands…"</div> }.into_any();
                         }
-                        let h = hi.get().min(m.len().saturating_sub(1));
-                        m.into_iter()
-                            .enumerate()
-                            .map(|(i, c)| {
-                                let cc = c.clone();
-                                view! {
-                                    <button
-                                        class="opt slash-opt"
-                                        class:on=i == h
-                                        on:mousedown=move |ev| {
-                                            ev.prevent_default();
-                                            pick(cc.clone());
-                                        }
-                                    >
-                                        <span class="slash-name t-mono">"/"{c.name}</span>
-                                        <span class="slash-desc">{c.description}</span>
-                                    </button>
-                                }
-                            })
-                            .collect_view()
-                            .into_any()
+                        if m.is_empty() {
+                            let note = if command_error.get() {
+                                "Commands unavailable; you can still type a command"
+                            } else {
+                                "No matching commands"
+                            };
+                            return view! { <div class="slash-empty t-label">{note}</div> }.into_any();
+                        }
+                        // Commands, then Skills; `match_commands` already orders them so.
+                        let h = hi.get().min(m.len() - 1);
+                        let mut out = Vec::new();
+                        let mut group = None;
+                        for (i, c) in m.into_iter().enumerate() {
+                            if group != Some(c.skill) {
+                                group = Some(c.skill);
+                                let title = if c.skill { "Skills" } else { "Commands" };
+                                out.push(view! { <div class="slash-head t-label">{title}</div> }.into_any());
+                            }
+                            let cc = c.clone();
+                            out.push(view! {
+                                <button
+                                    class="opt slash-opt"
+                                    class:on=i == h
+                                    role="menuitem"
+                                    on:mousedown=move |ev| {
+                                        ev.prevent_default();
+                                        pick(cc.clone());
+                                    }
+                                >
+                                    <span class="slash-name t-mono">
+                                        "/"{c.name}
+                                        {c.argument_hint.map(|a| view! { <span class="slash-arg">{format!(" {a}")}</span> })}
+                                    </span>
+                                    {(!c.description.is_empty()).then(|| view! { <span class="slash-desc">{c.description}</span> })}
+                                </button>
+                            }.into_any());
+                        }
+                        out.into_any()
                     }}
                 </div>
             </Show>
@@ -955,6 +1007,28 @@ mod tests {
             thinking_id(&json!({"thinkingOptionId":"lo"}), def).as_deref(),
             Some("lo")
         );
+    }
+
+    #[test]
+    fn slash_matches_rank() {
+        let c = |name: &str, desc: &str, skill: bool| Command {
+            name: name.into(),
+            description: desc.into(),
+            argument_hint: None,
+            skill,
+        };
+        let all = vec![
+            c("review-pr", "", true),
+            c("preview", "", false),
+            c("reset", "clear the review", false),
+            c("review", "", false),
+        ];
+        let names: Vec<_> = match_commands(&all, "rev")
+            .into_iter()
+            .map(|c| c.name)
+            .collect();
+        assert_eq!(names, ["review", "preview", "reset", "review-pr"]);
+        assert!(match_commands(&all, "zzz").is_empty());
     }
 
     #[test]
