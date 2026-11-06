@@ -303,6 +303,18 @@ impl Tasks {
         Ok(())
     }
 
+    /// `create` with any extra fields (category, …) merged into the request.
+    pub async fn create_with(self, project: String, fields: Value) -> Result<(), String> {
+        let c = get().conn.client().ok_or("not connected")?;
+        let mut body = fields;
+        body["projectId"] = project.clone().into();
+        let v = val(c.create_project_todo(&req(body)?).await)?;
+        let item: Todo = serde_json::from_value(v["item"].clone())
+            .map_err(|_| "could not create the to-do".to_owned())?;
+        self.upsert(&project, item);
+        Ok(())
+    }
+
     pub async fn update(self, project: String, id: String, fields: Value) -> Result<(), String> {
         let c = get().conn.client().ok_or("not connected")?;
         let mut body = fields;
