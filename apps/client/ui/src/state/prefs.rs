@@ -191,7 +191,7 @@ impl Prefs {
     pub fn toast_ms(&self) -> u32 {
         let sec = self
             .all
-            .with(|m| m.get("toastSeconds").and_then(Value::as_f64))
+            .with_untracked(|m| m.get("toastSeconds").and_then(Value::as_f64))
             .unwrap_or(5.0);
         if sec.is_finite() && sec >= 0.0 {
             (sec * 1000.0) as u32
