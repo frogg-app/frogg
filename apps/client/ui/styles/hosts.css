@@ -131,6 +131,14 @@
   flex: 1;
 }
 
+/* Design options live previews (settings, ui-next DesignOptions.tsx). */
+.design-preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
 /* App updates download progress (settings, ui-next AppUpdates.tsx). */
 .upd-bar {
   height: 2px;

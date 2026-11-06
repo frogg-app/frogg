@@ -501,6 +501,49 @@ fn NotifyPermission() -> impl IntoView {
     }
 }
 
+/// A live sample of what a design pick changes (ui-next `DesignOptions.tsx` previews), for
+/// the picks whose components live here; the rest show in the app as you change them.
+fn design_preview(key: &str) -> Option<AnyView> {
+    use crate::shell::toast::{Toast, ToastKind};
+    let app = crate::state::get();
+    let prefs = app.prefs;
+    match key {
+        "buttonStyle" => Some(
+            view! {
+                <Button kind=ButtonKind::Primary label="Create session" icon=Ico::Plus />
+                <Button kind=ButtonKind::Primary label="Approve" kbd="⌘↵" />
+                <Button label="Cancel" />
+                <Button kind=ButtonKind::Danger label="Deny" />
+                <Button label="Refresh" icon=Ico::RefreshCw />
+            }
+            .into_any(),
+        ),
+        "logoMotion" => Some(
+            view! {
+                <crate::components::Logo size=48.0 motion=Signal::derive(move || prefs.text("logoMotion")) />
+                <crate::components::Logo size=26.0 motion=Signal::derive(move || prefs.text("logoMotion")) />
+                <span class="faint">"Hover or click the gems."</span>
+            }
+            .into_any(),
+        ),
+        "toastStyle" => Some(
+            view! {
+                <Button label="Show done" on_press=Callback::new(move |_| {
+                    app.toasts.push(Toast::new(ToastKind::Done, "Fix flaky session list finished").detail("Ready to review"));
+                }) />
+                <Button label="Needs you" on_press=Callback::new(move |_| {
+                    app.toasts.push(Toast::new(ToastKind::Needs, "Release notes needs you"));
+                }) />
+                <Button label="Error" on_press=Callback::new(move |_| {
+                    app.toasts.push(Toast::new(ToastKind::Error, "Agent crashed").detail("exit code 137 while running npm test"));
+                }) />
+            }
+            .into_any(),
+        ),
+        _ => None,
+    }
+}
+
 type Opts = &'static [(&'static str, &'static str)];
 
 const DESIGN: &[(&str, &str, Opts)] = &[
@@ -622,6 +665,7 @@ pub fn DesignOptions() -> impl IntoView {
                                     .collect_view()}
                             </div>
                         </Block>
+                        {design_preview(key).map(|p| view! { <Block><div class="design-preview">{p}</div></Block> })}
                     </Section>
                 }
             })
