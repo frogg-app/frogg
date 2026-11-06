@@ -52,3 +52,22 @@
   opacity: 1;
   transform: none;
 }
+
+/* ----- context ring -------------------------------------------------------------------- */
+.composer-bar .ctx-meter {
+  gap: 5px;
+  padding: 4px 6px;
+}
+.ctx-meter svg {
+  display: block;
+  flex-shrink: 0;
+}
+.ctx-arc {
+  transition:
+    stroke-dashoffset 420ms var(--ease),
+    stroke 200ms var(--ease);
+}
+.ctx-pct {
+  font-size: 11px;
+  color: var(--faint);
+}

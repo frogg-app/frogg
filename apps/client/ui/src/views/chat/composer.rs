@@ -55,8 +55,6 @@ thread_local! {
     /// Unsent drafts per session, so switching sessions keeps what was typed.
     static DRAFTS: RefCell<HashMap<String, Draft>> = RefCell::new(HashMap::new());
     static NEXT_ATT: std::cell::Cell<u64> = const { std::cell::Cell::new(1) };
-    /// The host's provider snapshot (models per provider), loaded once per client.
-    static PROVIDERS: RefCell<Option<Value>> = const { RefCell::new(None) };
 }
 
 fn next_att() -> u64 {
@@ -681,35 +679,74 @@ pub fn Composer(
     }
 }
 
-fn providers_snapshot(set: RwSignal<Option<Value>>) {
-    if let Some(v) = PROVIDERS.with(|p| p.borrow().clone()) {
-        set.set(Some(v));
-        return;
-    }
-    let Some(c) = crate::state::get().conn.client() else {
-        return;
-    };
-    spawn_local(async move {
-        if let Ok(v) = c
-            .get_providers_snapshot(None, None)
-            .await
-            .map(|r| serde_json::to_value(r).unwrap_or_default())
-        {
-            PROVIDERS.with(|p| *p.borrow_mut() = Some(v.clone()));
-            set.set(Some(v));
-        }
-    });
+fn opt_str(v: &Value, k: &str) -> Option<String> {
+    v.get(k).and_then(Value::as_str).map(str::to_owned)
 }
 
-/// Model, thinking and mode chips for the live session.
+/// Options for a `Select` from `[{id, label, description}]`.
+fn options_of(list: &[Value]) -> Vec<SelectOption> {
+    list.iter()
+        .filter_map(|m| {
+            let id = opt_str(m, "id")?;
+            Some(SelectOption {
+                label: opt_str(m, "label").unwrap_or_else(|| id.clone()),
+                value: id,
+                hint: opt_str(m, "description"),
+            })
+        })
+        .collect()
+}
+
+/// The model definition a session runs: its own model (or an alias of it), else the provider's
+/// default when none is set.
+pub fn model_def<'a>(defs: &'a [Value], model: Option<&str>) -> Option<&'a Value> {
+    match model.filter(|m| !m.is_empty()) {
+        Some(m) => defs.iter().find(|d| {
+            d.get("id").and_then(Value::as_str) == Some(m)
+                || d.get("aliases")
+                    .and_then(Value::as_array)
+                    .is_some_and(|a| a.iter().any(|x| x.as_str() == Some(m)))
+        }),
+        None => defs
+            .iter()
+            .find(|d| d.get("isDefault").and_then(Value::as_bool) == Some(true)),
+    }
+}
+
+/// The selected thinking level: the session's choice, what the provider applied, else the
+/// model's default.
+pub fn thinking_id(agent: &Value, def: Option<&Value>) -> Option<String> {
+    opt_str(agent, "thinkingOptionId")
+        .or_else(|| opt_str(agent, "effectiveThinkingOptionId"))
+        .or_else(|| def.and_then(|d| opt_str(d, "defaultThinkingOptionId")))
+        .or_else(|| {
+            def?.get("thinkingOptions")?
+                .as_array()?
+                .iter()
+                .find(|o| o.get("isDefault").and_then(Value::as_bool) == Some(true))
+                .and_then(|o| opt_str(o, "id"))
+        })
+}
+
+fn info_toast(title: &str, detail: String) {
+    crate::state::get()
+        .toasts
+        .push(crate::shell::toast::Toast::new(ToastKind::Info, title.to_owned()).detail(detail));
+}
+
+/// Model, thinking and mode pickers for the live session, fed by the host's provider snapshot.
 #[component]
 fn AgentControls(session: Memo<Option<Session>>) -> impl IntoView {
-    let snapshot = RwSignal::new(None::<Value>);
-    providers_snapshot(snapshot);
+    let cfg = crate::state::config::get();
+    Effect::new(move |_| {
+        if cfg.providers.with(Option::is_none) && crate::state::get().conn.client().is_some() {
+            cfg.load_providers();
+        }
+    });
     let agent = Memo::new(move |_| session.get().map(|s| s.agent));
-    let models = Memo::new(move |_| {
+    let defs = Memo::new(move |_| {
         let provider = agent.with(|a| a.as_ref().map(|a| a.provider.clone()))?;
-        snapshot.with(|s| {
+        cfg.providers.with(|s| {
             s.as_ref()?
                 .get("entries")?
                 .as_array()?
@@ -720,43 +757,35 @@ fn AgentControls(session: Memo<Option<Session>>) -> impl IntoView {
                 .cloned()
         })
     });
+    let model = Memo::new(move |_| {
+        agent.with(|a| {
+            let a = a.as_ref()?;
+            a.runtime_info
+                .as_ref()
+                .and_then(|r| r.get("model"))
+                .and_then(Value::as_str)
+                .map(str::to_owned)
+                .or(a.model.clone())
+                .filter(|m| !m.is_empty())
+        })
+    });
     let model_chip = move || {
         let a = agent.get()?;
-        let current = a
-            .runtime_info
-            .as_ref()
-            .and_then(|r| r.get("model"))
-            .and_then(Value::as_str)
-            .map(str::to_owned)
-            .or(a.model.clone())
-            .unwrap_or_default();
-        let mut options: Vec<SelectOption> = models
+        let defs = defs.get().unwrap_or_default();
+        let mut options = options_of(&defs);
+        // No model set: the label is the provider's default model.
+        let shown = model
             .get()
-            .unwrap_or_default()
-            .iter()
-            .filter_map(|m| {
-                Some(SelectOption {
-                    value: m.get("id")?.as_str()?.to_owned(),
-                    label: m
-                        .get("label")
-                        .and_then(Value::as_str)
-                        .or(m.get("id")?.as_str())?
-                        .to_owned(),
-                    hint: m
-                        .get("description")
-                        .and_then(Value::as_str)
-                        .map(str::to_owned),
-                })
-            })
-            .collect();
-        if !current.is_empty() && !options.iter().any(|o| o.value == current) {
-            options.insert(0, SelectOption::new(current.clone(), current.clone()));
+            .or_else(|| model_def(&defs, None).and_then(|d| opt_str(d, "id")))
+            .unwrap_or_default();
+        if !shown.is_empty() && !options.iter().any(|o| o.value == shown) {
+            options.insert(0, SelectOption::new(shown.clone(), shown.clone()));
         }
         let id = a.id.clone();
         Some(view! {
             <Select
                 options=options
-                value=current
+                value=shown
                 placeholder="default model"
                 chip=true
                 mono=true
@@ -772,35 +801,54 @@ fn AgentControls(session: Memo<Option<Session>>) -> impl IntoView {
             />
         })
     };
+    let thinking_chip = move || {
+        let a = agent.get()?;
+        let defs = defs.get().unwrap_or_default();
+        let def = model_def(&defs, model.get().as_deref());
+        let levels = def?.get("thinkingOptions")?.as_array()?.clone();
+        if levels.is_empty() {
+            return None;
+        }
+        let current = thinking_id(&a.raw, def).unwrap_or_default();
+        let id = a.id.clone();
+        Some(view! {
+            <Select
+                options=options_of(&levels)
+                value=current
+                placeholder="thinking"
+                chip=true
+                on_change=Callback::new(move |v: String| {
+                    let Some(c) = client_or_toast() else { return };
+                    let id = id.clone();
+                    spawn_local(async move {
+                        match c.set_agent_thinking_option(&id, Some(&v)).await {
+                            Ok(notice) => {
+                                if let Some(m) = notice
+                                    .as_ref()
+                                    .and_then(|n| n.get("message"))
+                                    .and_then(Value::as_str)
+                                {
+                                    info_toast("Thinking level", m.to_owned());
+                                }
+                            }
+                            Err(e) => toast_err("Could not change thinking level", e),
+                        }
+                    });
+                })
+            />
+        })
+    };
     let mode_chip = move || {
         let a = agent.get()?;
         let modes = a.raw.get("availableModes")?.as_array()?.clone();
         if modes.is_empty() {
             return None;
         }
-        let options: Vec<SelectOption> = modes
-            .iter()
-            .filter_map(|m| {
-                Some(SelectOption {
-                    value: m.get("id")?.as_str()?.to_owned(),
-                    label: m.get("label")?.as_str()?.to_owned(),
-                    hint: m
-                        .get("description")
-                        .and_then(Value::as_str)
-                        .map(str::to_owned),
-                })
-            })
-            .collect();
-        let current = a
-            .raw
-            .get("currentModeId")
-            .and_then(Value::as_str)
-            .unwrap_or("")
-            .to_owned();
+        let current = opt_str(&a.raw, "currentModeId").unwrap_or_default();
         let id = a.id.clone();
         Some(view! {
             <Select
-                options=options
+                options=options_of(&modes)
                 value=current
                 chip=true
                 on_change=Callback::new(move |v: String| {
@@ -818,36 +866,100 @@ fn AgentControls(session: Memo<Option<Session>>) -> impl IntoView {
     view! {
         <span class="composer-ctl">
             {model_chip}
+            {thinking_chip}
             {mode_chip}
         </span>
     }
 }
 
-/// How full the context window is, from the agent's last usage.
+/// "12K" from a thousand tokens up.
+pub fn ktok(n: f64) -> String {
+    if n >= 1000.0 {
+        format!("{}K", (n / 1000.0).round())
+    } else {
+        format!("{}", n.round())
+    }
+}
+
+const RING: f64 = 14.0;
+const RING_STROKE: f64 = 2.0;
+
+/// Context window fill for the last turn: a ring plus percentage, token counts on hover.
 #[component]
 fn ContextMeter(session: Memo<Option<Session>>) -> impl IntoView {
-    let pct = Memo::new(move |_| {
+    let usage = Memo::new(move |_| {
         let s = session.get()?;
         let u = s.agent.raw.get("lastUsage")?;
         let used = u.get("contextWindowUsedTokens")?.as_f64()?;
         let max = u.get("contextWindowMaxTokens")?.as_f64()?;
-        (max > 0.0).then(|| (used / max * 100.0).clamp(0.0, 100.0))
+        (max > 0.0).then_some((used, max))
     });
     move || {
-        pct.get().map(|p| {
-            let tone = if p >= 85.0 {
-                "hot"
-            } else if p >= 60.0 {
-                "warm"
+        usage.get().map(|(used, max)| {
+            let p = (used / max * 100.0).clamp(0.0, 100.0);
+            let tone = if p >= 90.0 {
+                "var(--coral)"
+            } else if p >= 70.0 {
+                "var(--amber)"
             } else {
-                ""
+                "var(--cyan)"
             };
+            let r = (RING - RING_STROKE) / 2.0;
+            let circ = 2.0 * std::f64::consts::PI * r;
+            let c = RING / 2.0;
+            let label = format!("Context {p:.0}% · {} of {} tokens", ktok(used), ktok(max));
             view! {
-                <span class=format!("ctx-meter {tone}") title=format!("Context {p:.0}% used")>
-                    <span class="ctx-track"><span class="ctx-fill" style=format!("width:{p:.0}%")></span></span>
-                    <span class="t-mono">{format!("{p:.0}%")}</span>
+                <span class="ctx-meter" title=label.clone() aria-label=label>
+                    <svg width=RING height=RING viewBox=format!("0 0 {RING} {RING}")>
+                        <circle cx=c cy=c r=r fill="none" stroke="var(--line2)" stroke-width=RING_STROKE />
+                        <circle
+                            class="ctx-arc"
+                            cx=c
+                            cy=c
+                            r=r
+                            fill="none"
+                            stroke=tone
+                            stroke-width=RING_STROKE
+                            stroke-linecap="round"
+                            stroke-dasharray=circ
+                            stroke-dashoffset=circ * (1.0 - p / 100.0)
+                            transform=format!("rotate(-90 {c} {c})")
+                        />
+                    </svg>
+                    <span class="t-mono ctx-pct" style=(p >= 70.0).then(|| format!("color:{tone}"))>
+                        {format!("{p:.0}%")}
+                    </span>
                 </span>
             }
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn model_def_falls_back_to_default() {
+        let defs = vec![
+            json!({"id":"a","aliases":["alpha"]}),
+            json!({"id":"b","isDefault":true,"defaultThinkingOptionId":"hi"}),
+        ];
+        assert_eq!(model_def(&defs, Some("alpha")).unwrap()["id"], "a");
+        assert_eq!(model_def(&defs, None).unwrap()["id"], "b");
+        assert!(model_def(&defs, Some("zzz")).is_none());
+        let def = model_def(&defs, None);
+        assert_eq!(thinking_id(&json!({}), def).as_deref(), Some("hi"));
+        assert_eq!(
+            thinking_id(&json!({"thinkingOptionId":"lo"}), def).as_deref(),
+            Some("lo")
+        );
+    }
+
+    #[test]
+    fn token_counts() {
+        assert_eq!(ktok(950.0), "950");
+        assert_eq!(ktok(12_400.0), "12K");
     }
 }
