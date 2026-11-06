@@ -640,17 +640,18 @@ pub fn NewSession() -> impl IntoView {
             ui.new_session_prompt.set(String::new());
         }
     });
-    // The chosen host's projects and providers; switching hosts starts the pick over.
+    // The chosen host's projects and providers; switching hosts starts the pick over. Keyed on a
+    // memo: the host's link changes on every status tick, which would close the folder browser.
+    let host_key = Memo::new(move |_| (f.host_id.get(), f.host_conn() == Conn::Online));
     Effect::new(move |_| {
         if !open.get() {
             return;
         }
-        let _ = f.host_id.get();
-        let online = f.host_conn() == Conn::Online;
+        let (_, online) = host_key.get();
         f.projects.set(None);
         f.providers.set(None);
         f.browsing.set(false);
-        let Some(c) = f.client().filter(|_| online) else {
+        let Some(c) = untrack(|| f.client()).filter(|_| online) else {
             return;
         };
         let c2 = c.clone();
