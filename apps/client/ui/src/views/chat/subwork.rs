@@ -490,11 +490,29 @@ pub mod model {
             if !output.to_ascii_lowercase().contains("background") {
                 continue;
             }
-            let note = bg_id(output)
-                .and_then(|id| notes.iter().find(|(_, c)| c.contains(id)).map(|n| n.0));
+            // Claude's notifications carry the task id in `metadata.taskId` (the call id is a
+            // fresh uuid); older shapes put it in the call id.
+            let note = bg_id(output).and_then(|id| {
+                notes
+                    .iter()
+                    .find(|(n, c)| {
+                        c.contains(id)
+                            || n.item
+                                .get("metadata")
+                                .and_then(|m| s(m, "taskId"))
+                                .is_some_and(|t| t == id)
+                    })
+                    .map(|n| n.0)
+            });
             let started = r.timestamp.and_then(iso_ms);
+            let note_status = note.and_then(|n| {
+                n.item
+                    .get("metadata")
+                    .and_then(|m| s(m, "status"))
+                    .or_else(|| s(n.item, "status"))
+            });
             let status = match note {
-                Some(n) if s(n.item, "status") == Some("failed") => Status::Failed,
+                Some(_) if matches!(note_status, Some("failed" | "killed")) => Status::Failed,
                 Some(_) => Status::Done,
                 None if started.is_some_and(|t| now - t > BG_STALE_MS) => Status::Idle,
                 None => Status::Running,
@@ -1685,6 +1703,27 @@ mod tests {
             }
             v
         };
+        // Claude's shape: a uuid call id, the task id and status in metadata.
+        let shell2 = json!({ "type": "tool_call", "callId": "c3", "status": "completed",
+            "detail": { "type": "shell", "command": "sleep 5",
+                "output": "Command running in background with ID: b8ptp1nge. Output is being written to: /tmp/x" } });
+        let note2 = json!({ "type": "tool_call", "callId": "task_notification_e0c91805",
+            "metadata": { "taskId": "b8ptp1nge", "status": "completed" } });
+        let claude = from_timeline(
+            "p",
+            &[
+                TimelineSrc {
+                    timestamp: Some("2026-01-01T00:00:00Z"),
+                    item: &shell2,
+                },
+                TimelineSrc {
+                    timestamp: Some("2026-01-01T00:00:05Z"),
+                    item: &note2,
+                },
+            ],
+            t0,
+        );
+        assert_eq!(claude[0].status, Status::Done);
         let open = from_timeline("p", &rows(false), t0 + 1000.0);
         assert_eq!(open.len(), 1);
         assert_eq!(open[0].label, "npm run dev");
