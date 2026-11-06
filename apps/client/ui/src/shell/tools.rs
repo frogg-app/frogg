@@ -102,13 +102,13 @@ pub fn meta(tool: Tool) -> ToolMeta {
         .unwrap_or(TOOLS[0])
 }
 
-/// Whether a tool is offered (reactive). The Companion is a plugin feature: hidden until the
-/// plugins stream reports the host runs it. Terminals listed among sessions replace the tool.
+/// Whether a tool is offered (reactive). The Companion is a plugin feature: shown only when the
+/// host's server_info says it runs it and this device hasn't turned it off. Terminals listed
+/// among sessions replace the tool.
 pub fn shown(app: &AppState, tool: Tool) -> bool {
     match tool {
         Tool::Terminals => !app.prefs.flag("sessionsWithTerminals"),
-        // TODO(panels): gate on server_info's plugin list once the plugins store lands.
-        Tool::Companion => false,
+        Tool::Companion => app.prefs.flag("companion") && crate::state::config::companion_gate(),
         _ => true,
     }
 }

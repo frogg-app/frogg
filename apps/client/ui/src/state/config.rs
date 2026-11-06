@@ -91,6 +91,26 @@ pub fn feature(name: &str) -> Option<bool> {
     )
 }
 
+/// Whether the active host runs the Companion (ui-next `refreshPluginGate`): its
+/// `server_info.capabilities.companion` is present and names no missing plugin. Reactive on the
+/// active link, so a reconnect (which re-sends server_info) re-reads it.
+pub fn companion_gate() -> bool {
+    let app = super::get();
+    if app.conn.active_link().conn != Conn::Online {
+        return false;
+    }
+    app.conn
+        .client()
+        .and_then(|c| c.server_info())
+        .is_some_and(|i| companion_capability(&i.raw))
+}
+
+/// The gate rule over a raw server_info payload.
+pub fn companion_capability(info: &Value) -> bool {
+    info.pointer("/capabilities/companion")
+        .is_some_and(|cap| cap.is_object() && cap.get("plugin").is_none_or(Value::is_null))
+}
+
 /// This device's role on the active host (`callerRole`); None from an older daemon.
 pub fn caller_role() -> Option<String> {
     super::get()
@@ -510,6 +530,17 @@ mod tests {
             a,
             json!({ "relay": { "enabled": false, "endpoint": "x" }, "n": 2 })
         );
+    }
+
+    #[test]
+    fn companion_gate_rule() {
+        assert!(!companion_capability(&json!({})));
+        assert!(companion_capability(
+            &json!({ "capabilities": { "companion": { "enabled": true } } })
+        ));
+        assert!(!companion_capability(&json!({
+            "capabilities": { "companion": { "enabled": false, "plugin": { "id": "frogg.companion" } } }
+        })));
     }
 
     #[test]
