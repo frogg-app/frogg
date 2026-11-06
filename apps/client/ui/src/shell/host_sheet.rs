@@ -59,6 +59,7 @@ fn HostList() -> impl IntoView {
                                                 Conn::Online => l.version.map(|v| format!(" · v{v}")).unwrap_or_default(),
                                                 Conn::Connecting if l.attempt > 0 => format!(" · retry {}", l.attempt),
                                                 Conn::Connecting => " · connecting".into(),
+                                                Conn::Offline if l.paused => " · stopped retrying, tap to retry".into(),
                                                 Conn::Offline => l.error.map(|e| format!(" · {e}")).unwrap_or_else(|| " · offline".into()),
                                             }
                                         }}

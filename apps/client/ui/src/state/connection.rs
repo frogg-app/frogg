@@ -11,7 +11,8 @@ use frogg_client_core::protocol::inbound;
 #[cfg(target_arch = "wasm32")]
 use frogg_client_core::{relay, ws};
 use frogg_client_core::{
-    ClientConfig, ConnectOptions, ConnectionState, DaemonClient, ErrorInfo, Event, SessionFrame,
+    ClientConfig, ClientOptions, ConnectOptions, ConnectionState, DaemonClient, ErrorInfo, Event,
+    SessionFrame,
 };
 use leptos::prelude::*;
 use leptos::task::spawn_local;
@@ -51,6 +52,9 @@ pub struct Link {
     pub server_id: Option<String>,
     pub version: Option<String>,
     pub error: Option<String>,
+    /// Retries stopped after the host failed to answer [`GIVE_UP_AFTER`] times in a row; only a
+    /// user action (Retry, picking the host) dials again.
+    pub paused: bool,
 }
 
 impl Default for Link {
@@ -62,6 +66,7 @@ impl Default for Link {
             server_id: None,
             version: None,
             error: None,
+            paused: false,
         }
     }
 }
@@ -85,36 +90,84 @@ pub struct Connections {
     ui: Ui,
 }
 
-/// `?daemon=host:port` names where to look (desktop shell, dev); a page served by a daemon
-/// dials its own origin; otherwise the local Frogg Next daemon.
-pub fn default_endpoint() -> String {
-    let location = web_sys::window().map(|w| w.location());
-    if let Some(q) = location
-        .as_ref()
-        .and_then(|l| l.search().ok())
+/// The local Frogg Next daemon, dialled when nothing else names a host.
+pub const LOCAL_DAEMON: &str = "127.0.0.1:9969";
+
+/// A saved host that won't answer is retried more gently than core's default (1.5 s to 30 s),
+/// so a gone host doesn't fill the console with failed handshakes.
+const RECONNECT_BASE_MS: u64 = 4_000;
+const RECONNECT_MAX_MS: u64 = 300_000;
+/// Consecutive failed dials (first try included) before retries stop until the user asks.
+pub const GIVE_UP_AFTER: u32 = 5;
+
+/// Where the page itself was served from, when that may be a daemon (http(s), not the Trunk dev
+/// server or the Tauri webview).
+fn same_origin_candidate() -> Option<String> {
+    let location = web_sys::window()?.location();
+    let protocol = location.protocol().ok()?;
+    if protocol != "http:" && protocol != "https:" {
+        return None;
+    }
+    let host = location.host().ok()?;
+    (!host.starts_with("localhost:1420") && !host.starts_with("tauri.localhost")).then_some(host)
+}
+
+/// `?daemon=host:port`, when given (desktop shell, dev).
+fn query_endpoint() -> Option<String> {
+    web_sys::window()
+        .and_then(|w| w.location().search().ok())
         .and_then(|s| web_sys::UrlSearchParams::new_with_str(&s).ok())
         .and_then(|p| p.get("daemon"))
         .map(|d| d.trim().to_owned())
         .filter(|d| !d.is_empty())
-    {
-        return q
-            .trim_start_matches("ws://")
-            .trim_start_matches("wss://")
-            .trim_end_matches("/ws")
-            .to_owned();
+        .map(|q| {
+            q.trim_start_matches("ws://")
+                .trim_start_matches("wss://")
+                .trim_end_matches("/ws")
+                .to_owned()
+        })
+}
+
+/// True when `GET /api/health` on the page's origin answers JSON, i.e. a daemon served the page.
+#[cfg(target_arch = "wasm32")]
+async fn origin_is_daemon() -> bool {
+    use wasm_bindgen::JsCast;
+    use wasm_bindgen_futures::JsFuture;
+    let Some(window) = web_sys::window() else {
+        return false;
+    };
+    let Ok(response) = JsFuture::from(window.fetch_with_str("/api/health")).await else {
+        return false;
+    };
+    let Ok(response) = response.dyn_into::<web_sys::Response>() else {
+        return false;
+    };
+    if !response.ok() {
+        return false;
     }
-    let protocol = location
-        .as_ref()
-        .and_then(|l| l.protocol().ok())
+    let Ok(text) = response.text() else {
+        return false;
+    };
+    let text = JsFuture::from(text)
+        .await
+        .ok()
+        .and_then(|t| t.as_string())
         .unwrap_or_default();
-    if protocol == "http:" || protocol == "https:" {
-        if let Some(host) = location.and_then(|l| l.host().ok()) {
-            if !host.starts_with("localhost:1420") && !host.starts_with("tauri.localhost") {
-                return host;
-            }
-        }
-    }
-    "127.0.0.1:9969".to_owned()
+    serde_json::from_str::<Value>(&text).is_ok_and(|v| v.is_object())
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+async fn origin_is_daemon() -> bool {
+    false
+}
+
+/// `?daemon=host:port` names where to look (desktop shell, dev); a page served by a daemon
+/// dials its own origin; otherwise the local Frogg Next daemon. A synchronous best guess: the
+/// startup path (`Connections::start`) probes the origin before saving it as a host.
+pub fn default_endpoint() -> String {
+    query_endpoint()
+        .or_else(same_origin_candidate)
+        .unwrap_or_else(|| LOCAL_DAEMON.to_owned())
 }
 
 pub fn client_id() -> String {
@@ -129,12 +182,23 @@ pub fn client_id() -> String {
 }
 
 fn new_client() -> DaemonClient {
-    DaemonClient::new(ClientConfig {
+    DaemonClient::with_options(
+        client_config(),
+        ClientOptions {
+            reconnect_base_delay_ms: RECONNECT_BASE_MS,
+            reconnect_max_delay_ms: RECONNECT_MAX_MS,
+            ..ClientOptions::default()
+        },
+    )
+}
+
+fn client_config() -> ClientConfig {
+    ClientConfig {
         client_id: client_id(),
         client_type: inbound::HelloClientType::Browser,
         app_version: Some(env!("CARGO_PKG_VERSION").to_owned()),
         device_name: None,
-    })
+    }
 }
 
 /// Opens the transport for `host`: a direct socket, or the relay with E2EE. The core owns the
@@ -195,8 +259,25 @@ impl Connections {
 
     /// Connects the saved active host (or the default endpoint) once hosts are loaded.
     pub fn start(&self) {
-        let host = self.hosts.active_or_default(&default_endpoint());
-        self.activate(&host.id);
+        let saved = self.hosts.hosts.with_untracked(|h| !h.is_empty());
+        let named = query_endpoint();
+        let origin = same_origin_candidate();
+        if saved || named.is_some() || origin.is_none() {
+            let endpoint = named.unwrap_or_else(|| LOCAL_DAEMON.to_owned());
+            let host = self.hosts.active_or_default(&endpoint);
+            self.activate(&host.id);
+            return;
+        }
+        // Only save the page's origin as a host when a daemon actually served the bundle.
+        let this = *self;
+        spawn_local(async move {
+            let endpoint = match origin {
+                Some(o) if origin_is_daemon().await => o,
+                _ => LOCAL_DAEMON.to_owned(),
+            };
+            let host = this.hosts.active_or_default(&endpoint);
+            this.activate(&host.id);
+        });
     }
 
     /// The active host's client, when it has one.
@@ -367,6 +448,7 @@ impl Connections {
                     l.attempt += 1;
                 }
                 l.conn = Conn::Connecting;
+                l.paused = false;
             }),
             // Connected means server_info arrived.
             Event::State(ConnectionState::Connected) => self.on_connected(host_id),
@@ -382,9 +464,18 @@ impl Connections {
                         }
                         None => c.last_error(),
                     });
+                // Synchronous with the core's reconnect decision: turning reconnect off here makes
+                // this drop the last dial until the user asks again.
+                let give_up = self.link_untracked(host_id).attempt + 1 >= GIVE_UP_AFTER;
+                if give_up {
+                    if let Some(c) = self.client_of(host_id) {
+                        c.set_reconnect_enabled(false);
+                    }
+                }
                 self.set_link(host_id, |l| {
                     l.conn = Conn::Offline;
                     l.error = error;
+                    l.paused = give_up;
                 });
             }
             Event::State(ConnectionState::Idle) => {}

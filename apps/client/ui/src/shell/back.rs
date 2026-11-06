@@ -1,0 +1,126 @@
+//! System back on phones (the Android back button, a browser's back): the WebView's history
+//! drives it. While anything sits above the root, one guard entry is kept on the history stack;
+//! a back press pops it, closes the topmost thing (palette, sheet, popover, detail view, a tab
+//! other than Sessions) and re-arms the guard. At the root the press falls through to the
+//! WebView, which on Android leaves the app (wry's activity goes back while it can, then exits).
+
+use std::cell::Cell;
+
+use leptos::prelude::*;
+use wasm_bindgen::JsValue;
+
+use crate::state::{AppState, Tool};
+
+thread_local! {
+    /// Whether our guard entry is on top of the history stack.
+    static GUARDED: Cell<bool> = const { Cell::new(false) };
+}
+
+fn history() -> Option<web_sys::History> {
+    web_sys::window().and_then(|w| w.history().ok())
+}
+
+fn arm() {
+    if GUARDED.with(Cell::get) {
+        return;
+    }
+    if let Some(h) = history() {
+        if h.push_state(&JsValue::from_str("frogg-back"), "").is_ok() {
+            GUARDED.with(|g| g.set(true));
+        }
+    }
+}
+
+/// A sheet or popover portalled into the body (they close on Escape).
+fn overlay_open() -> bool {
+    web_sys::window()
+        .and_then(|w| w.document())
+        .and_then(|d| d.query_selector(".layer, .floating-catch").ok().flatten())
+        .is_some()
+}
+
+fn send_escape() {
+    let init = web_sys::KeyboardEventInit::new();
+    init.set_key("Escape");
+    init.set_bubbles(true);
+    if let (Some(w), Ok(ev)) = (
+        web_sys::window(),
+        web_sys::KeyboardEvent::new_with_keyboard_event_init_dict("keydown", &init),
+    ) {
+        let _ = w.dispatch_event(&ev);
+    }
+}
+
+/// Whether a back press has something to close (reactive, overlays aside).
+fn can_back(app: AppState) -> bool {
+    let ui = app.ui;
+    ui.palette_open.get()
+        || ui.new_session_open.get()
+        || ui.host_sheet_open.get()
+        || super::layout::has_phone_detail(app)
+        || ui.tool.get() != Tool::Sessions
+}
+
+/// Closes the topmost thing; false at the root.
+fn go_back(app: AppState) -> bool {
+    let ui = app.ui;
+    if ui.palette_open.get_untracked() {
+        ui.palette_open.set(false);
+        return true;
+    }
+    if ui.new_session_open.get_untracked() {
+        ui.set_new_session(false, None);
+        return true;
+    }
+    if ui.host_sheet_open.get_untracked() {
+        ui.host_sheet_open.set(false);
+        return true;
+    }
+    if overlay_open() {
+        send_escape();
+        return true;
+    }
+    if untrack(|| super::layout::has_phone_detail(app)) {
+        // Same order as the phone detail's own back buttons (layout::main_detail).
+        let tool = ui.tool.get_untracked();
+        match tool {
+            Tool::Scm if ui.diff_path.get_untracked().is_some() => ui.open_diff(None),
+            Tool::Terminals if ui.terminal_id.get_untracked().is_some() => ui.open_terminal(None),
+            _ if untrack(|| ui.sessions_terminal()).is_some() => ui.open_session_terminal(None),
+            Tool::Prs if ui.open_run.get_untracked().is_some() => ui.open_run.set(None),
+            Tool::Files if ui.file_path.get_untracked().is_some() => ui.open_file(None),
+            Tool::Settings if ui.settings_page.get_untracked().is_some() => ui.open_settings(None),
+            Tool::Inbox if ui.inbox_id.get_untracked().is_some() => ui.open_inbox(None),
+            _ => ui.select(None),
+        }
+        return true;
+    }
+    if ui.tool.get_untracked() != Tool::Sessions {
+        ui.set_tool(Tool::Sessions);
+        return true;
+    }
+    false
+}
+
+/// Wires back handling for the life of the app; active on phone layouts only.
+pub fn install() {
+    let app = crate::state::get();
+    Effect::new(move |_| {
+        if app.viewport.phone() && can_back(app) {
+            arm();
+        }
+    });
+    let handle = window_event_listener(leptos::ev::popstate, move |_| {
+        if !GUARDED.with(Cell::get) {
+            return;
+        }
+        GUARDED.with(|g| g.set(false));
+        if !app.viewport.phone() {
+            return;
+        }
+        if go_back(app) && untrack(|| can_back(app)) {
+            arm();
+        }
+    });
+    std::mem::forget(handle);
+}

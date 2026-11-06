@@ -2,7 +2,7 @@ name: Rust client
 
 # apps/client, the Rust Frogg Next client "Frogg Next RS" (docs/plans/rust-client.md).
 #
-# - check: the UI compiles for wasm32 and the core/render tests pass.
+# - check: the UI compiles for wasm32 and the core, render and UI tests pass.
 # - desktop: Tauri bundles for linux-x64 (deb, AppImage), windows-x64 (nsis) and macos-arm64
 #   (dmg, ad-hoc signed). With FROGG_NEXT_RS_UPDATER_KEY set, the updater artifacts (signed
 #   AppImage, nsis exe and .app.tar.gz, each with a .sig) are produced too.
@@ -90,9 +90,9 @@ jobs:
       - name: UI compiles for wasm32
         working-directory: apps/client
         run: cargo check -p frogg-ui --target wasm32-unknown-unknown
-      - name: Core and render tests
+      - name: Core, render and UI tests
         working-directory: apps/client
-        run: cargo test -p frogg-client-core -p frogg-render
+        run: cargo test -p frogg-client-core -p frogg-render -p frogg-ui
 
   desktop:
     needs: check

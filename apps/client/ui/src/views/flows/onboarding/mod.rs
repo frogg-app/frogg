@@ -222,7 +222,14 @@ fn ObCard(phone: bool) -> impl IntoView {
         view! {
             <div class="ob-scroll">
                 <div class="ob-body m-enter" class:phone=phone>
-                    <span class="t-label ob-eyebrow">{format!("Step {} of {}", index_of(st) + 1, STEPS.len())}</span>
+                    // Same denominator as the progress count: the closing "Done" page isn't a task.
+                    <span class="t-label ob-eyebrow">
+                        {if st == Step::Done {
+                            "All set".to_owned()
+                        } else {
+                            format!("Step {} of {}", index_of(st) + 1, progress_of(&[]).1)
+                        }}
+                    </span>
                     {steps::body(st)}
                 </div>
             </div>

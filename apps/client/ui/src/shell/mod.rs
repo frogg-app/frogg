@@ -1,6 +1,7 @@
 //! The app shell (ui-next `app/index.tsx`, Rail, StatusBar, PhoneTabs, Palette, toasts):
 //! layouts per form factor, navigation chrome and the overlays every screen shares.
 
+pub mod back;
 pub mod home;
 pub mod host_sheet;
 pub mod keys;
