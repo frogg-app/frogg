@@ -463,6 +463,9 @@
   padding: 12px;
   background: var(--panel);
   flex: none;
+  /* `.cut` isolates the card, which traps the branch menu's z-index: lift the whole card over
+     the commit box and graph below it. */
+  z-index: 3;
 }
 .pn-branch-head {
   display: flex;
