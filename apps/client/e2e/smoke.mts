@@ -311,6 +311,20 @@ async function desktop(page: Page, url: string, pairUrl: string, home: string, t
     await page.locator(".pn-viewer").getByText("smoke").first().waitFor({ timeout: STEP_TIMEOUT });
   });
 
+  await step(page, "prs streams", async () => {
+    await openTool(page, "PRs & CI");
+    await page.getByRole("tab", { name: "Streams" }).click();
+    await page
+      .locator(".pn-stream-row, .pn .pn-error, .pn .pn-empty")
+      .first()
+      .waitFor({ timeout: STEP_TIMEOUT });
+  });
+
+  await step(page, "files reopen", async () => {
+    await openTool(page, "Files");
+    await page.locator(".pn-node").getByText("README.md", { exact: true }).click();
+  });
+
   await step(page, "files edit and save", async () => {
     const viewer = page.locator(".pn-viewer");
     await viewer.getByRole("tab", { name: "Edit" }).click();
