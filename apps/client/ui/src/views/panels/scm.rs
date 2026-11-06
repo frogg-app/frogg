@@ -643,7 +643,7 @@ pub fn ScmStatusSegments() -> impl IntoView {
     });
     let go_scm = move |_| app.ui.set_tool(Tool::Scm);
     view! {
-        {move || git().map(|g| {
+        {move || { cwd.get()?; git() }.map(|g| {
             let ahead = g.ahead_behind.as_ref().map(|a| a.ahead).unwrap_or(0.0);
             view! {
                 <button class="sb-seg" on:click=go_scm>
@@ -654,6 +654,7 @@ pub fn ScmStatusSegments() -> impl IntoView {
             }
         })}
         {move || {
+            cwd.get()?;
             git()?;
             let (add, del) = s.files.with(|f| {
                 f.iter().flatten().fold((0.0, 0.0), |(a, d), x| (a + x.additions, d + x.deletions))
