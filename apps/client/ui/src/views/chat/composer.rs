@@ -385,7 +385,19 @@ pub fn Composer(
     /// Set while a draft is written (presence "typing").
     #[prop(optional)]
     typing: Option<RwSignal<bool>>,
+    /// No-agent mode (Home's "ask anything"): the text goes here instead of to an agent, and
+    /// the agent-only controls (attachments, slash commands, clean cut, agent chips) are hidden.
+    /// `agent_id` then only keys the draft and the remembered size.
+    #[prop(optional)]
+    on_send: Option<Callback<String>>,
+    /// Replaces the default "Message <provider> — / commands".
+    #[prop(optional, into)]
+    placeholder: Option<String>,
+    /// Static chips shown in place of the agent chips (no-agent mode).
+    #[prop(optional)]
+    chips: Vec<String>,
 ) -> impl IntoView {
+    let agentless = on_send.is_some();
     let mut draft = DRAFTS.with(|d| d.borrow().get(&agent_id).cloned().unwrap_or_default());
     // A fork's context waits to ride along with the new session's first message.
     if let Some(f) = session_menu::take_fork_draft(&agent_id) {
@@ -436,7 +448,9 @@ pub fn Composer(
         });
     }
     // The scissors send: a clean cut first, then this message goes to the fresh conversation.
-    let can_cut = Memo::new(move |_| online.get() && session_state::has_feature("agentCleanCut"));
+    let can_cut = Memo::new(move |_| {
+        !agentless && online.get() && session_state::has_feature("agentCleanCut")
+    });
     let cut_blocked = Memo::new(move |_| {
         if running.get() {
             Some("Wait for the turn to finish to make a clean cut")
@@ -530,13 +544,16 @@ pub fn Composer(
     };
 
     let slash_query = Memo::new(move |_| {
+        if agentless {
+            return None;
+        }
         let t = text.get();
         let q = t.strip_prefix('/')?;
         (!q.contains(char::is_whitespace) && !slash_closed.get()).then(|| q.to_owned())
     });
     let requested = StoredValue::new(false);
     Effect::new(move |_| {
-        if slash_query.get().is_none() || requested.get_value() {
+        if agentless || slash_query.get().is_none() || requested.get_value() {
             return;
         }
         let Some(c) = crate::state::get().conn.client() else {
@@ -638,6 +655,11 @@ pub fn Composer(
             );
             return;
         }
+        if let Some(f) = on_send {
+            restore();
+            f.run(t);
+            return;
+        }
         let agent = id.get_value();
         // A move or clean cut is rewriting the conversation: hold the message until it lands.
         if cut || session_state::busy(&agent) {
@@ -732,7 +754,7 @@ pub fn Composer(
     };
     let on_paste = move |ev: leptos::ev::ClipboardEvent| {
         let files = transfer_files(ev.as_ref(), "clipboardData");
-        if files.is_empty() || !online.get_untracked() {
+        if agentless || files.is_empty() || !online.get_untracked() {
             return;
         }
         ev.prevent_default();
@@ -742,12 +764,16 @@ pub fn Composer(
         ev.prevent_default();
         drag_depth.set(0);
         let files = transfer_files(ev.as_ref(), "dataTransfer");
-        if !files.is_empty() && online.get_untracked() {
+        if !agentless && !files.is_empty() && online.get_untracked() {
             spawn_local(async move { attach(read_files(files).await, atts) });
         }
     };
 
-    let placeholder = move || format!("Message {} — / commands", provider.get());
+    let placeholder = move || {
+        placeholder
+            .clone()
+            .unwrap_or_else(|| format!("Message {} — / commands", provider.get()))
+    };
     view! {
         <div class="composer" class:compact=compact>
             <Show when=move || slash_query.get().is_some()>
@@ -803,7 +829,7 @@ pub fn Composer(
                 class:drop=move || drop_over.get()
                 style="--c:10px"
                 on:dragenter=move |ev: leptos::ev::DragEvent| {
-                    if online.get_untracked() {
+                    if !agentless && online.get_untracked() {
                         ev.prevent_default();
                         drag_depth.update(|d| *d += 1);
                     }
@@ -910,19 +936,30 @@ pub fn Composer(
                 ></textarea>
                 </div>
                 <div class="composer-bar">
-                    <button
-                        class="icon-btn"
-                        aria-label="Attach images or files"
-                        title="Images go to the model; files go to the host"
-                        disabled=move || !online.get()
-                        on:click=move |_| pick_files()
-                    >
-                        <Icon ico=Ico::Plus size=16.0 />
-                    </button>
-                    <ProviderChip session=session rows=rows compact=compact />
-                    <AgentControls session=session />
-                    <AccountChip session=session />
-                    <ContextMeter session=session />
+                    {if agentless {
+                        chips
+                            .into_iter()
+                            .map(|c| view! { <span class="chip">{c}</span> })
+                            .collect_view()
+                            .into_any()
+                    } else {
+                        view! {
+                            <button
+                                class="icon-btn"
+                                aria-label="Attach images or files"
+                                title="Images go to the model; files go to the host"
+                                disabled=move || !online.get()
+                                on:click=move |_| pick_files()
+                            >
+                                <Icon ico=Ico::Plus size=16.0 />
+                            </button>
+                            <ProviderChip session=session rows=rows compact=compact />
+                            <AgentControls session=session />
+                            <AccountChip session=session />
+                            <ContextMeter session=session />
+                        }
+                        .into_any()
+                    }}
                     <span class="spacer"></span>
                     <button
                         class="icon-btn composer-expand"

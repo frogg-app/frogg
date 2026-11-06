@@ -108,7 +108,8 @@ additive edits only. Sizes are S/M/L.
 **7c tools-subwork-markdown** — owns `ui/src/views/chat/{tool,subwork}.rs`,
 `apps/client/render/src/markdown`
 
-- [done] M: host-relative images (`HostImage`, `ImageRoot`) in markdown and image tool rows.
+- [done] M: host-relative images (`HostImage`, `ImageRoot`) in markdown and image tool rows;
+  at integration, images in user messages too (`chat/item.rs`).
 - [done] S: markdown tables with inline-markdown cells and measured widths — `markdown/MdTable.tsx`.
 - [done] S: `Clamp` remeasures on resize (ResizeObserver) and animates; tool pane body not rebuilt per
   streamed chunk.
@@ -136,8 +137,9 @@ additive edits only. Sizes are S/M/L.
 - S (done): phone layout must not rebuild the list on selection (`shell/layout.rs` phone branch).
 - S (done): palette "New terminal" creates one; "Getting started"; sessions by `updatedAt`.
 - S (done): status-bar host segment opens Hosts; `railBadge` pref honoured.
-- M: home composer reuses the full composer. Blocked on 7b: `chat::Composer` needs a detached
-  mode (no agent; `on_send`, `placeholder`, `chips` props).
+- M (done, at integration): home composer reuses the full composer — `chat::Composer`'s
+  no-agent mode (`on_send`, `placeholder`, `chips`; hides attachments, slash commands, clean
+  cut and agent chips).
 - M (done): phone keyboard frame and tab hiding while the keyboard is up.
 - M (done): error boundary screen (panic hook crash page); M (done): popout single-session
   window.
@@ -167,8 +169,12 @@ additive edits only. Sizes are S/M/L.
   the update confirm takes the new capabilities from the catalog because the Rust client error
   carries only code and message).
 - S: companion uses the compact composer look and bubble icons (**done**; the composer is a
-  companion-local copy of the compact composer's markup, not the session `Composer`, which
-  needs an agent).
+  companion-local copy of the compact composer's markup; it could now move to the session
+  `Composer`'s no-agent mode).
+
+Wave 7 integration: a tail refetch rebuilds timeline rows with fresh uids, so a streamed reply
+row can remount within a frame; deferred chat callbacks (reveal pass, scroll anchor, composer
+measure, tool settle) read through `try_*` so a late read after disposal is a no-op.
 
 **7f hosts-settings-native** — owns `ui/src/views/panels/hosts/**`, `ui/src/views/settings/**`,
 `ui/src/native/`, `apps/client/src-tauri/src` (not the CI workflow)

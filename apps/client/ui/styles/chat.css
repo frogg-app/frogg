@@ -1246,6 +1246,14 @@
   cursor: zoom-in;
   border: 1px solid var(--line);
 }
+.tl-user-img-wrap {
+  display: block;
+  align-self: flex-start;
+  max-width: 100%;
+}
+.tl-user-img-wrap .fr-md-img {
+  max-height: 320px;
+}
 .tl-user-chips {
   display: flex;
   flex-wrap: wrap;

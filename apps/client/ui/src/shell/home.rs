@@ -1,12 +1,13 @@
 //! Home (ui-next `Home.tsx`): shown in the main pane when no session is open. Four start cards
-//! and an "ask anything" composer; the real composer arrives with the chat stream
-//! (`views::chat::Composer`), this one hands its text to New session.
+//! and an "ask anything" composer: the chat `Composer` in no-agent mode, handing its text to
+//! New session.
 
 use leptos::prelude::*;
 
 use super::panel_head::RevealHeading;
 use crate::components::{Ico, Icon};
 use crate::state::Tool;
+use crate::views::chat::Composer;
 
 #[component]
 pub fn Home() -> impl IntoView {
@@ -49,12 +50,7 @@ pub fn Home() -> impl IntoView {
             Some(Callback::new(move |_| ui.host_sheet_open.set(true))),
         ),
     ];
-    let prompt = RwSignal::new(String::new());
-    let ask = move || {
-        let text = prompt.get_untracked();
-        prompt.set(String::new());
-        ui.set_new_session(true, Some(text));
-    };
+    let ask = move |text: String| ui.set_new_session(true, Some(text));
     view! {
         <div class="home">
             <div class="home-head">
@@ -81,29 +77,16 @@ pub fn Home() -> impl IntoView {
                 <div class="home-ask">
                     <span class="t-label center">"or just ask · no project"</span>
                     <RevealHeading text="What do you want to know?".to_string() class="home-ask-title" />
-                    <div class="composer-stub cut cut-stroke" style="--c:10px">
-                        <textarea
-                            class="composer-input"
-                            rows="2"
-                            placeholder="Ask anything…"
-                            prop:value=move || prompt.get()
-                            on:input=move |ev| prompt.set(event_target_value(&ev))
-                            on:keydown=move |ev| {
-                                if ev.key() == "Enter" && !ev.shift_key() {
-                                    ev.prevent_default();
-                                    ask();
-                                }
-                            }
-                        ></textarea>
-                        <div class="composer-row">
-                            <span class="chip">"Claude Code"</span>
-                            <span class="chip">"Opus 5.5"</span>
-                            <span class="spacer"></span>
-                            <button class="send cut" style="--c:6px" aria-label="Send" on:click=move |_| ask()>
-                                <Icon ico=Ico::ArrowUp size=15.0 stroke=2.0 />
-                            </button>
-                        </div>
-                    </div>
+                    <Composer
+                        agent_id="home".to_string()
+                        session=Memo::new(|_| None)
+                        rows=Signal::derive(Vec::new)
+                        online=Signal::derive(|| true)
+                        provider=Signal::derive(String::new)
+                        on_send=Callback::new(ask)
+                        placeholder="Ask anything…"
+                        chips=vec!["Claude Code".to_string(), "Opus 5.5".to_string()]
+                    />
                 </div>
             </div>
         </div>

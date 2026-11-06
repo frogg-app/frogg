@@ -10,6 +10,7 @@ use super::reveal::RevealReply;
 use super::tool::ToolCall;
 use crate::components::{Ico, Icon};
 use crate::state::timeline::{sent, Entry};
+use frogg_render::markdown::HostImage;
 
 /// Links in rendered markdown open outside the app.
 pub fn on_link() -> Callback<String> {
@@ -117,7 +118,7 @@ fn UserMessage(#[prop(into)] text: Signal<String>, message_id: Option<String>) -
 }
 
 /// The user's own turn: plain text (line breaks kept), right-aligned, cyan edge. Images written
-/// into the text as markdown render inline; what this device attached shows under the text,
+/// into the text as markdown render inline (host files through `HostImage`); what this device attached shows under the text,
 /// pictures first, the rest (and pictures after a reload) as name chips.
 #[component]
 fn UserBubble(#[prop(into)] text: Signal<String>, message_id: Option<String>) -> impl IntoView {
@@ -147,20 +148,11 @@ fn UserBubble(#[prop(into)] text: Signal<String>, message_id: Option<String>) ->
                                 .then(|| view! { <span class="tl-user-t">{t}</span> })
                                 .into_any()
                         }
-                        Piece::Img { alt, src } => {
-                            match frogg_render::markdown::resolve_image(&src, None) {
-                                Some(frogg_render::markdown::ImageSource::Uri(u)) => {
-                                    view! { <img class="tl-user-img" src=u alt=alt /> }.into_any()
-                                }
-                                _ => view! {
-                                    <span class="tl-user-chip t-mono" title=src>
-                                        <Icon ico=Ico::Image size=12.0 />
-                                        <span>{if alt.is_empty() { "image".to_owned() } else { alt }}</span>
-                                    </span>
-                                }
-                                .into_any(),
-                            }
+                        // Host paths load through the chat's image root, as in replies.
+                        Piece::Img { alt, src } => view! {
+                            <span class="tl-user-img-wrap"><HostImage src=src alt=alt /></span>
                         }
+                        .into_any(),
                     })
                     .collect_view()
             }}
