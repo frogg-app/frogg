@@ -101,8 +101,49 @@ pub fn Privacy() -> impl IntoView {
             .server_name
             .unwrap_or_else(|| "this host".to_owned())
     });
+    let consent = RwSignal::new(stats_consent());
+    let note = RwSignal::new(None::<String>);
+    let set_app = Callback::new(move |on: bool| {
+        note.set(None);
+        set_stats_consent(if on { "on" } else { "off" });
+        consent.set(stats_consent());
+        // An owner's opt-in turns on the connected host's statistics too; off never touches it.
+        if on {
+            let h = host.get_untracked();
+            note.set(match (host_stats.get_untracked(), owner) {
+                (None, _) => None,
+                (Some(_), false) => Some(format!("{h} sends its own statistics only if its owner turns them on.")),
+                (Some(true), true) => None,
+                (Some(false), true) => {
+                    cfg.patch(json!({ "usageStats": true }));
+                    Some(format!("Also turned on for {h}, because you own it. Its own switch above turns it off again."))
+                }
+            });
+        }
+    });
     view! {
+        <Show when=move || STATS_COLLECTOR.is_some() && consent.get() == "unset">
+            <Banner ico=Ico::ChartColumn title="Help improve Frogg" body="Send usage statistics: which features you use and which build you run, so we know what to work on. Never your prompts, code, file paths or other data. Off until you turn it on.">
+                <Button kind=ButtonKind::Primary label="Send usage statistics" on_press=Callback::new(move |_| set_app.run(true)) />
+                <Button label="No thanks" on_press=Callback::new(move |_| set_app.run(false)) />
+            </Banner>
+        </Show>
         <Section title="Usage statistics">
+            <Row
+                label="Send usage statistics"
+                hint=if STATS_COLLECTOR.is_some() {
+                    "App interactions from this device only. If you own the connected host, turning it on turns on that host's statistics too. Turning it off leaves hosts as they are."
+                } else {
+                    "This build has no statistics collector, so nothing is ever sent."
+                }
+            >
+                <Toggle
+                    value=Signal::derive(move || consent.get() == "on")
+                    disabled=STATS_COLLECTOR.is_none()
+                    on_change=set_app
+                    label="Send usage statistics"
+                />
+            </Row>
             <Row
                 label=Signal::derive(move || format!("Send from {}", host.get()))
                 hint=Signal::derive(move || match host_stats.get() {
@@ -121,7 +162,54 @@ pub fn Privacy() -> impl IntoView {
                 />
             </Row>
         </Section>
+        {move || note.get().map(|n| view! { <Note>{n}</Note> })}
+        <Section title="What is sent">
+            {STATS_EVENTS.iter().map(|(name, what)| view! { <Row label=*what hint=*name /> }).collect_view()}
+            <Row
+                label="Every batch also carries"
+                hint="A random statistics id, the app's name, version, OS and platform, and times rounded to the minute"
+            />
+        </Section>
         <BugReport />
+    }
+}
+
+/// The collector this build sends app statistics to (set at build time); none means the
+/// device toggle stays off and nothing is ever sent.
+const STATS_COLLECTOR: Option<&str> = option_env!("FROGG_COLLECTOR_URL");
+const STATS_KEY: &str = "frogg.next-rs.usage-stats.consent";
+const STATS_EVENTS: &[(&str, &str)] = &[
+    (
+        "app_opened, app_active",
+        "The app started, and was used today",
+    ),
+    (
+        "panel_opened, settings_opened",
+        "Which view or settings page you opened, by name",
+    ),
+    (
+        "session_started",
+        "A session started, and with which provider",
+    ),
+    ("host_added", "A host was added, and how it connects"),
+    (
+        "bug_report_sent",
+        "A bug report was sent, and whether it had a chat",
+    ),
+];
+
+/// "unset" | "on" | "off" for this device.
+fn stats_consent() -> String {
+    web_sys::window()
+        .and_then(|w| w.local_storage().ok().flatten())
+        .and_then(|s| s.get_item(STATS_KEY).ok().flatten())
+        .filter(|v| v == "on" || v == "off")
+        .unwrap_or_else(|| "unset".into())
+}
+
+fn set_stats_consent(v: &str) {
+    if let Some(s) = web_sys::window().and_then(|w| w.local_storage().ok().flatten()) {
+        let _ = s.set_item(STATS_KEY, v);
     }
 }
 
