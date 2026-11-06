@@ -2,6 +2,7 @@
 //! layouts per form factor, navigation chrome and the overlays every screen shares.
 
 pub mod back;
+pub mod crash;
 pub mod home;
 pub mod host_sheet;
 pub mod keys;
