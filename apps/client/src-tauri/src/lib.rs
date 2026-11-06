@@ -12,6 +12,7 @@
 //! - `open_external { url }` (http/https/mailto only)
 //! - `notify { title, body?, sound? }`, `notify_permission` → bool (asks when undecided)
 //! - `pick_files { multiple }` → `[{ name, mime, size, base64 }]`
+//! - `save_text { name, text }` → false when the save dialog was cancelled
 //! - `clipboard_write { text }`, `clipboard_read` → string
 //! - `take_pending_link` → the `frogg-next-rs://` link that launched or reached the app, if any;
 //!   later links arrive as the `frogg://open-url` event (payload: the url string)
@@ -211,6 +212,29 @@ fn mime_for(name: &str) -> &'static str {
     }
 }
 
+/// Asks where to save `text` (suggesting `name`) and writes it. False when cancelled.
+#[tauri::command]
+async fn save_text<R: Runtime>(
+    app: AppHandle<R>,
+    name: String,
+    text: String,
+) -> Result<bool, String> {
+    use std::io::Write as _;
+    let Some(path) = app
+        .dialog()
+        .file()
+        .set_file_name(&name)
+        .blocking_save_file()
+    else {
+        return Ok(false);
+    };
+    let mut opts = tauri_plugin_fs::OpenOptions::new();
+    opts.read(false).write(true).create(true).truncate(true);
+    let mut file = app.fs().open(path, opts).map_err(|e| e.to_string())?;
+    file.write_all(text.as_bytes()).map_err(|e| e.to_string())?;
+    Ok(true)
+}
+
 #[tauri::command]
 async fn pick_files<R: Runtime>(
     app: AppHandle<R>,
@@ -363,6 +387,7 @@ pub fn run() {
             notify,
             notify_permission,
             pick_files,
+            save_text,
             clipboard_write,
             clipboard_read,
             take_pending_link,

@@ -5,7 +5,7 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use serde_json::json;
 
-use crate::components::{Button, ButtonKind, Ico, Seg};
+use crate::components::{Button, ButtonKind, Ico, Seg, Select, SelectOption};
 use crate::native;
 use crate::state::config::{self, need, ns, Action};
 use crate::state::onboarding::{self, progress_of, Level, Status, LEVELS, WORKS};
@@ -217,20 +217,83 @@ fn set_stats_consent(v: &str) {
 #[component]
 fn BugReport() -> impl IntoView {
     let description = RwSignal::new(String::new());
+    let app = crate::state::get();
     let draft = RwSignal::new(None::<String>);
     let done = RwSignal::new(None::<String>);
+    let attach = RwSignal::new(false);
+    let session = RwSignal::new(String::new());
+    let act = Action::new();
+    let sessions = Memo::new(move |_| {
+        let host = app.hosts.active_id.get();
+        app.agents
+            .list(host.as_deref())
+            .into_iter()
+            .take(30)
+            .map(|s| SelectOption::new(s.agent.id.clone(), s.agent.title_or_untitled()))
+            .collect::<Vec<_>>()
+    });
     let preview = move |_| {
-        let info = config::host_version().unwrap_or_else(|| "unknown".to_owned());
-        let text = format!(
-            "## Bug report\n\n{}\n\n## Environment\n\n- App: Frogg Next RS {} ({})\n- Daemon: {}\n- User agent: {}\n",
-            description.get_untracked().trim(),
-            env!("CARGO_PKG_VERSION"),
-            platform_name(),
-            info,
-            web_sys::window().and_then(|w| w.navigator().user_agent().ok()).unwrap_or_default(),
+        let desc = description.get_untracked();
+        let sid = (attach.get_untracked() && !session.get_untracked().is_empty())
+            .then(|| session.get_untracked());
+        let host = app.hosts.active_id.get_untracked();
+        let provider = sid
+            .as_deref()
+            .zip(host.as_deref())
+            .and_then(|(s, h)| app.agents.get(h, s))
+            .map(|s| s.agent.provider);
+        act.run(
+            "preview",
+            async move {
+                let chat = match sid {
+                    Some(id) => {
+                        let v = config::call(
+                            &need()?,
+                            "fetch_agent_timeline_request",
+                            json!({ "agentId": id, "direction": "tail", "limit": 200 }),
+                            "fetch_agent_timeline_response",
+                            None,
+                        )
+                        .await?;
+                        Some(chat_transcript(&v))
+                    }
+                    None => None,
+                };
+                Ok(json!({ "chat": chat }))
+            },
+            move |v| {
+                let info = config::host_version().unwrap_or_else(|| "unknown".to_owned());
+                let mut text = format!(
+                    "## Bug report\n\n{}\n\n## Environment\n\n- App: Frogg Next RS {} ({})\n- Daemon: {}\n{}- User agent: {}\n",
+                    desc.trim(),
+                    env!("CARGO_PKG_VERSION"),
+                    platform_name(),
+                    info,
+                    provider.as_ref().map(|p| format!("- Provider: {p}\n")).unwrap_or_default(),
+                    web_sys::window().and_then(|w| w.navigator().user_agent().ok()).unwrap_or_default(),
+                );
+                if let Some(chat) = v.get("chat").and_then(|c| c.as_str()) {
+                    text.push_str(&format!("\n## Chat\n\n{chat}\n"));
+                }
+                draft.set(Some(text));
+                done.set(None);
+            },
         );
-        draft.set(Some(text));
-        done.set(None);
+    };
+    let save = move |_| {
+        if let Some(t) = draft.get_untracked() {
+            spawn_local(async move {
+                done.set(Some(
+                    match native::save_text(&bug_report_file_name(), &t).await {
+                        Ok(true) => {
+                            "Report saved. Attach the file wherever you report issues.".to_owned()
+                        }
+                        Ok(false) => return,
+                        Err(e) => format!("Couldn't save the report: {e}"),
+                    },
+                ));
+            });
+        }
     };
     let copy = move |_| {
         if let Some(t) = draft.get_untracked() {
@@ -254,9 +317,29 @@ fn BugReport() -> impl IntoView {
                     on:input=move |ev| description.set(event_target_value(&ev))
                 ></textarea>
             </Block>
-            <Row label="Preview" hint="Builds the report on this device; nothing is sent">
-                <Button label="Preview report" kind=ButtonKind::Primary on_press=Callback::new(preview) />
+            <Row label="Attach a chat" hint="Messages and tool names from one session">
+                <Toggle value=Signal::derive(move || attach.get()) on_change=Callback::new(move |v| attach.set(v)) label="Attach a chat" />
             </Row>
+            <Show when=move || attach.get()>
+                <Row label="Session">
+                    {move || view! {
+                        <Select
+                            options=sessions.get()
+                            value=Signal::derive(move || session.get())
+                            on_change=Callback::new(move |v: String| session.set(v))
+                        />
+                    }}
+                </Row>
+            </Show>
+            <Row label="Preview" hint="Builds the report on this device; nothing is sent">
+                <Button
+                    label=Signal::derive(move || if act.busy() { "Building…".to_owned() } else { "Preview report".to_owned() })
+                    kind=ButtonKind::Primary
+                    disabled=Signal::derive(move || act.busy() || (attach.get() && session.get().is_empty()))
+                    on_press=Callback::new(preview)
+                />
+            </Row>
+            <ErrorLine text=act.error />
         </Section>
         {move || draft.get().is_some().then(|| view! {
             <Section title="Review before sharing">
@@ -270,15 +353,63 @@ fn BugReport() -> impl IntoView {
                 </Block>
                 <Block>
                     <Acts>
-                        <Button label="Copy" kind=ButtonKind::Primary on_press=Callback::new(copy) />
+                        <Button label="Save as file" kind=ButtonKind::Primary on_press=Callback::new(save) />
+                        <Button label="Copy" on_press=Callback::new(copy) />
                         <Button label="Discard" on_press=Callback::new(move |_| draft.set(None)) />
                     </Acts>
                 </Block>
             </Section>
         })}
         {move || done.get().map(|d| view! { <Note>{d}</Note> })}
-        <Note>"This build has no report collector: copy the report and attach it to an issue."</Note>
+        <Note>"This build has no report collector: save the report and attach it to an issue."</Note>
     }
+}
+
+const MAX_CHAT_CHARS: usize = 60_000;
+
+/// One session's chat as plain text (ui-next `chatTranscript`): messages, errors and tool
+/// names, trimmed from the start past [`MAX_CHAT_CHARS`].
+fn chat_transcript(timeline: &serde_json::Value) -> String {
+    let s = |v: &serde_json::Value, k: &str| v.get(k).and_then(|x| x.as_str()).map(str::to_owned);
+    let lines: Vec<String> = timeline
+        .get("entries")
+        .and_then(|e| e.as_array())
+        .into_iter()
+        .flatten()
+        .filter_map(|e| {
+            let item = e.get("item")?;
+            match item.get("type")?.as_str()? {
+                "user_message" => s(item, "text").map(|t| format!("## You\n{t}")),
+                "assistant_message" => s(item, "text").map(|t| format!("## Agent\n{t}")),
+                "error" => s(item, "message").map(|t| format!("## Error\n{t}")),
+                "tool_call" => s(item, "name").map(|n| match s(item, "status") {
+                    Some(st) if !st.is_empty() => format!("[tool {n}: {st}]"),
+                    _ => format!("[tool {n}]"),
+                }),
+                _ => None,
+            }
+        })
+        .collect();
+    let text = lines.join("\n\n");
+    if text.len() > MAX_CHAT_CHARS {
+        let mut cut = text.len() - MAX_CHAT_CHARS;
+        while !text.is_char_boundary(cut) {
+            cut += 1;
+        }
+        format!("[earlier messages trimmed]\n\n{}", &text[cut..])
+    } else {
+        text
+    }
+}
+
+fn bug_report_file_name() -> String {
+    let d = js_sys::Date::new_0();
+    format!(
+        "frogg-bug-report-{}-{:02}-{:02}.md",
+        d.get_full_year(),
+        d.get_month() + 1,
+        d.get_date()
+    )
 }
 
 #[component]

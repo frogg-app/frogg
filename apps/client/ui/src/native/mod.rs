@@ -449,6 +449,36 @@ async fn pick_files_web(multiple: bool) -> Result<Vec<PickedFile>, JsValue> {
     Ok(out)
 }
 
+/// Saves `text` as a file named `name`: the shell's save dialog, or a browser download.
+/// `Ok(false)` when the user cancelled the dialog.
+pub async fn save_text(name: &str, text: &str) -> Result<bool, String> {
+    if is_tauri() {
+        return invoke(
+            "save_text",
+            serde_json::json!({ "name": name, "text": text }),
+        )
+        .await;
+    }
+    let document = web_sys::window()
+        .and_then(|w| w.document())
+        .ok_or("no document")?;
+    let parts = js_sys::Array::of1(&JsValue::from_str(text));
+    let opts = web_sys::BlobPropertyBag::new();
+    opts.set_type("text/markdown");
+    let blob = web_sys::Blob::new_with_str_sequence_and_options(&parts, &opts).map_err(js_error)?;
+    let url = web_sys::Url::create_object_url_with_blob(&blob).map_err(js_error)?;
+    let a: web_sys::HtmlAnchorElement = document
+        .create_element("a")
+        .map_err(js_error)?
+        .dyn_into()
+        .map_err(|_| "not an anchor".to_owned())?;
+    a.set_href(&url);
+    a.set_download(name);
+    a.click();
+    let _ = web_sys::Url::revoke_object_url(&url);
+    Ok(true)
+}
+
 // ----- clipboard ------------------------------------------------------------------------------
 
 pub async fn clipboard_write(text: &str) -> Result<(), String> {
