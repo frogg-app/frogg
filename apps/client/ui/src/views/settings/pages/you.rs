@@ -244,6 +244,27 @@ pub fn ChatComposer() -> impl IntoView {
             <Row label="Downloads"><PrefSeg key="downloads" options=&[("ask", "Ask every time"), ("folder", "Save to folder")] /></Row>
             <Row label="Show hidden folders in pickers"><PrefToggle key="hiddenFolders" /></Row>
         </Section>
+        <Section title="Session list">
+            <Row
+                label="Order sessions by"
+                hint="Attention first puts sessions that need you, failed or are ready above working and idle ones, in every grouping. Also in the list's filter menu."
+            >
+                <SortSeg />
+            </Row>
+        </Section>
+    }
+}
+
+/// The session list's sort (shared with its filter menu; saved with the list's prefs).
+#[component]
+fn SortSeg() -> impl IntoView {
+    let list = crate::state::sessions::get();
+    view! {
+        <Seg
+            options=opts(&[("state", "Attention first"), ("recent", "Recent"), ("created", "Created"), ("title", "Title")])
+            value=Signal::derive(move || list.prefs.with(|p| p.sort.clone()))
+            on_change=Callback::new(move |v: String| list.prefs.update(|p| p.sort = v))
+        />
     }
 }
 
