@@ -40,16 +40,22 @@ fn flag(v: &Value, key: &str) -> bool {
     v.get(key) == Some(&Value::Bool(true))
 }
 
-/// A setting pinned by the daemon's environment (`overrideControlledPaths`).
+/// A `daemon.auth.<key>` setting pinned by the daemon's environment (`overrideControlledPaths`).
+/// The daemon refuses changes to it, so the page shows the lock instead of a live control.
 fn pinned(set: &Value, key: &str) -> bool {
-    let key = key.to_lowercase();
+    let path = format!("daemon.auth.{key}");
     set.get("overrideControlledPaths")
         .and_then(Value::as_array)
-        .is_some_and(|ps| {
-            ps.iter()
-                .filter_map(Value::as_str)
-                .any(|p| p.to_lowercase().contains(&key))
-        })
+        .is_some_and(|ps| ps.iter().filter_map(Value::as_str).any(|p| p == path))
+}
+
+/// Hint for an access toggle: the env lock wins, then a failed update, then the default.
+fn toggle_hint(locked_by: Option<&str>, error: Option<String>, default: &str) -> String {
+    match (locked_by, error) {
+        (Some(var), _) => format!("Locked: set by {var} in the daemon’s environment"),
+        (None, Some(e)) => e,
+        (None, None) => default.to_owned(),
+    }
 }
 
 /// One finding line: tone icon, title, body and actions (ui-next `hostkit` `Finding`).
@@ -326,36 +332,53 @@ fn PasswordForm(enabled: bool, pinned: bool, on_change: Callback<()>) -> impl In
 #[component]
 fn AuthToggles(settings: Value, on_change: Callback<()>) -> impl IntoView {
     let act = Action::new();
-    let update = move |patch: Value| {
+    // One action drives both toggles; its error belongs to the row that ran last.
+    let last = RwSignal::new("");
+    let update = move |row: &'static str, patch: Value| {
+        last.set(row);
         act.run(
             "u",
             async move { ns(&need()?, "auth.settings.update.request", patch).await },
             move |_| on_change.run(()),
         );
     };
+    let row_error = move |row: &'static str| {
+        Signal::derive(move || act.error.get().filter(|_| last.get() == row))
+    };
+    let (lan_err, claim_err) = (row_error("lan"), row_error("claim"));
     let claim = flag(&settings, "claimMode");
-    let lan_pinned = pinned(&settings, "trust");
-    let claim_pinned = pinned(&settings, "claim");
+    let lan_pinned = pinned(&settings, "trustLan");
+    let claim_pinned = pinned(&settings, "claimMode");
     view! {
         <Row
             label="Trust local network"
-            hint=if claim { "Ignored while claim mode is on" } else { "Skip pairing for LAN clients" }
+            hint=Signal::derive(move || toggle_hint(
+                lan_pinned.then_some("FROGG_TRUST_LAN"),
+                lan_err.get(),
+                if claim { "Ignored while claim mode is on" } else { "Skip pairing for LAN clients" },
+            ))
+            bad=Signal::derive(move || !lan_pinned && lan_err.get().is_some())
         >
             <Toggle
                 value=flag(&settings, "trustLan")
                 disabled=Signal::derive(move || act.busy() || lan_pinned)
-                on_change=Callback::new(move |v: bool| update(json!({ "trustLan": v })))
+                on_change=Callback::new(move |v: bool| update("lan", json!({ "trustLan": v })))
                 label="Trust local network"
             />
         </Row>
         <Row
             label="Claim mode"
-            hint=Signal::derive(move || act.error.get().unwrap_or_else(|| "First device to pair becomes owner".to_owned()))
+            hint=Signal::derive(move || toggle_hint(
+                claim_pinned.then_some("FROGG_CLAIM_MODE"),
+                claim_err.get(),
+                "First device to pair becomes owner",
+            ))
+            bad=Signal::derive(move || !claim_pinned && claim_err.get().is_some())
         >
             <Toggle
                 value=claim
                 disabled=Signal::derive(move || act.busy() || claim_pinned)
-                on_change=Callback::new(move |v: bool| update(json!({ "claimMode": v })))
+                on_change=Callback::new(move |v: bool| update("claim", json!({ "claimMode": v })))
                 label="Claim mode"
             />
         </Row>
@@ -373,8 +396,22 @@ mod tests {
             "This host binds 0.0.0.0:6767."
         );
         assert_eq!(copy("odd_thing", "").0, "odd thing");
-        let set = json!({ "overrideControlledPaths": ["auth.trustLan"] });
-        assert!(pinned(&set, "trust"));
+        let set = json!({
+            "overrideControlledPaths": ["daemon.auth.trustLan", "daemon.auth.claimScope"]
+        });
+        assert!(pinned(&set, "trustLan"));
         assert!(!pinned(&set, "password"));
+        // An env claimScope must not read as a claim mode lock.
+        assert!(!pinned(&set, "claimMode"));
+    }
+
+    #[test]
+    fn toggle_hints_show_the_lock_first() {
+        assert_eq!(
+            toggle_hint(Some("FROGG_TRUST_LAN"), Some("refused".into()), "d"),
+            "Locked: set by FROGG_TRUST_LAN in the daemon’s environment"
+        );
+        assert_eq!(toggle_hint(None, Some("refused".into()), "d"), "refused");
+        assert_eq!(toggle_hint(None, None, "d"), "d");
     }
 }
