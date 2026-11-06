@@ -130,6 +130,10 @@ pub struct Commit {
     pub sha: String,
     pub subject: String,
     pub when: String,
+    /// For the commit graph: author, whether it is on the base branch and on the remote.
+    pub author: String,
+    pub on_base: bool,
+    pub on_remote: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -434,8 +438,12 @@ impl Scm {
                     when: c["relativeDate"]
                         .as_str()
                         .or(c["date"].as_str())
+                        .or(c["authorDate"].as_str())
                         .unwrap_or_default()
                         .to_owned(),
+                    author: c["authorName"].as_str().unwrap_or_default().to_owned(),
+                    on_base: c["isOnBase"].as_bool().unwrap_or(false),
+                    on_remote: c["isOnRemote"].as_bool().unwrap_or(true),
                 })
                 .collect();
             let stashes = stashes

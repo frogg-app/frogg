@@ -47,7 +47,8 @@ pub fn use_presence(open: Signal<bool>, exit_ms: u32) -> Presence {
         let mine = generation.get_value();
         set_timeout(
             move || {
-                if generation.get_value() == mine {
+                // The owner may be gone (navigated away mid-exit).
+                if generation.try_get_value() == Some(mine) {
                     p.mounted.set(false);
                     p.closing.set(false);
                 }

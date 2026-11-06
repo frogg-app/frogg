@@ -320,6 +320,13 @@ async function desktop(page: Page, url: string, pairUrl: string, home: string, t
       .waitFor({ timeout: STEP_TIMEOUT });
   });
 
+  await step(page, "scm quick settings", async () => {
+    await openTool(page, "Source control");
+    await page.getByRole("button", { name: "Source control view settings" }).click();
+    await page.locator(".pn-quick").getByText("Branch graph").waitFor({ timeout: STEP_TIMEOUT });
+    await page.keyboard.press("Escape");
+  });
+
   await step(page, "files reopen", async () => {
     await openTool(page, "Files");
     await page.locator(".pn-node").getByText("README.md", { exact: true }).click();

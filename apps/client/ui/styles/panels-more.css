@@ -140,6 +140,153 @@
   color: var(--amber);
 }
 
+/* SCM: commit graph */
+.pn-graph-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px 4px;
+  font-size: 10px;
+  color: var(--faint);
+}
+.pn-graph-legend .pn-gnode {
+  position: static;
+  margin-left: 2px;
+}
+.pn-graph-legend .pn-gnode + * {
+  margin-right: 8px;
+}
+.pn-cline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 8px;
+  padding: 0 8px;
+  min-height: 30px;
+  font-size: 12.5px;
+  animation: pn-enter 220ms var(--ease) both;
+}
+.pn-cline.compact {
+  min-height: 22px;
+}
+.pn-cline .pn-sha {
+  font-size: 11px;
+}
+.pn-cline .dim {
+  color: var(--muted);
+}
+.pn-cauthor {
+  font-size: 10.5px;
+  color: var(--faint);
+  max-width: 90px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pn-graph {
+  position: relative;
+  width: 26px;
+  align-self: stretch;
+  flex: none;
+}
+.pn-graph.narrow {
+  width: 14px;
+}
+.pn-graph-dot {
+  width: 6px;
+  display: flex;
+  justify-content: center;
+  flex: none;
+}
+.pn-lane {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--line2);
+}
+.pn-lane.base {
+  left: 7px;
+}
+.pn-lane.dim {
+  opacity: 0.5;
+}
+.pn-lane.branch {
+  left: 19px;
+  background: var(--cyan);
+}
+.pn-lane.from-mid {
+  top: 50%;
+}
+.pn-lane.to-mid {
+  bottom: 12px;
+}
+/* The branch leaves the base lane: a 45° segment from the branch lane down to the base lane. */
+.pn-fork {
+  position: absolute;
+  width: 1px;
+  height: 17px;
+  left: 13px;
+  bottom: -2.5px;
+  background: var(--cyan);
+  transform: rotate(45deg);
+}
+.pn-gnode {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  transform: rotate(45deg);
+  flex: none;
+}
+.pn-graph .pn-gnode {
+  position: absolute;
+  top: 50%;
+  margin-top: -3.5px;
+}
+.pn-gnode.at-branch {
+  left: 16px;
+}
+.pn-gnode.at-base {
+  left: 4px;
+}
+.pn-gnode.pushed {
+  background: var(--cyan);
+}
+.pn-gnode.local {
+  background: var(--bg2);
+  border: 1px solid var(--amber);
+}
+.pn-gnode.base {
+  background: var(--faint);
+}
+
+/* SCM: quick settings */
+.pn-quick {
+  width: 260px;
+  max-height: none;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  top: 100%;
+}
+.pn-quick-head {
+  margin-top: 8px;
+}
+.pn-quick-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 30px;
+}
+.pn-quick-label {
+  flex: 1;
+  font-size: 12.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* PRs & CI: live progress */
 .pn-ci-progress {
   display: flex;

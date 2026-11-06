@@ -6,7 +6,7 @@ use frogg_render::{parse_unified, DiffMode, FileDiff};
 use leptos::prelude::*;
 
 use super::util::{plural, Ask, Confirm};
-use crate::components::{Brackets, Button, ButtonKind, Ico, Icon, Menu, MenuItem, Seg};
+use crate::components::{Brackets, Button, ButtonKind, Floating, Ico, Icon, Menu, MenuItem, Seg};
 use crate::shell::panel_head::{GroupHead, PanelHead};
 use crate::state::checkout::{base_name, online, session_cwd};
 use crate::state::scm::{store, Compare, DiffFile, Status};
@@ -66,6 +66,7 @@ pub fn ScmPanel() -> impl IntoView {
     view! {
         <div class="panel pn">
             <PanelHead title="Source control">
+                {move || git().is_some().then(|| view! { <QuickSettings /> })}
                 <button class="icon-btn" aria-label="Refresh" on:click=move |_| s.refresh()>
                     <Icon ico=Ico::RefreshCw size=14.0 class="faint" />
                 </button>
@@ -414,25 +415,182 @@ fn FileRow(f: DiffFile, ask: RwSignal<Option<Ask>>) -> impl IntoView {
     }
 }
 
+/// How many of the base branch's newest commits sit under the branch, to show where it forked.
+const BASE_CONTEXT: usize = 5;
+
+/// A commit's place in the two-lane graph.
+#[derive(Clone)]
+struct GraphRow {
+    c: crate::state::scm::Commit,
+    branch: bool,
+    first: bool,
+    last: bool,
+}
+
+fn graph_rows(commits: Vec<crate::state::scm::Commit>, with_base: bool) -> Vec<GraphRow> {
+    let (branch, base): (Vec<_>, Vec<_>) = commits.into_iter().partition(|c| !c.on_base);
+    let n = branch.len();
+    let mut rows: Vec<GraphRow> = branch
+        .into_iter()
+        .enumerate()
+        .map(|(i, c)| GraphRow {
+            c,
+            branch: true,
+            first: i == 0,
+            last: i + 1 == n,
+        })
+        .collect();
+    if with_base {
+        rows.extend(
+            base.into_iter()
+                .take(BASE_CONTEXT)
+                .enumerate()
+                .map(|(i, c)| GraphRow {
+                    c,
+                    branch: false,
+                    first: i == 0,
+                    last: false,
+                }),
+        );
+    }
+    rows
+}
+
+/// The checkout's commits with a branch graph as the left-most column: this branch's commits on
+/// their own lane, joining the base lane where it forked (ui-next `scm/CommitGraph.tsx`). The
+/// daemon lists commits without parents, so the graph shows the fork, not merges.
 #[component]
 fn Commits() -> impl IntoView {
+    let app = state::get();
     let s = store();
     move || {
+        let p = app.prefs;
         let list = s.commits.get().filter(|c| !c.is_empty())?;
-        let n = list.len();
+        let rows = graph_rows(list, p.flag("scmBaseCommits"));
+        let n = rows.iter().filter(|r| r.branch).count();
+        let has_branch = n > 0;
+        let base = git()
+            .and_then(|g| g.base_ref)
+            .unwrap_or_else(|| "base".into());
+        let label = if has_branch {
+            format!("Commits not in {base}")
+        } else {
+            format!("Recent on {base}")
+        };
+        let (graph, sha, author, date, compact) = (
+            p.flag("scmGraph"),
+            p.flag("scmSha"),
+            p.flag("scmAuthor"),
+            p.flag("scmDate"),
+            p.flag("scmCompact"),
+        );
+        let unpushed = rows.iter().any(|r| !r.c.on_remote);
+        let base_legend = has_branch && p.flag("scmBaseCommits");
         Some(view! {
-            <GroupHead label="Commits" count=Signal::derive(move || n) />
-            {list
+            {if has_branch {
+                view! { <GroupHead label=label count=Signal::derive(move || n) /> }.into_any()
+            } else {
+                view! { <GroupHead label=label /> }.into_any()
+            }}
+            {unpushed.then(|| view! {
+                <div class="pn-graph-legend t-mono">
+                    <i class="pn-gnode local"></i>"not pushed yet"
+                    {base_legend.then(|| view! { <i class="pn-gnode base"></i>{base.clone()} })}
+                </div>
+            })}
+            {rows
                 .into_iter()
-                .map(|c| view! {
-                    <div class="pn-line">
-                        <span class="t-mono cyan2 pn-sha">{c.sha}</span>
-                        <span class="pn-line-text">{c.subject}</span>
-                        <span class="t-mono pn-when">{c.when}</span>
-                    </div>
+                .map(|r| {
+                    let node = if !r.c.on_remote {
+                        "local"
+                    } else if !r.branch {
+                        "base"
+                    } else {
+                        "pushed"
+                    };
+                    let cell = if graph {
+                        let solo = r.first && r.last;
+                        view! {
+                            <span class="pn-graph" class:narrow=!has_branch>
+                                {(has_branch && r.branch).then(|| view! { <i class="pn-lane base dim"></i> })}
+                                {(!r.branch).then(|| view! { <i class="pn-lane base"></i> })}
+                                {r.branch.then(|| view! {
+                                    <i class="pn-lane branch" class:from-mid=r.first || solo class:to-mid=r.last || solo></i>
+                                })}
+                                {(r.branch && r.last).then(|| view! { <i class="pn-fork"></i> })}
+                                <i class=format!("pn-gnode {node} {}", if r.branch { "at-branch" } else { "at-base" })></i>
+                            </span>
+                        }
+                        .into_any()
+                    } else {
+                        view! {
+                            <span class="pn-graph-dot">
+                                {(!r.c.on_remote).then(|| view! { <i class="pn-gnode local"></i> })}
+                            </span>
+                        }
+                        .into_any()
+                    };
+                    let when = if js_sys::Date::parse(&r.c.when).is_finite() && r.c.when.contains('T') {
+                        super::util::ago(&r.c.when)
+                    } else {
+                        r.c.when.clone()
+                    };
+                    view! {
+                        <div class="pn-cline" class:compact=compact>
+                            {cell}
+                            {sha.then(|| view! { <span class="t-mono cyan2 pn-sha" class:dim=!r.branch>{r.c.sha.clone()}</span> })}
+                            <span class="pn-line-text" class:dim=!r.branch>{r.c.subject.clone()}</span>
+                            {(author && !r.c.author.is_empty()).then(|| view! { <span class="t-mono pn-cauthor">{r.c.author.clone()}</span> })}
+                            {date.then(|| view! { <span class="t-mono pn-when">{when}</span> })}
+                        </div>
+                    }
                 })
                 .collect_view()}
         })
+    }
+}
+
+/// Top-right quick settings for the commit list: columns, density and layout.
+#[component]
+fn QuickSettings() -> impl IntoView {
+    use crate::views::settings::kit::PrefToggle;
+    let open = RwSignal::new(false);
+    let base = move || {
+        git()
+            .and_then(|g| g.base_ref)
+            .unwrap_or_else(|| "base".into())
+    };
+    let row = |label: String, key: &'static str| {
+        view! {
+            <div class="pn-quick-row">
+                <span class="pn-quick-label">{label}</span>
+                <PrefToggle key=key />
+            </div>
+        }
+    };
+    view! {
+        <div class="pn-rel">
+            <button
+                class="icon-btn"
+                class:pn-on=move || open.get()
+                aria-label="Source control view settings"
+                on:click=move |_| open.set(true)
+            >
+                <Icon ico=Ico::SlidersHorizontal size=14.0 />
+            </button>
+            <Floating open=open on_close=Callback::new(move |_| open.set(false)) align_right=true class="pn-quick">
+                <span class="t-label">"Columns"</span>
+                {row("Branch graph".into(), "scmGraph")}
+                {row("Commit hash".into(), "scmSha")}
+                {row("Author".into(), "scmAuthor")}
+                {row("Age".into(), "scmDate")}
+                <span class="t-label pn-quick-head">"Appearance"</span>
+                {row("Compact rows".into(), "scmCompact")}
+                <span class="t-label pn-quick-head">"Layout"</span>
+                {move || row(format!("Show {} under the branch", base()), "scmBaseCommits")}
+                {row("Stashes".into(), "scmStashes")}
+            </Floating>
+        </div>
     }
 }
 
