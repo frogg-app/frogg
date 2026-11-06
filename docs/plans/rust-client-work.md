@@ -108,13 +108,13 @@ additive edits only. Sizes are S/M/L.
 **7c tools-subwork-markdown** — owns `ui/src/views/chat/{tool,subwork}.rs`,
 `apps/client/render/src/markdown`
 
-- M: host-relative images (`HostImage`, `ImageRoot`) in markdown and image tool rows.
-- S: markdown tables with inline-markdown cells and measured widths — `markdown/MdTable.tsx`.
-- S: `Clamp` remeasures on resize (ResizeObserver) and animates; tool pane body not rebuilt per
+- [done] M: host-relative images (`HostImage`, `ImageRoot`) in markdown and image tool rows.
+- [done] S: markdown tables with inline-markdown cells and measured widths — `markdown/MdTable.tsx`.
+- [done] S: `Clamp` remeasures on resize (ResizeObserver) and animates; tool pane body not rebuilt per
   streamed chunk.
-- L: full sub-work model (background commands, workflows, ports, to-dos, nesting) and strip
+- [done: `subwork::model` (pure, reusable by 7d session rows); `session_state` counts by kind] L: full sub-work model (background commands, workflows, ports, to-dos, nesting) and strip
   (tone roll-up, "+N more", elapsed, port chips) — `subwork/*`.
-- M: sub-work detail live status, links, scroll anchor, refetch on reconnect.
+- [done] M: sub-work detail live status, links, scroll anchor, refetch on reconnect.
 
 **7d sessions-shell** — owns `ui/src/views/sessions/**`, `ui/src/views/new_session/**`,
 `ui/src/shell/**`, `ui/src/state/{sessions,projects,ui}.rs`
