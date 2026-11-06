@@ -8,7 +8,7 @@ use leptos::prelude::*;
 use serde_json::Value;
 
 use super::item::on_link;
-use super::subwork::{SpawnedElapsed, SpawnedLink};
+use super::subwork::{SpawnedElapsed, SpawnedLink, Status as SubStatus, SubWork};
 use crate::components::{Ico, Icon, StatusGlyph};
 use crate::state::timeline::Entry;
 use crate::state::Bucket;
@@ -129,10 +129,12 @@ pub fn summary(name: &str, d: &Value) -> Summary {
         "plain_text" => Summary {
             ico: Ico::Wrench,
             verb: s(d, "label").unwrap_or(name).to_owned(),
+            // Task notifications repeat the label as the text: say it once.
             arg: s(d, "text")
                 .unwrap_or("")
                 .lines()
                 .next()
+                .filter(|t| Some(*t) != s(d, "label"))
                 .unwrap_or("")
                 .to_owned(),
             meta: None,
@@ -306,8 +308,36 @@ enum Settle {
 #[component]
 pub fn ToolCall(entry: ArcRwSignal<Entry>) -> impl IntoView {
     let open = RwSignal::new(false);
+    // A subagent call links to its live sub-work row (ticking run time, "Open subagent").
     let e = entry.clone();
-    let status = Memo::new(move |_| e.with(|e| e.str("status").unwrap_or("running").to_owned()));
+    let sub_call = Memo::new(move |_| {
+        e.with(|e| {
+            e.item
+                .get("detail")
+                .filter(|d| s(d, "type") == Some("sub_agent"))
+                .and_then(|_| e.str("callId"))
+                .map(str::to_owned)
+        })
+    });
+    // Claude leaves a Task call "running" in the timeline after its subagent settles; the
+    // subagent track knows better.
+    let work = use_context::<SubWork>();
+    let e = entry.clone();
+    let status = Memo::new(move |_| {
+        let raw = e.with(|e| e.str("status").unwrap_or("running").to_owned());
+        if raw != "running" {
+            return raw;
+        }
+        let settled = sub_call
+            .get()
+            .and_then(|c| work.and_then(|w| w.spawned(&c)))
+            .map(|sub| sub.status);
+        match settled {
+            Some(SubStatus::Done) => "completed".to_owned(),
+            Some(SubStatus::Failed) => "failed".to_owned(),
+            _ => raw,
+        }
+    });
     let e = entry.clone();
     let head = Memo::new(move |_| {
         e.with(|e| {
@@ -323,17 +353,6 @@ pub fn ToolCall(entry: ArcRwSignal<Entry>) -> impl IntoView {
                 .get("detail")
                 .filter(|d| s(d, "type") == Some("sub_agent"))
                 .and_then(|d| s(d, "childSessionId"))
-                .map(str::to_owned)
-        })
-    });
-    // A subagent call links to its live sub-work row (ticking run time, "Open subagent").
-    let e = entry.clone();
-    let sub_call = Memo::new(move |_| {
-        e.with(|e| {
-            e.item
-                .get("detail")
-                .filter(|d| s(d, "type") == Some("sub_agent"))
-                .and_then(|_| e.str("callId"))
                 .map(str::to_owned)
         })
     });

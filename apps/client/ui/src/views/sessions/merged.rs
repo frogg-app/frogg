@@ -91,9 +91,10 @@ pub fn MergedTerminals(#[prop(into)] needle: Signal<String>) -> impl IntoView {
     let on = Memo::new(move |_| app.prefs.flag("sessionsWithTerminals"));
     let t = store();
     // Refresh now and on a timer while on and online.
+    // A connection drop can rerun this after the list unmounted and disposed `on`.
     Effect::new(move |_| {
         let online = app.conn.active_link().conn == crate::state::Conn::Online;
-        if on.get() && online {
+        if on.try_get().unwrap_or(false) && online {
             spawn_local(t.refresh_all());
         }
     });
