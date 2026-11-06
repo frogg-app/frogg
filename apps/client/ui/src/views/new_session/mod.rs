@@ -4,6 +4,7 @@
 //! provider account and extra CLI flags, the first prompt with attachments, and an optional
 //! title. Desktop: a centred cut card; phone: a full-screen sheet.
 
+pub mod launch;
 use std::collections::BTreeMap;
 
 use frogg_client_core::protocol::inbound;
@@ -48,6 +49,8 @@ pub struct Account {
     pub id: String,
     pub name: String,
     pub authenticated: bool,
+    /// Host-stored account preferences; `launchArgs` seeds the flags field.
+    pub preferences: Option<Value>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Default)]
@@ -308,6 +311,7 @@ struct Form {
     flags: RwSignal<String>,
     branches: RwSignal<Option<Vec<SelectOption>>>,
     drafts: RwSignal<Vec<Draft>>,
+    launch: StoredValue<Option<launch::Launch>>,
 }
 
 impl Form {
@@ -333,6 +337,7 @@ impl Form {
             flags: RwSignal::new(String::new()),
             branches: RwSignal::new(None),
             drafts: RwSignal::new(Vec::new()),
+            launch: StoredValue::new(None),
         }
     }
 
@@ -559,6 +564,12 @@ async fn submit(f: Form) {
         if let Some(t) = &title {
             config["title"] = t.clone().into();
         }
+        if let Some(l) = f.launch.get_value() {
+            let values = untrack(|| l.feature_values());
+            if !values.is_empty() {
+                config["featureValues"] = Value::Object(values);
+            }
+        }
         let flags = f.flags.get_untracked();
         if untrack(|| f.flags_supported()) && !flags.trim().is_empty() {
             let args = parse_flags(&flags)?;
@@ -628,6 +639,8 @@ pub fn NewSession() -> impl IntoView {
     let open = Signal::derive(move || ui.new_session_open.get());
     let p = use_presence(open, OVERLAY_OUT_MS + 30);
     let f = Form::new();
+    f.launch
+        .set_value(Some(launch::Launch::new(launch_inputs(f))));
     let close = move || {
         ui.set_new_session(false, None);
         f.error.set(None);
@@ -829,6 +842,45 @@ pub fn NewSession() -> impl IntoView {
 }
 
 /// A labelled row: label left and control right on wide layouts, stacked on phones.
+/// The launch fields' inputs, built once per form.
+fn launch_inputs(f: Form) -> launch::Inputs {
+    let app = crate::state::get();
+    let host = Memo::new(move |_| {
+        let h = f.host_id.get();
+        let online = match &h {
+            Some(h) => app.conn.link(h).conn,
+            None => app.conn.active_link().conn,
+        } == Conn::Online;
+        (h, online)
+    });
+    let provider = Memo::new(move |_| f.agent().then(|| f.provider.get()).flatten());
+    let root = Memo::new(move |_| f.project().map(|p| p.project_root_path));
+    let account_args = Memo::new(move |_| {
+        let pick = f.account.get();
+        f.entry()
+            .and_then(|e| e.accounts)
+            .unwrap_or_default()
+            .into_iter()
+            .find(|a| Some(&a.id) == pick.as_ref())
+            .and_then(|a| a.preferences)
+            .and_then(|p| p.get("launchArgs").cloned())
+            .and_then(|v| serde_json::from_value::<Vec<String>>(v).ok())
+            .unwrap_or_default()
+    });
+    launch::Inputs {
+        host,
+        provider,
+        root,
+        account_args: account_args.into(),
+        flags: f.flags,
+        flags_on: Signal::derive(move || f.flags_supported()),
+    }
+}
+
+fn launch_row(label: String, phone: bool, body: AnyView) -> AnyView {
+    view! { <Row label=label phone=phone>{body}</Row> }.into_any()
+}
+
 #[component]
 fn Row(#[prop(into)] label: Signal<String>, phone: bool, children: Children) -> impl IntoView {
     view! {
@@ -1267,12 +1319,15 @@ fn AgentFields(f: Form, phone: bool) -> impl IntoView {
                         spellcheck="false"
                         autocomplete="off"
                         prop:value=move || f.flags.get()
-                        on:input=move |ev| f.flags.set(event_target_value(&ev))
+                        on:input=move |ev| f.flags.set(launch::plain_flags(&event_target_value(&ev)))
                     />
                     {move || f.flags_error().map(|e| view! { <span class="field-err">{e}</span> })}
                 </div>
             </Row>
         </Show>
+        {f.launch.get_value().map(|l| view! {
+            <launch::LaunchFeatures launch=l phone=phone row=launch_row />
+        })}
     }
 }
 

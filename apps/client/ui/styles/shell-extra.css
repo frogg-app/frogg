@@ -193,3 +193,29 @@
   max-height: 280px;
   overflow: auto;
 }
+
+/* ----- launch fields (ui-next sessions/LaunchFields.tsx) ----- */
+.ns-save {
+  display: flex;
+  justify-content: flex-end;
+  min-height: 18px;
+}
+.ns-save-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.ns-save-link:hover {
+  color: var(--text);
+}
+.ns-save-link.off {
+  color: var(--faint);
+  cursor: default;
+}
+.ns-save-note {
+  font-size: 12px;
+  color: var(--faint);
+}

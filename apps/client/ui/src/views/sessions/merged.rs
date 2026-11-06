@@ -33,7 +33,7 @@ pub fn MergedTerminals(#[prop(into)] needle: Signal<String>) -> impl IntoView {
                 if !alive.try_get_value().unwrap_or(false) {
                     return;
                 }
-                if on.get_untracked() && crate::state::checkout::online() {
+                if on.try_get_untracked().unwrap_or(false) && crate::state::checkout::online() {
                     spawn_local(store().refresh_all());
                 }
                 tick(alive, on);
