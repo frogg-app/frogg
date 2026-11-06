@@ -122,8 +122,7 @@ additive edits only. Sizes are S/M/L.
 
 - M (done): merged terminals in the sessions list (`sessions/merged.tsx`), the active host's,
   then each other online host's (opening one switches host); S (done): fall back to Sessions
-  when the current tool
-  stops being offered.
+  when the current tool stops being offered.
 - M (done): projects dialog and device-local projects — `sessions/ProjectsDialog.tsx`,
   `localProjects.ts`.
 - M (done): sub-work chips on session rows and in the status summary (provider subagents and
@@ -169,9 +168,8 @@ additive edits only. Sizes are S/M/L.
   unlink dev plugins, update confirm with new capabilities, incompatible reason text (**done**;
   the update confirm takes the new capabilities from the catalog because the Rust client error
   carries only code and message).
-- S: companion uses the compact composer look and bubble icons (**done**; the composer is a
-  companion-local copy of the compact composer's markup; it could now move to the session
-  `Composer`'s no-agent mode).
+- S: companion uses the compact composer look and bubble icons (**done**; the composer is the
+  session `Composer` in no-agent mode: `compact`, `on_send`, `placeholder`, no chips).
 
 Wave 7 integration: a tail refetch rebuilds timeline rows with fresh uids, so a streamed reply
 row can remount within a frame; deferred chat callbacks (reveal pass, scroll anchor, composer

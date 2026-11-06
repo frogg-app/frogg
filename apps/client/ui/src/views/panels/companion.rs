@@ -10,6 +10,7 @@ use crate::shell::panel_head::{GroupHead, PanelHead};
 use crate::state::checkout::online;
 use crate::state::Bucket;
 use crate::state::{self};
+use crate::views::chat::Composer;
 
 #[derive(Clone, PartialEq)]
 struct Line {
@@ -33,7 +34,6 @@ pub fn CompanionPanel() -> impl IntoView {
     let lines = RwSignal::new(Vec::<Line>::new());
     let error = RwSignal::new(None::<String>);
     let seq = StoredValue::new(0u64);
-    let draft = RwSignal::new(String::new());
     let push = move |you: bool, text: String| {
         seq.update_value(|s| *s += 1);
         let id = seq.get_value();
@@ -88,35 +88,19 @@ pub fn CompanionPanel() -> impl IntoView {
         let c = leptos::__reexports::send_wrapper::SendWrapper::new(c);
         on_cleanup(move || c.unsubscribe(id));
     });
-    let input = NodeRef::<leptos::html::Textarea>::new();
-    // Autosize to the text, up to a cap, like the session composer.
-    let fit = move || {
-        if let Some(el) = input.get_untracked() {
-            let style = web_sys::HtmlElement::style(&el);
-            let _ = style.set_property("height", "auto");
-            let h = el.scroll_height().min(160);
-            let _ = style.set_property("height", &format!("{h}px"));
-        }
-    };
-    let send = move || {
-        let text = draft.get_untracked().trim().to_owned();
-        if text.is_empty() {
-            return;
-        }
+    let send = Callback::new(move |text: String| {
         let Some(c) = app.conn.client().filter(|_| online()) else {
             error.set(Some("Host is not connected.".into()));
             return;
         };
         error.set(None);
-        draft.set(String::new());
-        fit();
         push(true, text.clone());
         spawn_local(async move {
             if let Err(e) = c.send_companion_message(&text).await {
                 error.set(Some(e.to_string()));
             }
         });
-    };
+    });
     view! {
         <div class="panel pn">
             <PanelHead title="Companion" />
@@ -150,50 +134,19 @@ pub fn CompanionPanel() -> impl IntoView {
                 </For>
                 {move || error.get().map(|e| view! { <div class="pn-error t-mono">{e}</div> })}
             </div>
-            // The compact composer's look (ui-next passes `compact` and no chips): the same box,
-            // input and send button as a session's composer, without agent controls.
+            // The session composer in no-agent mode, compact and without chips (ui-next
+            // passes `compact` and no chips).
             <div class="pn-companion-composer">
-                <div class="composer compact">
-                    <div class="composer-box cut cut-stroke" style="--c:10px">
-                        <textarea
-                            class="composer-input"
-                            node_ref=input
-                            rows="1"
-                            aria-label="Message the companion"
-                            placeholder="Tell the companion…"
-                            prop:value=move || draft.get()
-                            on:input=move |e| {
-                                draft.set(event_target_value(&e));
-                                fit();
-                            }
-                            on:keydown=move |e: web_sys::KeyboardEvent| {
-                                if e.key() == "Enter" && !e.shift_key() && !e.is_composing() {
-                                    e.prevent_default();
-                                    send();
-                                }
-                            }
-                        ></textarea>
-                        <div class="composer-bar">
-                            <span class="spacer"></span>
-                            {move || {
-                                let idle = draft.with(|d| d.trim().is_empty()) || !online();
-                                view! {
-                                    <button
-                                        class="send cut"
-                                        class:idle=idle
-                                        style="--c:6px"
-                                        aria-label="Send"
-                                        title="Send"
-                                        disabled=idle
-                                        on:click=move |_| send()
-                                    >
-                                        <Icon ico=Ico::ArrowUp size=16.0 stroke=2.2 />
-                                    </button>
-                                }
-                            }}
-                        </div>
-                    </div>
-                </div>
+                <Composer
+                    agent_id="companion".to_string()
+                    session=Memo::new(|_| None)
+                    rows=Signal::derive(Vec::new)
+                    online=Signal::derive(online)
+                    provider=Signal::derive(String::new)
+                    compact=true
+                    on_send=send
+                    placeholder="Tell the companion…"
+                />
             </div>
         </div>
     }
