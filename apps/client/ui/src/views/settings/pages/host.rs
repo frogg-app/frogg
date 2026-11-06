@@ -772,7 +772,9 @@ pub fn HostUpdate(version: Option<String>) -> impl IntoView {
     let status = RwSignal::new(None::<Value>);
     let act = Action::new();
     let alive = StoredValue::new(true);
-    on_cleanup(move || alive.set_value(false));
+    on_cleanup(move || {
+        let _ = alive.try_set_value(false);
+    });
     Effect::new(move |_| {
         channel.track();
         check.set(None);
@@ -782,7 +784,7 @@ pub fn HostUpdate(version: Option<String>) -> impl IntoView {
             let Ok(c) = need() else { return };
             leptos::task::spawn_local(async move {
                 if let Ok(s) = ns(&c, "daemon.update.get_status.request", json!({})).await {
-                    if alive.get_value() {
+                    if alive.try_get_value().unwrap_or(false) {
                         status.set(Some(s));
                     }
                 }
@@ -791,7 +793,7 @@ pub fn HostUpdate(version: Option<String>) -> impl IntoView {
         read();
         if let Ok(h) = set_interval_with_handle(
             move || {
-                if alive.get_value() {
+                if alive.try_get_value().unwrap_or(false) {
                     read();
                 }
             },
@@ -805,7 +807,7 @@ pub fn HostUpdate(version: Option<String>) -> impl IntoView {
     if runs == Some(true) {
         leptos::task::spawn_local(async move {
             let r = fetch_releases().await;
-            if alive.get_value() {
+            if alive.try_get_value().unwrap_or(false) {
                 releases.set(Some(r));
             }
         });

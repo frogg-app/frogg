@@ -66,7 +66,9 @@ impl ProjectCfg {
             tick: RwSignal::new(0),
         };
         let alive = StoredValue::new(true);
-        on_cleanup(move || alive.set_value(false));
+        on_cleanup(move || {
+            let _ = alive.try_set_value(false);
+        });
         Effect::new(move |_| {
             p.tick.track();
             p.config.set(None);
@@ -77,7 +79,7 @@ impl ProjectCfg {
             let root = p.root.get_value();
             spawn_local(async move {
                 let res = c.read_project_config(&root).await;
-                if !alive.get_value() {
+                if !alive.try_get_value().unwrap_or(false) {
                     return;
                 }
                 p.loading.set(false);
