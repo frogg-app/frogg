@@ -1,6 +1,6 @@
 {
   "name": "@frogg/highlight",
-  "version": "1.6.14-next.8",
+  "version": "1.6.14-next.9",
   "files": [
     "dist",
     "!dist/**/*.map",
