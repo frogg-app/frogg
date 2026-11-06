@@ -1325,6 +1325,16 @@ fn AgentFields(f: Form, phone: bool) -> impl IntoView {
                 </div>
             </Row>
         </Show>
+        // The host runs Claude but its daemon predates extra flags: say why the field is missing.
+        <Show when=move || {
+            f.entry().is_some_and(|e| e.provider == "claude")
+                && f.host_conn() == Conn::Online
+                && f.client().is_some_and(|c| !c.has_feature("claudeExtraArgs"))
+        }>
+            <Row label="Extra flags" phone=phone>
+                <span class="ns-gate-hint">"This host's daemon is too old for extra flags. Update it in Settings › Daemon."</span>
+            </Row>
+        </Show>
         {f.launch.get_value().map(|l| view! {
             <launch::LaunchFeatures launch=l phone=phone row=launch_row />
         })}
