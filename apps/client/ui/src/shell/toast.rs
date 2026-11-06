@@ -356,6 +356,33 @@ fn glyph(kind: ToastKind) -> impl IntoView {
     }
 }
 
+/// Facet variant's leading-edge triangle mesh (after the frogg.dev hero mesh).
+const MESH: [(&str, f32); 12] = [
+    ("0,0 14,0 0,12", 0.55),
+    ("14,0 0,12 16,18", 0.32),
+    ("14,0 30,0 16,18", 0.2),
+    ("30,0 16,18 36,14", 0.1),
+    ("0,12 16,18 0,30", 0.42),
+    ("16,18 0,30 18,34", 0.24),
+    ("16,18 36,14 18,34", 0.12),
+    ("0,30 18,34 0,48", 0.5),
+    ("18,34 0,48 14,52", 0.28),
+    ("18,34 36,40 14,52", 0.1),
+    ("0,48 14,52 0,64", 0.38),
+    ("14,52 0,64 22,64", 0.18),
+];
+
+/// `HH:MM:SS` local time, for the HUD header.
+fn clock_now() -> String {
+    let d = js_sys::Date::new_0();
+    format!(
+        "{:02}:{:02}:{:02}",
+        d.get_hours(),
+        d.get_minutes(),
+        d.get_seconds()
+    )
+}
+
 #[component]
 pub fn ToastHost() -> impl IntoView {
     let app = crate::state::get();
@@ -390,11 +417,94 @@ pub fn ToastHost() -> impl IntoView {
                         (true, true) => "toast-out-down",
                     };
                     let life = if t.life == 0 { TOAST_LIFE_MS } else { t.life };
-                    view! {
-                        <div class="toast-slot" class:leaving=t.leaving>
+                    let variant = app.prefs.get_untracked::<Option<String>>("toastStyle").unwrap_or_default();
+                    let snap = !t.leaving;
+                    let close = move |_| toasts.dismiss(id);
+                    let title_v = move || title.get().unwrap_or_else(|| t_title.clone());
+                    let detail_v = move || detail.get().or_else(|| t_detail.clone());
+                    let action = t.action.clone();
+                    let act = move || {
+                        if !keep {
+                            toasts.dismiss(id);
+                        }
+                        if let Some(a) = &action {
+                            a.run.run(());
+                        }
+                    };
+                    let act_label = t.action.as_ref().map(|a| a.label.clone());
+                    let drain = (!t.sticky && !t.leaving).then(|| view! {
+                        <span
+                            class="toast-drain"
+                            class:held=move || toasts.paused.get()
+                            style=format!("animation-duration:{life}ms")
+                        ></span>
+                    });
+                    let card = match variant.as_str() {
+                        // B: HUD frame, corner ticks, mono header, grid texture.
+                        "hud" => {
+                            let meta = format!("{} · {}", clock_now(), id);
+                            view! {
+                                <div class=format!("toast toast-hud {motion} k-{}", kind.id())>
+                                    <span class=if snap { "toast-ticks snap" } else { "toast-ticks" }>
+                                        <i class="tk tl"></i><i class="tk tr"></i><i class="tk bl"></i><i class="tk br"></i>
+                                    </span>
+                                    <div class="toast-hud-head">
+                                        <span class="toast-hud-dot"></span>
+                                        <span class="t-mono toast-hud-tag">{kind.tag().to_uppercase()}</span>
+                                        <span class="t-mono toast-hud-meta">{meta}</span>
+                                        <span class="spacer"></span>
+                                        <button class="icon-btn" aria-label="Dismiss" on:click=close>
+                                            <Icon ico=Ico::X size=12.0 />
+                                        </button>
+                                    </div>
+                                    <div class="toast-hud-rule"></div>
+                                    <div class="toast-hud-body">
+                                        <div class="toast-title">{title_v}</div>
+                                        {move || detail_v().map(|d| view! { <div class="toast-detail t-mono">{d}</div> })}
+                                        {act_label.map(|l| view! {
+                                            <button class="toast-hud-act t-mono" on:click=move |_| act()>
+                                                {format!("[ {} ]", l.to_uppercase())}
+                                            </button>
+                                        })}
+                                    </div>
+                                    {drain}
+                                </div>
+                            }.into_any()
+                        }
+                        // C: faceted, triangle mesh at the leading edge, gem glyph.
+                        "facet" => view! {
+                            <div class=format!("toast toast-facet cut cut-stroke {motion} k-{}", kind.id()) style="--c:10px">
+                                <svg class="toast-mesh" viewBox="0 0 40 64" preserveAspectRatio="none" aria-hidden="true">
+                                    {MESH.iter().map(|(p, o)| view! { <polygon points=*p opacity=o.to_string()></polygon> }).collect_view()}
+                                </svg>
+                                <span class=if snap { "toast-gem snap" } else { "toast-gem" }>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                                        <polygon class="gem-face" points="12,1 22,7 22,17 12,23 2,17 2,7"></polygon>
+                                        <polygon points="12,1 22,7 12,12" fill="#ffffff" opacity="0.32"></polygon>
+                                        <polygon points="2,17 12,12 12,23" fill="#000000" opacity="0.3"></polygon>
+                                    </svg>
+                                </span>
+                                <div class="toast-facet-body">
+                                    <div class="toast-title">{title_v}</div>
+                                    {move || detail_v().map(|d| view! { <div class="toast-detail">{d}</div> })}
+                                    <div class="toast-facet-foot">
+                                        <span class="t-label toast-tag">{kind.tag()}</span>
+                                        {act_label.map(|l| view! {
+                                            <button class="toast-link" on:click=move |_| act()>{format!("{l} →")}</button>
+                                        })}
+                                    </div>
+                                </div>
+                                <button class="icon-btn toast-facet-x" aria-label="Dismiss" on:click=close>
+                                    <Icon ico=Ico::X size=12.0 />
+                                </button>
+                                {drain}
+                            </div>
+                        }.into_any(),
+                        // A (default): chamfered card, kind bracket corners, edge bar, tag.
+                        _ => view! {
                             <div class=format!("toast cut cut-stroke {motion} k-{}", kind.id()) style="--c:10px">
                                 <span class="toast-edge"></span>
-                                <span class=if t.leaving { "toast-corners" } else { "toast-corners snap" }>
+                                <span class=if snap { "toast-corners snap" } else { "toast-corners" }>
                                     <i class="tc tl"></i>
                                     <i class="tc br"></i>
                                 </span>
@@ -403,39 +513,24 @@ pub fn ToastHost() -> impl IntoView {
                                         {glyph(kind)}
                                         <span class="t-label toast-tag">{kind.tag()}</span>
                                         <span class="spacer"></span>
-                                        <button class="icon-btn" aria-label="Dismiss" on:click=move |_| toasts.dismiss(id)>
+                                        <button class="icon-btn" aria-label="Dismiss" on:click=close>
                                             <Icon ico=Ico::X size=13.0 />
                                         </button>
                                     </div>
-                                    <div class="toast-title">{move || title.get().unwrap_or_else(|| t_title.clone())}</div>
-                                    {move || detail.get().or_else(|| t_detail.clone()).map(|d| view! { <div class="toast-detail">{d}</div> })}
-                                    {t.action.clone().map(|a| {
-                                        let run = a.run;
-                                        view! {
-                                            <button
-                                                class="btn cut btn-tint toast-act"
-                                                style="--c:6px"
-                                                on:click=move |_| {
-                                                    if !keep {
-                                                        toasts.dismiss(id);
-                                                    }
-                                                    run.run(());
-                                                }
-                                            >
-                                                <span class="btn-l">{a.label.clone()}</span>
-                                            </button>
-                                        }
+                                    <div class="toast-title">{title_v}</div>
+                                    {move || detail_v().map(|d| view! { <div class="toast-detail">{d}</div> })}
+                                    {act_label.map(|l| view! {
+                                        <button class="btn cut btn-tint toast-act" style="--c:6px" on:click=move |_| act()>
+                                            <span class="btn-l">{l}</span>
+                                        </button>
                                     })}
                                 </div>
-                                {(!t.sticky && !t.leaving).then(|| view! {
-                                    <span
-                                        class="toast-drain"
-                                        class:held=move || toasts.paused.get()
-                                        style=format!("animation-duration:{life}ms")
-                                    ></span>
-                                })}
+                                {drain}
                             </div>
-                        </div>
+                        }.into_any(),
+                    };
+                    view! {
+                        <div class="toast-slot" class:leaving=t.leaving>{card}</div>
                     }
                 }
             />

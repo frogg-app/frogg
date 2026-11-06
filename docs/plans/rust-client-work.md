@@ -144,7 +144,7 @@ additive edits only. Sizes are S/M/L.
 - M (done): error boundary screen (panic hook crash page); M (done): popout single-session
   window.
 - M (done): toast history log, live toast updates, accurate pause; host toasts with Retry.
-  Left: toast variants (`toastStyle` hud/facet).
+  Done: toast variants (`toastStyle` hud/facet) in `shell/toast.rs`.
 
 **7e panels** — owns `ui/src/views/panels/{files,scm,terminals,tasks,search,prs,usage,plugins,companion,util}.rs`,
 `apps/client/render/src/terminal`
