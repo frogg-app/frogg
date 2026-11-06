@@ -3,14 +3,19 @@
 pub mod agents;
 pub mod app;
 pub mod ci;
+pub mod context;
 pub mod developer;
 pub mod host;
+pub mod labels;
 pub mod metadata;
 pub mod plugins;
 pub mod project;
 pub mod resources;
 pub mod scripts;
+pub mod security;
 pub mod terminals;
+pub mod tools;
+pub mod voice;
 pub mod worktrees;
 pub mod you;
 
@@ -36,6 +41,11 @@ pub fn body(page: &Page) -> AnyView {
         "devices" => host_page(|| view! { <host::DevicesAccess /> }.into_any()),
         "automation" => host_page(|| view! { <host::Automation /> }.into_any()),
         "daemon" => host_page(|| view! { <host::DaemonUpdates /> }.into_any()),
+        "voice" => view! { <voice::VoiceCompanion /> }.into_any(),
+        "context" => view! { <context::ContextCleanCut /> }.into_any(),
+        "tools" => host_page(|| view! { <tools::ToolsPrompts /> }.into_any()),
+        "security" => host_page(|| view! { <security::Security /> }.into_any()),
+        "labels" => host_page(|| view! { <labels::SessionLabels /> }.into_any()),
         "onboarding" => view! { <app::GettingStarted /> }.into_any(),
         "privacy" => view! { <app::Privacy /> }.into_any(),
         "about" => view! { <app::About /> }.into_any(),
