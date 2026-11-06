@@ -311,6 +311,25 @@ async function desktop(page: Page, url: string, pairUrl: string, home: string, t
     await page.locator(".pn-viewer").getByText("smoke").first().waitFor({ timeout: STEP_TIMEOUT });
   });
 
+  await step(page, "files edit and save", async () => {
+    const viewer = page.locator(".pn-viewer");
+    await viewer.getByRole("tab", { name: "Edit" }).click();
+    const editor = viewer.locator("textarea.pn-editor");
+    await editor.fill("# smoke edited\n");
+    await viewer.getByText("◆ Unsaved", { exact: false }).waitFor({ timeout: STEP_TIMEOUT });
+    await viewer.getByRole("button", { name: "Save", exact: true }).click();
+    await viewer.getByText("◆ Unsaved", { exact: false }).waitFor({ state: "detached" });
+    await viewer.getByRole("tab", { name: "Source" }).click();
+    await viewer.getByText("smoke edited").first().waitFor({ timeout: STEP_TIMEOUT });
+  });
+
+  await step(page, "files search", async () => {
+    await page.getByRole("button", { name: "Search files", exact: true }).click();
+    await page.getByRole("textbox", { name: "Search files" }).fill("READ");
+    await page.locator(".pn-search-count").waitFor({ timeout: STEP_TIMEOUT });
+    await page.getByRole("button", { name: "Close search", exact: true }).click();
+  });
+
   await step(page, "terminal", async () => {
     await openTool(page, "Terminals");
     await page.getByRole("button", { name: "New terminal", exact: true }).click();

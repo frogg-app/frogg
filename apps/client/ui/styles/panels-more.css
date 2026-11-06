@@ -1,0 +1,147 @@
+/* Panel additions (Wave 7e): file search and editor, tab menus, and later panel parity. */
+
+/* Files: header search */
+.icon-btn.pn-on {
+  color: var(--cyan2);
+}
+.pn-file-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 12px 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg2);
+  animation: pn-enter 160ms ease-out both;
+}
+.pn-file-search:focus-within {
+  border-color: var(--cyan);
+}
+.pn-file-search-input {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 13px;
+}
+.pn-file-search-input::placeholder {
+  color: var(--faint);
+}
+.pn-search-count {
+  padding: 4px 16px 6px;
+}
+.pn-hit-dir {
+  margin-left: auto;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  max-width: 50%;
+  direction: rtl;
+  text-align: left;
+}
+@keyframes pn-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+/* Files: tab strip */
+.pn-tabs {
+  position: relative;
+  overflow: visible;
+}
+.pn-tabs-in {
+  display: flex;
+  align-items: stretch;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.pn-tab-menu {
+  position: absolute;
+  top: 100%;
+  width: 230px;
+  z-index: 30;
+}
+.pn-tab-menu .floating {
+  top: 2px;
+}
+.pn-tab-more {
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.pn-tab:hover .pn-tab-more,
+.pn-tab.on .pn-tab-more {
+  opacity: 1;
+}
+.pn-tab-dirty {
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--amber);
+  flex: none;
+}
+.pn-tab-plus {
+  margin: 0 6px;
+  align-self: center;
+}
+.pn-rel {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.pn-rel .menu {
+  top: 100%;
+}
+
+/* Files: editor */
+.pn-editor {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  resize: none;
+  border: none;
+  outline: none;
+  padding: 14px 24px;
+  background: var(--bg2);
+  color: var(--text);
+  font-size: 12.5px;
+  line-height: 1.6;
+  tab-size: 4;
+  white-space: pre;
+}
+.pn-save-error {
+  padding: 8px 24px;
+}
+.pn-viewer-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 16px;
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+  font-size: 11px;
+  flex: none;
+}
+.pn-mode-chip {
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--faint);
+  background: var(--panel);
+}
+.pn-mode-chip.edit {
+  color: var(--bg);
+  background: var(--cyan);
+}
+.pn-unsaved {
+  color: var(--amber);
+}
