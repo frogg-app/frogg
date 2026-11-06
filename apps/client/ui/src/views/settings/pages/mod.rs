@@ -2,7 +2,16 @@
 
 pub mod agents;
 pub mod app;
+pub mod ci;
+pub mod developer;
 pub mod host;
+pub mod metadata;
+pub mod plugins;
+pub mod project;
+pub mod resources;
+pub mod scripts;
+pub mod terminals;
+pub mod worktrees;
 pub mod you;
 
 use leptos::prelude::*;
@@ -31,6 +40,14 @@ pub fn body(page: &Page) -> AnyView {
         "privacy" => view! { <app::Privacy /> }.into_any(),
         "about" => view! { <app::About /> }.into_any(),
         "updates" => view! { <app::AppUpdates /> }.into_any(),
+        "terminals" => host_page(|| view! { <terminals::TerminalProfiles /> }.into_any()),
+        "resources" => host_page(|| view! { <resources::ResourcesStorage /> }.into_any()),
+        "worktrees" => view! { <worktrees::Worktrees /> }.into_any(),
+        "scripts" => view! { <scripts::Scripts /> }.into_any(),
+        "ci" => view! { <ci::Ci /> }.into_any(),
+        "metadata" => view! { <metadata::Metadata /> }.into_any(),
+        "plugins" => host_page(|| view! { <plugins::Plugins /> }.into_any()),
+        "developer" => host_page(|| view! { <developer::Developer /> }.into_any()),
         _ => view! { <span class="t-label">"not built yet"</span> }.into_any(),
     }
 }
