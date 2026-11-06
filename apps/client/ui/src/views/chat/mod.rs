@@ -10,6 +10,7 @@ mod lightbox;
 mod notices;
 mod permission;
 mod relay;
+mod reveal;
 pub mod session_menu;
 pub mod session_state;
 mod subwork;
