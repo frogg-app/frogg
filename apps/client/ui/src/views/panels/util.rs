@@ -267,27 +267,6 @@ pub fn human_size(n: u64) -> String {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn quotes_paths_like_a_terminal() {
-        assert_eq!(shell_path("/tmp/a.png"), "/tmp/a.png");
-        assert_eq!(shell_path("/tmp/a b.png"), "'/tmp/a b.png'");
-        assert_eq!(shell_path("/tmp/it's"), "'/tmp/it'\\''s'");
-        assert_eq!(shell_path("C:\\a b"), "\"C:\\a b\"");
-        assert_eq!(dropped_paths(&["/a".into(), "/b c".into()]), "/a '/b c' ");
-        assert_eq!(dropped_paths(&[]), "");
-    }
-
-    #[test]
-    fn sizes() {
-        assert_eq!(human_size(12), "12 B");
-        assert_eq!(human_size(2048), "2.0 KB");
-    }
-}
-
 /// The shared sheet (it portals itself to `<body>`).
 pub use crate::components::Sheet;
 
@@ -308,5 +287,26 @@ pub fn ago(iso: &str) -> String {
         format!("{}d", s / 86_400)
     } else {
         format!("{}mo", s / 2_592_000)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn quotes_paths_like_a_terminal() {
+        assert_eq!(shell_path("/tmp/a.png"), "/tmp/a.png");
+        assert_eq!(shell_path("/tmp/a b.png"), "'/tmp/a b.png'");
+        assert_eq!(shell_path("/tmp/it's"), "'/tmp/it'\\''s'");
+        assert_eq!(shell_path("C:\\a b"), "\"C:\\a b\"");
+        assert_eq!(dropped_paths(&["/a".into(), "/b c".into()]), "/a '/b c' ");
+        assert_eq!(dropped_paths(&[]), "");
+    }
+
+    #[test]
+    fn sizes() {
+        assert_eq!(human_size(12), "12 B");
+        assert_eq!(human_size(2048), "2.0 KB");
     }
 }

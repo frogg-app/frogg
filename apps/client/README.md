@@ -70,8 +70,8 @@ Release wasm size at the time of writing: about 5.1 MB raw, 1.9 MB gzip.
 - A sent message's bubble does not show its attachments (ui-next remembers them per message id,
   `chat/sentAttachments.ts`); the files are sent correctly.
 - Upload progress and cancel are not shown for large file attachments.
-- Plugin rail entries are not gated on the daemon's plugin list yet (`shell/tools.rs`).
-- A saved host that is gone keeps retrying in the background (with backoff) and logs a failed
-  WebSocket handshake to the console each time.
-- The status bar keeps the last session's branch and diff stat when no session is selected.
-- The frogg-ui crate has no tests in CI; only core and render are tested there.
+- Settings pages not built yet are hidden from the list: Voice & Companion, Context & clean cut,
+  Tools/skills/prompts, Security, Session labels, Terminal profiles, Resources & storage, the
+  Project pages (Worktrees, Scripts, CI, Generated text), Plugins and Developer.
+- Android back: a sheet or popover opened from the root screen isn't closed by back (it leaves
+  the app); everywhere else back closes the topmost view first.
