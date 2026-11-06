@@ -84,6 +84,9 @@ pub enum Error {
     Unsupported(String),
     #[error("the client was closed")]
     Disposed,
+    /// The caller cancelled the call (e.g. an upload) before the daemon answered.
+    #[error("cancelled")]
+    Cancelled,
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

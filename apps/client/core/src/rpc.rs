@@ -1472,6 +1472,18 @@ impl DaemonClient {
         &self,
         input: FileUploadInput<'_>,
     ) -> Result<outbound::FileUploadResponsePayload> {
+        self.upload_file_stream_cancellable(input, &|| false).await
+    }
+
+    /// `upload_file_stream`, polling `cancelled` between chunks. Once it returns true the upload
+    /// is aborted: the protocol has no abort frame, so the stream is ended short, which the
+    /// daemon treats as a size mismatch and answers by deleting the partial file. Resolves to
+    /// `Error::Cancelled` straight away, without waiting for that answer.
+    pub async fn upload_file_stream_cancellable(
+        &self,
+        input: FileUploadInput<'_>,
+        cancelled: &dyn Fn() -> bool,
+    ) -> Result<outbound::FileUploadResponsePayload> {
         let rid = self.new_request_id();
         let modified_at = input.modified_at.clone().unwrap_or_else(now_iso);
         let size = input.size;
@@ -1508,12 +1520,22 @@ impl DaemonClient {
         if let Some(p) = input.on_progress {
             p(0, size);
         }
+        let abort = |rid: String| -> Result<outbound::FileUploadResponsePayload> {
+            let _ = send(&FileFrame::End { request_id: rid });
+            Err(Error::Cancelled)
+        };
         while sent < size {
             while self.buffered_amount() > high_water {
                 if let std::task::Poll::Ready(r) = futures::poll!(response.as_mut()) {
                     return decode(&r?);
                 }
+                if cancelled() {
+                    return abort(rid);
+                }
                 crate::sleep(self, 15).await;
+            }
+            if cancelled() {
+                return abort(rid);
             }
             let next = (sent + chunk).min(size);
             let payload = (input.read)(sent, next);
@@ -1532,6 +1554,9 @@ impl DaemonClient {
             if let std::task::Poll::Ready(r) = futures::poll!(response.as_mut()) {
                 return decode(&r?);
             }
+        }
+        if cancelled() {
+            return abort(rid);
         }
         send(&FileFrame::End { request_id: rid })?;
         decode(&response.await?)

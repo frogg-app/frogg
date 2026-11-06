@@ -1502,9 +1502,11 @@
 body:has(.tool-menu) .ob-chip-place.phone {
   display: none;
 }
-/* A phone detail view has no tab bar but a composer at the bottom: clear it. */
-.ob-chip-place.phone.detail {
-  bottom: calc(104px + env(safe-area-inset-bottom));
+/* A phone detail view has no tab bar but a composer of varying height at the bottom; the chip
+   would cover it, so it waits for views without one. */
+.ob-chip-place.phone.detail,
+body:has(.chat-composer) .ob-chip-place.phone {
+  display: none;
 }
 .ob-chip-place.docked {
   position: static;

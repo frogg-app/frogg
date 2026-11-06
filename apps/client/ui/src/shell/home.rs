@@ -30,7 +30,11 @@ pub fn Home() -> impl IntoView {
             Ico::Upload,
             "Import conversations",
             "Claude Code, Codex or JSONL files",
-            None,
+            // The session list hosts the import dialog (the scope menu's "Import conversations…").
+            Some(Callback::new(move |_| {
+                ui.set_tool(Tool::Sessions);
+                crate::state::sessions::get().open(crate::state::sessions::Sheet::Import);
+            })),
         ),
         (
             Ico::Zap,

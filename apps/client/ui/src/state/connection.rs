@@ -523,7 +523,9 @@ impl Connections {
             self.hosts.update(host_id, |h| h.server_id = server_id);
         }
         if let Some(name) = name {
-            if saved.name == saved.endpoint.split(':').next().unwrap_or_default() {
+            let placeholder = saved.name == saved.endpoint.split(':').next().unwrap_or_default()
+                || saved.server_id.as_deref() == Some(saved.name.as_str());
+            if placeholder && saved.name != name {
                 self.hosts.rename(host_id, &name);
             }
         }

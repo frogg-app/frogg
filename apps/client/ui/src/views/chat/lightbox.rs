@@ -23,7 +23,10 @@ fn state() -> RwSignal<Option<Shown>> {
     if let Some(s) = OPEN.with(Cell::get) {
         return s;
     }
-    let s = Owner::new_root(None).with(|| RwSignal::new(None));
+    // The root owns the signal for the app's life: dropping it would dispose the signal.
+    let owner = Owner::new_root(None);
+    let s = owner.with(|| RwSignal::new(None));
+    std::mem::forget(owner);
     OPEN.with(|c| c.set(Some(s)));
     s
 }

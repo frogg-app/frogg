@@ -102,15 +102,12 @@ fn attach(files: Vec<PickedFile>, atts: RwSignal<Vec<Att>>) {
         });
         spawn_local(async move {
             let bytes = f.bytes;
-            // Removing the chip cancels: the stream stops early and the result is dropped.
+            // Removing the chip aborts the upload on the daemon (see `upload_file_stream_cancellable`).
             let gone = move || {
                 atts.try_with_untracked(|a| !a.iter().any(|x| x.id == id))
                     .unwrap_or(true)
             };
             let read = |start: u64, end: u64| {
-                if gone() {
-                    return Vec::new();
-                }
                 let end = (end as usize).min(bytes.len());
                 bytes[(start as usize).min(end)..end].to_vec()
             };
@@ -120,19 +117,22 @@ fn attach(files: Vec<PickedFile>, atts: RwSignal<Vec<Att>>) {
                 f.mime.clone()
             };
             let res = client
-                .upload_file_stream(FileUploadInput {
-                    file_name: f.name.clone(),
-                    mime_type: mime,
-                    size: bytes.len() as u64,
-                    modified_at: None,
-                    chunk_size: None,
-                    read: &read,
-                    on_progress: Some(&|sent: u64, total: u64| {
-                        if total > 0 {
-                            progress.try_set(sent as f64 / total as f64);
-                        }
-                    }),
-                })
+                .upload_file_stream_cancellable(
+                    FileUploadInput {
+                        file_name: f.name.clone(),
+                        mime_type: mime,
+                        size: bytes.len() as u64,
+                        modified_at: None,
+                        chunk_size: None,
+                        read: &read,
+                        on_progress: Some(&|sent: u64, total: u64| {
+                            if total > 0 {
+                                progress.try_set(sent as f64 / total as f64);
+                            }
+                        }),
+                    },
+                    &gone,
+                )
                 .await;
             if gone() {
                 return;
@@ -734,8 +734,10 @@ fn AgentControls(#[prop(into)] session: Signal<Option<Session>>) -> impl IntoVie
         })
     };
     view! {
-        {model_chip}
-        {mode_chip}
+        <span class="composer-ctl">
+            {model_chip}
+            {mode_chip}
+        </span>
     }
 }
 
