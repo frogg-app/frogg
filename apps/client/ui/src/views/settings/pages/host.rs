@@ -169,7 +169,7 @@ const ROLES: &[(&str, &str)] = &[
 ];
 const INVITE_ROLES: &[(&str, &str)] = &[("operator", "Operator"), ("viewer", "Viewer")];
 
-fn device_icon(name: &str) -> Ico {
+pub fn device_icon(name: &str) -> Ico {
     let n = name.to_lowercase();
     if ["phone", "pixel", "android", "iphone", "galaxy"]
         .iter()
@@ -186,7 +186,7 @@ fn device_icon(name: &str) -> Ico {
     }
 }
 
-fn seen_text(d: &Value) -> String {
+pub fn seen_text(d: &Value) -> String {
     let connected = d.get("connected") == Some(&Value::Bool(true));
     let current = d.get("current") == Some(&Value::Bool(true));
     let mut seen = match d.get("lastSeenAt").and_then(Value::as_str) {

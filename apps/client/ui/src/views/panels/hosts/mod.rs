@@ -3,6 +3,11 @@
 //! open the shell's host sheet.
 
 pub mod access;
+pub mod here;
+pub mod offline;
+pub mod pair;
+pub mod routes;
+pub mod service_url;
 pub mod versions;
 
 use leptos::prelude::*;
@@ -16,8 +21,10 @@ use crate::state::hosts::{parse_host_address, Host};
 use crate::state::hostview::{self, open_add_host, HostDialog};
 use crate::state::Conn;
 use crate::views::settings::kit::{ErrorLine, Input, Meter};
-use crate::views::settings::pages::host::{HostUpdate, PairBar};
+use crate::views::settings::pages::host::HostUpdate;
 use access::{auth_refusal, identity_mismatch, offline_reason};
+use offline::Offline;
+use routes::Routes;
 
 pub fn host_kind(h: &Host) -> &'static str {
     if h.is_relay() {
@@ -32,6 +39,26 @@ fn last_error(host_id: &str) -> Option<frogg_client_core::ErrorInfo> {
         .conn
         .client_of(host_id)
         .and_then(|c| c.last_error_info())
+}
+
+fn restart_daemon() {
+    let app = crate::state::get();
+    let Some(c) = app.conn.client() else { return };
+    spawn_local(async move {
+        match c.restart_server(Some("Restart from Hosts")).await {
+            Ok(_) => app.toasts.push(crate::shell::toast::Toast::new(
+                crate::shell::toast::ToastKind::Info,
+                "Restarting the daemon…",
+            )),
+            Err(e) => app.toasts.push(
+                crate::shell::toast::Toast::new(
+                    crate::shell::toast::ToastKind::Error,
+                    "Couldn't restart the daemon",
+                )
+                .detail(e.to_string()),
+            ),
+        };
+    });
 }
 
 #[component]
@@ -267,22 +294,28 @@ fn ActiveHost(host: Host, on_back: Option<Callback<()>>) -> impl IntoView {
     let name = host.name.clone();
     let host_s = StoredValue::new(host);
     move || {
-        let link = app.conn.active_link();
-        if link.conn != Conn::Online {
-            let err = last_error(&hid.get_value());
-            let fixable =
-                auth_refusal(err.as_ref()).is_none() && identity_mismatch(err.as_ref()).is_none();
-            let connecting = link.conn == Conn::Connecting;
-            return view! {
-                <Head name=name.clone() eyebrow=format!("Host · {kind}") on_back=on_back>
-                    {fixable.then(|| view! {
+        if !online.get() {
+            // Only the link's state re-renders the head; the offline banner stays mounted.
+            let head_btn = move || {
+                let link = app.conn.active_link();
+                let err = last_error(&hid.get_value());
+                let fixable = auth_refusal(err.as_ref()).is_none()
+                    && identity_mismatch(err.as_ref()).is_none();
+                let connecting = link.conn == Conn::Connecting;
+                fixable.then(|| {
+                    view! {
                         <Button
                             kind=ButtonKind::Primary
                             label=if connecting { "Retrying…" } else { "Retry" }
                             disabled=connecting
                             on_press=Callback::new(move |_| app.conn.activate(&hid.get_value()))
                         />
-                    })}
+                    }
+                })
+            };
+            return view! {
+                <Head name=name.clone() eyebrow=format!("Host · {kind}") on_back=on_back>
+                    {head_btn}
                 </Head>
                 <Offline host=host_s.get_value() />
             }
@@ -304,9 +337,12 @@ fn ActiveHost(host: Host, on_back: Option<Callback<()>>) -> impl IntoView {
             .join(" · ");
         let via = if kind == "Relay" {
             "Connected via relay"
+        } else if here::over_tailscale(&host_s.get_value()) {
+            "Connected over Tailscale"
         } else {
             "Connected directly"
         };
+        let raw_info = info.as_ref().map(|i| i.raw.clone());
         let status = Signal::derive(move || {
             let m = metrics.get();
             format!(
@@ -330,6 +366,7 @@ fn ActiveHost(host: Host, on_back: Option<Callback<()>>) -> impl IntoView {
         view! {
             <Head name=name.clone() eyebrow=eyebrow status=status on_back=on_back>
                 {owner.then(|| view! { <Button label="Pair a device" on_press=Callback::new(move |_| hv.open(HostDialog::PairDevice)) /> })}
+                {owner.then(|| view! { <Button label="Restart daemon" on_press=Callback::new(move |_| restart_daemon()) /> })}
                 <Button label="Edit" on_press=Callback::new(move |_| hv.open(HostDialog::Edit(hid.get_value()))) />
             </Head>
             <div class="hd-grid">
@@ -356,6 +393,7 @@ fn ActiveHost(host: Host, on_back: Option<Callback<()>>) -> impl IntoView {
                         }
                     }}
                 </Card>
+                {owner.then(|| view! { <here::HereNow owner=owner role=role.clone() /> })}
                 <Card title="Connections">
                     <Routes host_id=hid.get_value() />
                     {fp.map(|f| view! { <span class="t-mono faint">{format!("key {}…", f.chars().take(20).collect::<String>())}</span> })}
@@ -365,6 +403,7 @@ fn ActiveHost(host: Host, on_back: Option<Callback<()>>) -> impl IntoView {
                     <span class="muted">{role_t.map(|r| format!("This device is {} {r}.", if r.starts_with(['a', 'e', 'i', 'o', 'u']) { "an" } else { "a" })).unwrap_or_default()}</span>
                     {owner.then(|| view! { <HostUpdate version=version.clone() /> })}
                 </Card>
+                <here::TailscaleCard host=host_s.get_value() info=raw_info />
             </div>
         }
         .into_any()
@@ -384,71 +423,6 @@ fn MeterLine(
             <span class="t-mono faint">{detail}</span>
         </div>
     }
-}
-
-/// Why the active host isn't connected, and the fix.
-#[component]
-fn Offline(host: Host) -> impl IntoView {
-    let app = crate::state::get();
-    let hv = hostview::get();
-    let id = StoredValue::new(host.id.clone());
-    let link = app.conn.active_link();
-    let err = last_error(&host.id);
-    if let Some(r) = auth_refusal(err.as_ref()) {
-        return view! {
-            <div class="hd-banner warn">
-                <Icon ico=Ico::ShieldAlert size=18.0 class="amber" />
-                <div class="hd-banner-text">
-                    <span class="hd-strong">{r.title}</span>
-                    <span class="muted">{r.body}</span>
-                </div>
-                <div class="set-acts">
-                    <Button kind=ButtonKind::Primary label=r.action on_press=Callback::new(|_| open_add_host(true)) />
-                    <Button label="Enter password" on_press=Callback::new(move |_| hv.open(HostDialog::Edit(id.get_value()))) />
-                </div>
-            </div>
-        }
-        .into_any();
-    }
-    if let Some((expected, actual)) = identity_mismatch(err.as_ref()) {
-        return view! {
-            <div class="hd-banner warn">
-                <Icon ico=Ico::AlertTriangle size=18.0 class="amber" />
-                <div class="hd-banner-text">
-                    <span class="hd-strong">{format!("A different Frogg daemon is answering at {}", host.endpoint)}</span>
-                    <span class="muted t-mono">{format!("saved {expected} · answering {actual}")}</span>
-                    <span class="muted">"Frogg keeps retrying in case the saved one comes back. Remove this host and add the new daemon if it moved for good."</span>
-                </div>
-                <div class="set-acts">
-                    <Button kind=ButtonKind::Danger label="Remove host…" on_press=Callback::new(move |_| hv.open(HostDialog::Remove(id.get_value()))) />
-                </div>
-            </div>
-        }
-        .into_any();
-    }
-    let reason = offline_reason(None, link.error.as_deref());
-    view! {
-        <div class="hd-banner">
-            <Icon ico=Ico::WifiOff size=18.0 class="faint" />
-            <div class="hd-banner-text">
-                <span class="hd-strong">{if link.conn == Conn::Connecting { "Connecting…".to_owned() } else { reason }}</span>
-                <span class="muted">
-                    {format!(
-                        "Is the daemon running? Start it on the host with `{} daemon start`, then retry. {}",
-                        access::NEXT_CLI,
-                        host.last_online_at.as_deref().map(|t| format!("Last connected {}.", config::ago(t))).unwrap_or_default()
-                    )}
-                </span>
-            </div>
-            <div class="set-acts">
-                <Button label="Edit host…" on_press=Callback::new(move |_| hv.open(HostDialog::Edit(id.get_value()))) />
-            </div>
-        </div>
-        <div class="hd-grid">
-            <Card title="Connections"><Routes host_id=host.id.clone() /></Card>
-        </div>
-    }
-    .into_any()
 }
 
 #[component]
@@ -512,72 +486,24 @@ fn SavedHost(host: Host, on_back: Option<Callback<()>>) -> impl IntoView {
     }
 }
 
-/// The routes to a host: the one in use and saved alternates (promote, forget).
-#[component]
-fn Routes(host_id: String) -> impl IntoView {
-    let app = crate::state::get();
-    let id = StoredValue::new(host_id);
-    let host = Memo::new(move |_| app.hosts.find(&id.get_value()));
-    move || {
-        let Some(h) = host.get() else {
-            return ().into_any();
-        };
-        let primary = h.primary_route();
-        let alts = h.routes.clone().unwrap_or_default();
-        let label = |relay: bool, tls: Option<bool>| {
-            format!(
-                "{}{}",
-                if relay { "Relay" } else { "Direct" },
-                if tls == Some(true) { " · TLS" } else { "" }
-            )
-        };
-        view! {
-            <div class="routes">
-                <div class="route">
-                    <span class="hdot online"></span>
-                    <span class="route-text">
-                        <span class="t-mono">{primary.endpoint.clone()}</span>
-                        <span class="hosts-sub">{label(primary.relay.is_some(), primary.tls)}</span>
-                    </span>
-                    <span class="t-label">"in use"</span>
-                </div>
-                {alts.into_iter().map(|r| {
-                    let rid = StoredValue::new(r.id.clone());
-                    view! {
-                        <div class="route">
-                            <span class="hdot"></span>
-                            <span class="route-text">
-                                <span class="t-mono">{r.endpoint.clone()}</span>
-                                <span class="hosts-sub">{label(r.relay.is_some(), r.tls)}</span>
-                            </span>
-                            <Button label="Use" on_press=Callback::new(move |_| {
-                                if app.hosts.promote_route(&id.get_value(), &rid.get_value()).is_some() {
-                                    app.conn.activate(&id.get_value());
-                                }
-                            }) />
-                            <button class="icon-btn danger" aria-label="Forget route" on:click=move |_| app.hosts.remove_route(&id.get_value(), &rid.get_value())>
-                                <Icon ico=Ico::X size=13.0 />
-                            </button>
-                        </div>
-                    }
-                }).collect_view()}
-            </div>
-        }
-        .into_any()
-    }
-}
-
 /// The Hosts tool's own dialogs: edit, remove, pair a device.
 #[component]
 fn HostDialogs() -> impl IntoView {
     let hv = hostview::get();
-    let open = Signal::derive(move || hv.dialog.get().is_some());
+    let app = crate::state::get();
+    let pairing = Memo::new(move |_| hv.dialog.get() == Some(HostDialog::PairDevice));
+    let open = Signal::derive(move || hv.dialog.get().is_some() && !pairing.get());
     let close = Callback::new(move |_| hv.close());
     let title = move || match hv.dialog.get() {
         Some(HostDialog::Edit(_)) => "Edit host",
         Some(HostDialog::Remove(_)) => "Remove host",
-        Some(HostDialog::PairDevice) => "Pair a device",
-        None => "",
+        _ => "",
+    };
+    let host_name = move || {
+        app.hosts
+            .active()
+            .map(|h| h.name)
+            .unwrap_or_else(|| "host".into())
     };
     view! {
         <Sheet open=open on_close=close width=520.0>
@@ -590,9 +516,22 @@ fn HostDialogs() -> impl IntoView {
             {move || match hv.dialog.get() {
                 Some(HostDialog::Edit(id)) => view! { <EditHost id=id /> }.into_any(),
                 Some(HostDialog::Remove(id)) => view! { <RemoveHost id=id /> }.into_any(),
-                Some(HostDialog::PairDevice) => view! { <div class="pair-device"><PairBar /></div> }.into_any(),
-                None => ().into_any(),
+                _ => ().into_any(),
             }}
+        </Sheet>
+        <Sheet open=pairing on_close=close width=740.0>
+            <div class="sheet-head">
+                <span class="sheet-titles">
+                    <span class="t-label">{move || format!("{} · devices", host_name())}</span>
+                    <span class="t-display sheet-title">"Pair a device"</span>
+                </span>
+                <button class="icon-btn" aria-label="Close" on:click=move |_| hv.close()>
+                    <Icon ico=Ico::X size=16.0 />
+                </button>
+            </div>
+            <Show when=move || pairing.get()>
+                <pair::PairDevice />
+            </Show>
         </Sheet>
     }
 }

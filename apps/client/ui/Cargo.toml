@@ -89,3 +89,7 @@ web-sys = { version = "0.3", features = [
   "MutationObserver",
   "MutationObserverInit",
 ] }
+
+# views/panels/hosts (pairing QR). Own table so dependency edits never conflict.
+[target.'cfg(not(target_os = "solaris"))'.dependencies]
+qrcodegen = "1.8"

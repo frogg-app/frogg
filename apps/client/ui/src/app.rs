@@ -30,6 +30,7 @@ pub fn App() -> impl IntoView {
         <flows::signin::SignInDialog />
         <flows::onboarding::Onboarding />
         <ToastHost />
+        <crate::views::panels::hosts::service_url::ServiceUrlDialog />
     }
 }
 

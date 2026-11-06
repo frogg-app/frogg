@@ -83,6 +83,11 @@ struct Identity {
     hostname: Option<String>,
 }
 
+/// The server id a daemon reports at `/api/identity` over the given scheme, if it answers.
+pub async fn fetch_server_id(endpoint: &str, tls: bool) -> Option<String> {
+    identity(endpoint, tls).await?.server_id
+}
+
 async fn identity(endpoint: &str, tls: bool) -> Option<Identity> {
     let base = daemon_http_base(endpoint, tls).ok()?;
     let reply = http(&format!("{base}/api/identity"), None).await.ok()?;
