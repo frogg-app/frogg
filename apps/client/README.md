@@ -67,9 +67,6 @@ Release wasm size at the time of writing: about 5.1 MB raw, 1.9 MB gzip.
 
 ## Known gaps
 
-- A sent message's bubble does not show its attachments (ui-next remembers them per message id,
-  `chat/sentAttachments.ts`); the files are sent correctly.
-- Upload progress and cancel are not shown for large file attachments.
 - Plugin rail entries are not gated on the daemon's plugin list yet (`shell/tools.rs`).
 - A saved host that is gone keeps retrying in the background (with backoff) and logs a failed
   WebSocket handshake to the console each time.

@@ -17,6 +17,7 @@ use super::{client_or_toast, toast_err};
 use crate::components::{Ico, Icon, Select, SelectOption};
 use crate::native::PickedFile;
 use crate::shell::toast::ToastKind;
+use crate::state::timeline::sent;
 use crate::state::Session;
 
 /// Images up to this size go to the model inline; anything else uploads as a file.
@@ -25,8 +26,12 @@ const MAX_INPUT_PX: i32 = 240;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum AttKind {
-    Image { mime: String, data: String },
-    Uploading,
+    Image {
+        mime: String,
+        data: String,
+    },
+    /// Streaming to the host; the signal is the fraction sent (0..=1).
+    Uploading(RwSignal<f64>),
     File(Value),
 }
 
@@ -87,16 +92,25 @@ fn attach(files: Vec<PickedFile>, atts: RwSignal<Vec<Att>>) {
         let Some(client) = client_or_toast() else {
             return;
         };
+        let progress = RwSignal::new(0.0);
         atts.update(|a| {
             a.push(Att {
                 id,
                 name: f.name.clone(),
-                kind: AttKind::Uploading,
+                kind: AttKind::Uploading(progress),
             })
         });
         spawn_local(async move {
             let bytes = f.bytes;
+            // Removing the chip cancels: the stream stops early and the result is dropped.
+            let gone = move || {
+                atts.try_with_untracked(|a| !a.iter().any(|x| x.id == id))
+                    .unwrap_or(true)
+            };
             let read = |start: u64, end: u64| {
+                if gone() {
+                    return Vec::new();
+                }
                 let end = (end as usize).min(bytes.len());
                 bytes[(start as usize).min(end)..end].to_vec()
             };
@@ -113,9 +127,16 @@ fn attach(files: Vec<PickedFile>, atts: RwSignal<Vec<Att>>) {
                     modified_at: None,
                     chunk_size: None,
                     read: &read,
-                    on_progress: None,
+                    on_progress: Some(&|sent: u64, total: u64| {
+                        if total > 0 {
+                            progress.try_set(sent as f64 / total as f64);
+                        }
+                    }),
                 })
                 .await;
+            if gone() {
+                return;
+            }
             let file = res
                 .map_err(|e| e.to_string())
                 .and_then(|r| match (r.file, r.error) {
@@ -187,11 +208,34 @@ async fn send(agent_id: &str, text: &str, atts: &[Att]) -> Result<(), String> {
             _ => None,
         })
         .collect();
+    // The id comes back on the user message, so its bubble can show what was attached.
+    let message_id = sent::new_message_id();
+    sent::remember(
+        &message_id,
+        atts.iter()
+            .filter_map(|a| {
+                let (kind, uri) = match &a.kind {
+                    AttKind::Image { mime, data } => {
+                        ("image", Some(format!("data:{mime};base64,{data}")))
+                    }
+                    AttKind::File(_) => ("file", None),
+                    _ => return None,
+                };
+                Some(sent::SentAtt {
+                    id: a.id.to_string(),
+                    kind: kind.into(),
+                    name: a.name.clone(),
+                    uri,
+                })
+            })
+            .collect(),
+    );
     client
         .send_message(
             agent_id,
             text,
             SendMessageOptions {
+                message_id: Some(message_id),
                 images: (!images.is_empty()).then_some(Value::Array(images)),
                 attachments: (!files.is_empty()).then_some(Value::Array(files)),
                 ..Default::default()
@@ -242,7 +286,8 @@ pub fn Composer(
             .unwrap_or(false)
     });
     let empty = move || text.with(|t| t.trim().is_empty()) && atts.with(Vec::is_empty);
-    let uploading = move || atts.with(|a| a.iter().any(|x| x.kind == AttKind::Uploading));
+    let uploading =
+        move || atts.with(|a| a.iter().any(|x| matches!(x.kind, AttKind::Uploading(_))));
 
     // Autosize the box to its text, up to a cap.
     let fit = move || {
@@ -465,22 +510,31 @@ pub fn Composer(
                     <div class="att-chips">
                         <For
                             each=move || atts.get()
-                            key=|a| (a.id, matches!(a.kind, AttKind::Uploading))
+                            key=|a| (a.id, matches!(a.kind, AttKind::Uploading(_)))
                             children=move |a| {
                                 let aid = a.id;
                                 let ico = match a.kind {
                                     AttKind::Image { .. } => Ico::Image,
                                     _ => Ico::Paperclip,
                                 };
-                                let up = a.kind == AttKind::Uploading;
+                                let progress = match a.kind {
+                                    AttKind::Uploading(p) => Some(p),
+                                    _ => None,
+                                };
+                                let up = progress.is_some();
                                 view! {
                                     <span class="att-chip m-enter" class:uploading=up>
                                         <Icon ico=ico size=12.0 />
                                         <span class="att-name t-mono">{a.name}</span>
-                                        {up.then(|| view! { <span class="att-up t-label">"uploading"</span> })}
+                                        {progress.map(|p| view! {
+                                            <span class="att-up t-label">
+                                                {move || format!("{}%", (p.get() * 100.0).round() as u32)}
+                                            </span>
+                                            <span class="att-bar" style:width=move || format!("{:.1}%", p.get() * 100.0)></span>
+                                        })}
                                         <button
                                             class="att-x"
-                                            aria-label="Remove"
+                                            aria-label=if up { "Cancel upload" } else { "Remove" }
                                             on:click=move |_| atts.update(|l| l.retain(|x| x.id != aid))
                                         >
                                             <Icon ico=Ico::X size=11.0 />
