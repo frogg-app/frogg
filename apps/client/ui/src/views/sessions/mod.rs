@@ -7,6 +7,7 @@ pub mod folder;
 pub mod history;
 pub mod inbox;
 pub mod menus;
+pub mod merged;
 pub mod sheets;
 pub mod summary;
 
@@ -476,6 +477,9 @@ pub fn SessionList() -> impl IntoView {
                         />
                         <Show when=move || m.with(|m| m.groups.is_empty())>
                             <span class="slist-none">"Nothing matches."</span>
+                        </Show>
+                        <Show when=move || !chats()>
+                            <merged::MergedTerminals needle=q />
                         </Show>
                     </div>
                 }
