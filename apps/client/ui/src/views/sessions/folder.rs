@@ -80,14 +80,14 @@ pub fn FolderBrowser(
         spawn_local(async move {
             if target == DRIVES {
                 let list = projects::list_drives(&c).await;
-                if seq.get_value() == mine {
+                if seq.try_get_value() == Some(mine) {
                     abs.set(DRIVES.into());
                     entries.set(Some(list));
                 }
                 return;
             }
             let res = projects::list_dir(&c, &target).await;
-            if seq.get_value() != mine {
+            if seq.try_get_value() != Some(mine) {
                 return;
             }
             match res {

@@ -23,7 +23,7 @@ pub fn HistoryList() -> impl IntoView {
         let more = cursor.is_some();
         spawn_local(async move {
             let res = projects::fetch_history(&search, cursor).await;
-            if seq.get_value() != mine {
+            if seq.try_get_value() != Some(mine) {
                 return;
             }
             match res {
