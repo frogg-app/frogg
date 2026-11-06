@@ -256,3 +256,66 @@
     opacity: 0.35;
   }
 }
+
+/* ----- toast log in the Inbox (ui-next toast/ToastLog.tsx) ----- */
+.toast-log-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px 6px;
+}
+.toast-log-count {
+  font-size: 10.5px;
+  color: var(--faint);
+}
+.toast-log-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: 11.5px;
+  color: var(--faint);
+  cursor: pointer;
+}
+.toast-log-link:hover {
+  color: var(--text);
+}
+.toast-log-more {
+  padding: 10px 16px;
+}
+.toast-log-row {
+  margin: 0 8px;
+  padding: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.toast-log-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.toast-log-ok {
+  width: 7px;
+  height: 7px;
+  background: var(--mint);
+}
+.toast-log-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.toast-log-when {
+  font-size: 10.5px;
+  color: var(--faint);
+}
+.toast-log-detail {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 3px 0 0 15px;
+  font-size: 11px;
+  color: var(--faint);
+}

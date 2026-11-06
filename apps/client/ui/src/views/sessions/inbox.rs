@@ -121,6 +121,7 @@ pub fn InboxPanel() -> impl IntoView {
                         }
                     })
                     .collect_view()}
+                <ToastLog />
             </div>
             <span class="t-mono inbox-foot">"Session approvals, failures, finished work and past toasts"</span>
         </div>
@@ -278,5 +279,60 @@ pub fn InboxDetail(
                 .into_any()
             }}
         </div>
+    }
+}
+
+/// Inbox section: every toast raised on this device, newest first, kept per the retention
+/// setting (ui-next `toast/ToastLog.tsx`).
+#[component]
+fn ToastLog() -> impl IntoView {
+    use crate::shell::toast::ToastKind;
+    const PAGE: usize = 20;
+    let toasts = crate::state::get().toasts;
+    let shown = RwSignal::new(PAGE);
+    let records = toasts.history;
+    view! {
+        <Show when=move || records.with(|r| !r.is_empty())>
+            <div class="toast-log">
+                <div class="toast-log-head">
+                    <span class="t-label">"Toasts"</span>
+                    <span class="spacer"></span>
+                    <span class="t-mono toast-log-count">{move || records.with(Vec::len)}</span>
+                    <button class="toast-log-link" aria-label="Clear toast history" on:click=move |_| toasts.clear_history()>"Clear"</button>
+                </div>
+                <For
+                    each=move || records.with(|r| r.iter().take(shown.get()).cloned().collect::<Vec<_>>())
+                    key=|r| r.id.clone()
+                    children=move |r| {
+                        let mark = match r.kind {
+                            ToastKind::Ok => view! { <span class="toast-log-ok"></span> }.into_any(),
+                            ToastKind::Done => view! { <StatusGlyph bucket=Bucket::Review size=7.0 /> }.into_any(),
+                            ToastKind::Error => view! { <StatusGlyph bucket=Bucket::Failed size=7.0 /> }.into_any(),
+                            ToastKind::Needs => view! { <StatusGlyph bucket=Bucket::Needs size=7.0 /> }.into_any(),
+                            ToastKind::Info => view! { <StatusGlyph bucket=Bucket::Working size=7.0 /> }.into_any(),
+                        };
+                        let when = js_sys::Date::new(&wasm_bindgen::JsValue::from_f64(r.at))
+                            .to_iso_string()
+                            .as_string()
+                            .unwrap_or_default();
+                        view! {
+                            <div class="toast-log-row">
+                                <div class="toast-log-line">
+                                    {mark}
+                                    <span class="toast-log-title">{r.title.clone()}</span>
+                                    <span class="t-mono toast-log-when">{ago(&when)}</span>
+                                </div>
+                                {r.detail.clone().map(|d| view! { <span class="t-mono toast-log-detail">{d}</span> })}
+                            </div>
+                        }
+                    }
+                />
+                <Show when=move || { records.with(Vec::len) > shown.get() }>
+                    <button class="toast-log-link toast-log-more" on:click=move |_| shown.update(|n| *n += PAGE)>
+                        {move || format!("Show {} more", PAGE.min(records.with(Vec::len) - shown.get()))}
+                    </button>
+                </Show>
+            </div>
+        </Show>
     }
 }
