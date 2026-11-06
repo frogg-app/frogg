@@ -642,8 +642,14 @@ pub fn ScmStatusSegments() -> impl IntoView {
         }
     });
     let go_scm = move |_| app.ui.set_tool(Tool::Scm);
+    // `use_watch` falls back to any session's checkout (the SCM panel wants one); the status bar
+    // speaks only for the selected session, as ui-next's does.
+    let selected = Memo::new(move |_| {
+        app.selected_session()
+            .is_some_and(|s| !s.agent.cwd.is_empty())
+    });
     view! {
-        {move || { cwd.get()?; git() }.map(|g| {
+        {move || { selected.get().then_some(())?; cwd.get()?; git() }.map(|g| {
             let ahead = g.ahead_behind.as_ref().map(|a| a.ahead).unwrap_or(0.0);
             view! {
                 <button class="sb-seg" on:click=go_scm>
@@ -654,6 +660,7 @@ pub fn ScmStatusSegments() -> impl IntoView {
             }
         })}
         {move || {
+            selected.get().then_some(())?;
             cwd.get()?;
             git()?;
             let (add, del) = s.files.with(|f| {
@@ -666,7 +673,7 @@ pub fn ScmStatusSegments() -> impl IntoView {
                 </button>
             })
         }}
-        {move || checks.get().flatten().map(|(done, total, failed)| view! {
+        {move || selected.get().then(|| checks.get().flatten()).flatten().map(|(done, total, failed)| view! {
             <button class="sb-seg" on:click=move |_| app.ui.set_tool(Tool::Prs)>
                 <span class={if failed > 0 { "sb-t coral" } else { "sb-t" }}>
                     {format!("{} checks {done}/{total}", if failed > 0 { "■" } else { "▸" })}
