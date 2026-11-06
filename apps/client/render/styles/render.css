@@ -449,8 +449,6 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  direction: rtl;
-  text-align: left;
 }
 .fr-md-img-missing {
   font-size: 12.5px;
