@@ -418,3 +418,161 @@ pub mod paths {
         }
     }
 }
+
+/// Running sub-work per session for the list's row chips and the "N sub-processes running"
+/// caption (ui-next `daemon/subwork.ts` `useRunningSubWork`, `subwork/hooks.ts`): each running
+/// session's provider subagents on the active host, listed once and kept live from
+/// `agent.provider_subagents.update` pushes. Workspace scripts aren't counted here yet.
+pub mod subwork {
+    use std::cell::{Cell, RefCell};
+    use std::collections::{HashMap, HashSet};
+
+    use leptos::prelude::*;
+    use leptos::task::spawn_local;
+    use serde_json::Value;
+
+    use frogg_client_core::{DaemonClient, Event};
+
+    /// Session id -> (subagent id -> status).
+    type Map = HashMap<String, HashMap<String, String>>;
+
+    thread_local! {
+        static STORE: Cell<Option<RwSignal<Map>>> = const { Cell::new(None) };
+        static STARTED: Cell<bool> = const { Cell::new(false) };
+        /// Sessions already listed on the current host, and that host.
+        static LISTED: RefCell<(Option<String>, HashSet<String>)> = RefCell::new((None, HashSet::new()));
+    }
+
+    fn store() -> RwSignal<Map> {
+        if let Some(s) = STORE.with(Cell::get) {
+            return s;
+        }
+        let owner = Owner::new_root(None);
+        let s = owner.with(|| RwSignal::new(Map::new()));
+        std::mem::forget(owner);
+        STORE.with(|c| c.set(Some(s)));
+        s
+    }
+
+    fn apply(p: &Value) {
+        let s = |v: &Value, k: &str| v.get(k).and_then(Value::as_str).map(str::to_owned);
+        match p.get("kind").and_then(Value::as_str) {
+            Some("upsert") => {
+                let Some(sub) = p.get("subagent") else { return };
+                let (Some(parent), Some(id)) = (s(sub, "parentAgentId"), s(sub, "id")) else {
+                    return;
+                };
+                let status = s(sub, "status").unwrap_or_else(|| "running".into());
+                store().update(|m| {
+                    m.entry(parent).or_default().insert(id, status);
+                });
+            }
+            Some("remove") => {
+                let (Some(parent), Some(id)) = (s(p, "parentAgentId"), s(p, "subagentId")) else {
+                    return;
+                };
+                store().update(|m| {
+                    if let Some(x) = m.get_mut(&parent) {
+                        x.remove(&id);
+                    }
+                });
+            }
+            _ => {}
+        }
+    }
+
+    /// Keeps the counts for the active host's running sessions, for the life of the app. Safe
+    /// to call on every list mount; only the first starts it.
+    pub fn watch() {
+        if STARTED.with(|s| s.replace(true)) {
+            return;
+        }
+        let owner = Owner::new_root(None);
+        owner.with(start);
+        std::mem::forget(owner);
+    }
+
+    fn start() {
+        let app = crate::state::get();
+        // One push listener per client.
+        Effect::new(move |prev: Option<Option<(DaemonClient, u64)>>| {
+            let host = app.hosts.active_id.get();
+            let client = app.conn.client();
+            if let Some(Some((c, id))) = &prev {
+                c.unsubscribe(*id);
+            }
+            store().set(Map::new());
+            LISTED.with(|l| *l.borrow_mut() = (host.clone(), HashSet::new()));
+            let (Some(_), Some(c)) = (host, client) else {
+                return None;
+            };
+            let id = c.subscribe(|e| {
+                let Event::Session(f) = e else { return };
+                if f.kind != "agent.provider_subagents.update" {
+                    return;
+                }
+                if let Ok(p) = f.payload::<Value>() {
+                    apply(&p);
+                }
+            });
+            Some((c, id))
+        });
+        // List each newly running session's subagents once.
+        Effect::new(move |_| {
+            let Some(c) = app.conn.client() else { return };
+            if !c.has_feature("providerSubagents") {
+                return;
+            }
+            for s in app.sessions() {
+                if s.agent.status != "running" {
+                    continue;
+                }
+                let id = s.agent.id.clone();
+                let fresh = LISTED.with(|l| l.borrow_mut().1.insert(id.clone()));
+                if !fresh {
+                    continue;
+                }
+                let c = c.clone();
+                spawn_local(async move {
+                    let Ok(r) = c.list_provider_subagents(&id, None).await else {
+                        return;
+                    };
+                    let Ok(v) = serde_json::to_value(&r.subagents) else {
+                        return;
+                    };
+                    let subs: HashMap<String, String> = v
+                        .as_array()
+                        .into_iter()
+                        .flatten()
+                        .filter_map(|x| {
+                            Some((
+                                x.get("id")?.as_str()?.to_owned(),
+                                x.get("status")
+                                    .and_then(Value::as_str)
+                                    .unwrap_or("running")
+                                    .to_owned(),
+                            ))
+                        })
+                        .collect();
+                    store().update(|m| {
+                        m.insert(id, subs);
+                    });
+                });
+            }
+        });
+    }
+
+    /// Running subagents of one session (reactive).
+    pub fn running(session: &str) -> usize {
+        store().with(|m| {
+            m.get(session)
+                .map(|x| x.values().filter(|s| *s == "running").count())
+                .unwrap_or(0)
+        })
+    }
+
+    /// Running subagents across these sessions (reactive).
+    pub fn running_in(sessions: &[String]) -> usize {
+        sessions.iter().map(|s| running(s)).sum()
+    }
+}
