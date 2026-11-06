@@ -8,6 +8,7 @@ use leptos::prelude::*;
 use serde_json::Value;
 
 use super::item::on_link;
+use super::subwork::{SpawnedElapsed, SpawnedLink};
 use crate::components::{Ico, Icon, StatusGlyph};
 use crate::state::timeline::Entry;
 use crate::state::Bucket;
@@ -325,6 +326,17 @@ pub fn ToolCall(entry: ArcRwSignal<Entry>) -> impl IntoView {
                 .map(str::to_owned)
         })
     });
+    // A subagent call links to its live sub-work row (ticking run time, "Open subagent").
+    let e = entry.clone();
+    let sub_call = Memo::new(move |_| {
+        e.with(|e| {
+            e.item
+                .get("detail")
+                .filter(|d| s(d, "type") == Some("sub_agent"))
+                .and_then(|_| e.str("callId"))
+                .map(str::to_owned)
+        })
+    });
     // Plays once on a live running → completed/failed transition, never on mount.
     let settle = RwSignal::new(Settle::None);
     Effect::new(move |prev: Option<String>| {
@@ -395,6 +407,7 @@ pub fn ToolCall(entry: ArcRwSignal<Entry>) -> impl IntoView {
                 <span class="tool-verb">{move || head.get().1}</span>
                 <span class="tool-arg">{move || head.get().2}</span>
                 {move || head.get().3.map(|m| view! { <span class="tool-meta t-mono">{m}</span> })}
+                {move || sub_call.get().map(|c| view! { <SpawnedElapsed call_id=c /> })}
                 {move || {
                     if running() {
                         view! { <StatusGlyph bucket=Bucket::Working size=7.0 /> }.into_any()
@@ -416,7 +429,8 @@ pub fn ToolCall(entry: ArcRwSignal<Entry>) -> impl IntoView {
             </button>
             <Show when=move || open.get()>
                 <div class="tool-body">
-                    {pane.clone()}
+                    {pane}
+                    {move || sub_call.get().map(|c| view! { <SpawnedLink call_id=c /> })}
                     {move || child.get().map(|id| view! {
                         <button class="tool-link" on:click=move |_| ui.select(Some(id.clone()))>
                             <Icon ico=Ico::ArrowUpRight size=12.0 />
