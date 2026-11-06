@@ -525,7 +525,10 @@ pub mod sent {
         }
         let saved: Vec<(String, Vec<SentAtt>)> =
             crate::state::storage::get_json(KEY).unwrap_or_default();
-        let s = Owner::new_root(None).with(|| RwSignal::new_local(saved));
+        // The root owns the signal for the app's life: dropping it would dispose the signal.
+        let owner = Owner::new_root(None);
+        let s = owner.with(|| RwSignal::new_local(saved));
+        std::mem::forget(owner);
         STORE.with(|c| c.set(Some(s)));
         s
     }
