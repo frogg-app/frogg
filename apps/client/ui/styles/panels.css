@@ -166,7 +166,9 @@
 .pn-term-toggle {
   padding: 6px;
   color: var(--faint);
-  transition: background-color 120ms var(--ease), color 120ms var(--ease);
+  transition:
+    background-color 120ms var(--ease),
+    color 120ms var(--ease);
 }
 .pn-term-toggle:hover {
   background: var(--wash);
@@ -197,7 +199,9 @@
   inset: 0;
   pointer-events: none;
   border: 1px solid transparent;
-  transition: border-color 140ms var(--ease), background-color 140ms var(--ease);
+  transition:
+    border-color 140ms var(--ease),
+    background-color 140ms var(--ease);
 }
 .pn-drop-ring.on {
   border-color: var(--cyan2);
@@ -309,7 +313,9 @@
   width: 12px;
   height: 12px;
   color: var(--faint);
-  transition: transform 180ms var(--ease), color 120ms ease-out;
+  transition:
+    transform 180ms var(--ease),
+    color 120ms ease-out;
 }
 .pn-node:hover .pn-chev {
   color: var(--muted);
@@ -1155,7 +1161,9 @@
   width: 10px;
   height: 10px;
   background: var(--muted);
-  transition: transform 160ms var(--ease), background-color 160ms var(--ease);
+  transition:
+    transform 160ms var(--ease),
+    background-color 160ms var(--ease);
 }
 .pn-toggle.on {
   background: var(--cyan-wash3);
