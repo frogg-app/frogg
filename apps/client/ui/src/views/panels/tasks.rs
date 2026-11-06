@@ -30,10 +30,51 @@ const LIST_ORDER: [&str; 7] = [
 ];
 const ALL: &str = "__all";
 
+/// Most urgent first; the daemon's order (most recently touched) breaks ties (ui-next
+/// `TodoBoard.tsx` `byUrgency`).
+fn by_urgency(mut items: Vec<(String, Todo)>) -> Vec<(String, Todo)> {
+    let rank = |p: &str| match p {
+        "urgent" => 0,
+        "high" => 1,
+        "medium" => 2,
+        _ => 3,
+    };
+    items.sort_by_key(|(_, t)| rank(&t.priority));
+    items
+}
+
 fn toast_err(title: String, e: String) {
     state::get()
         .toasts
         .push(Toast::new(ToastKind::Error, title).detail(e));
+}
+
+/// A move the user made (board arrows, the detail's column): a toast names the column with an
+/// Undo, so a card leaving the view is never unexplained (ui-next `tasks/moves.ts`).
+async fn move_todo(project: String, id: String, title: String, from: String, to: String) {
+    if from == to {
+        return;
+    }
+    if let Err(e) = store()
+        .set_status(project.clone(), id.clone(), to.clone())
+        .await
+    {
+        toast_err(format!("Couldn't move “{title}”"), e);
+        return;
+    }
+    let undo = move || {
+        let (p, i, back) = (project.clone(), id.clone(), from.clone());
+        spawn_local(async move {
+            if let Err(e) = store().set_status(p, i, back).await {
+                toast_err("Couldn't undo the move".into(), e);
+            }
+        });
+    };
+    state::get().toasts.push(
+        Toast::new(ToastKind::Ok, format!("Moved to {}", status_label(&to)))
+            .detail(title)
+            .action("Undo", undo),
+    );
 }
 
 fn status_tint(s: &str) -> &'static str {
@@ -180,7 +221,7 @@ fn FilterNote() -> impl IntoView {
 fn TodoList(on_new: Callback<()>) -> impl IntoView {
     let t = store();
     move || {
-        let items = t.filtered();
+        let items = by_urgency(t.filtered());
         let multi = t.scope.get().is_none();
         if items.is_empty() {
             let loading = t.loading();
@@ -252,17 +293,19 @@ fn TodoCard(
         .unwrap_or(0);
     let step = {
         let (pid, id, title) = (project.clone(), todo.id.clone(), todo.title.clone());
+        let from = todo.status.clone();
         move |by: i32| {
             let next = at as i32 + by;
             let Some(next) = (next >= 0).then(|| STATUSES.get(next as usize)).flatten() else {
                 return;
             };
-            let (pid, id, title) = (pid.clone(), id.clone(), title.clone());
-            spawn_local(async move {
-                if let Err(e) = store().set_status(pid, id, next.0.into()).await {
-                    toast_err(format!("Couldn't move “{title}”"), e);
-                }
-            });
+            spawn_local(move_todo(
+                pid.clone(),
+                id.clone(),
+                title.clone(),
+                from.clone(),
+                next.0.into(),
+            ));
         }
     };
     let step2 = step.clone();
@@ -344,7 +387,7 @@ fn TodoCard(
 fn Board() -> impl IntoView {
     let t = store();
     move || {
-        let items = t.filtered();
+        let items = by_urgency(t.filtered());
         let multi = t.scope.get().is_none();
         view! {
             <div class="pn-board">
@@ -540,7 +583,8 @@ fn TodoDetailSheet() -> impl IntoView {
     view! {
         <Sheet open=open on_close=Callback::new(move |_| t.open.set(None)) width=520.0>
             {move || current.get().map(|(pid, todo)| {
-                let (p1, id1) = (pid.clone(), todo.id.clone());
+                let (p1, id1, ti1, from1) =
+                    (pid.clone(), todo.id.clone(), todo.title.clone(), todo.status.clone());
                 let (p2, id2, ti2) = (pid.clone(), todo.id.clone(), todo.title.clone());
                 let (p3, id3) = (pid.clone(), todo.id.clone());
                 view! {
@@ -564,12 +608,13 @@ fn TodoDetailSheet() -> impl IntoView {
                                 options=STATUSES.iter().map(|(v, l, _)| SelectOption::new(*v, *l)).collect()
                                 value=todo.status.clone()
                                 on_change=Callback::new(move |v: String| {
-                                    let (p, id) = (p1.clone(), id1.clone());
-                                    spawn_local(async move {
-                                        if let Err(e) = store().set_status(p, id, v).await {
-                                            error.set(Some(e));
-                                        }
-                                    });
+                                    spawn_local(move_todo(
+                                        p1.clone(),
+                                        id1.clone(),
+                                        ti1.clone(),
+                                        from1.clone(),
+                                        v,
+                                    ));
                                 })
                                 chip=true
                             />

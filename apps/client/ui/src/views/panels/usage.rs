@@ -1,6 +1,7 @@
 //! Usage (ui-next `UsagePanel.tsx`, `Meter.tsx`): each provider's limit windows as segmented
 //! meters, balances, plan and source. Full width: cards sit side by side.
 
+use std::collections::HashSet;
 use std::time::Duration;
 
 use leptos::prelude::*;
@@ -17,8 +18,10 @@ const CELLS: usize = 20;
 const STAGGER_MS: usize = 18;
 /// Figures older than this are flagged stale.
 const STALE_MS: f64 = 15.0 * 60_000.0;
-/// Automatic refresh while the panel is open.
-const AUTO_MS: u64 = 120_000;
+/// The automatic refresh period for the `meterSeconds` pref (at least 30 s).
+fn auto_ms(secs: f64) -> u64 {
+    (secs.max(30.0) * 1000.0) as u64
+}
 
 /// "resets in 3h" for a window's reset time.
 pub fn until(iso: Option<&str>) -> Option<String> {
@@ -62,7 +65,15 @@ pub fn Meter(
     let filled = Memo::new(move |_| p.get().map(|p| (p / 5.0).round() as usize).unwrap_or(0));
     let tint = Memo::new(move |_| tone_for(p.get()));
     view! {
-        <div class="pn-meter">
+        <div
+            class="pn-meter"
+            on:pointerenter=move |_| {
+                // `meterHover`: pointer over a meter refreshes when the user turned that on.
+                if state::get().prefs.get_untracked::<bool>("meterHover") {
+                    store().load(Some(60_000), true);
+                }
+            }
+        >
             <div class="pn-meter-head">
                 <span class="pn-meter-label">{label}</span>
                 <span class="t-mono pn-meter-pct" class:crit=move || tint.get() == "var(--coral)">
@@ -96,11 +107,49 @@ pub fn UsagePanel() -> impl IntoView {
             u.load(None, true);
         }
     });
-    if let Ok(h) =
-        set_interval_with_handle(move || u.load(None, true), Duration::from_millis(AUTO_MS))
-    {
-        on_cleanup(move || h.clear());
-    }
+    // ui-next `daemon/usage.ts` `syncTimer`: the `meterTimer`/`meterSeconds` prefs drive the
+    // automatic refresh; changing either restarts it.
+    let timer = StoredValue::new_local(None::<IntervalHandle>);
+    Effect::new(move |_| {
+        let on: bool = app.prefs.get("meterTimer");
+        let secs: f64 = app.prefs.get("meterSeconds");
+        if let Some(h) = timer.get_value() {
+            h.clear();
+        }
+        let ms = auto_ms(secs);
+        timer.set_value(
+            on.then(|| {
+                set_interval_with_handle(
+                    move || u.load(Some(ms.saturating_sub(5_000)), true),
+                    Duration::from_millis(ms),
+                )
+                .ok()
+            })
+            .flatten(),
+        );
+    });
+    on_cleanup(move || {
+        if let Some(h) = timer.get_value() {
+            h.clear();
+        }
+    });
+    // `meterAfterReply`: a turn finishing spends quota, so refresh when one stops running.
+    Effect::new(move |prev: Option<HashSet<String>>| {
+        let running: HashSet<String> = app.agents.by_host.with(|m| {
+            m.values()
+                .flat_map(|s| s.values())
+                .filter(|s| s.agent.status == "running")
+                .map(|s| s.agent.id.clone())
+                .collect()
+        });
+        if let Some(prev) = prev {
+            let finished = prev.iter().any(|id| !running.contains(id));
+            if finished && app.prefs.get_untracked::<bool>("meterAfterReply") {
+                u.load(Some(30_000), true);
+            }
+        }
+        running
+    });
     let open_settings = move |_| {
         app.ui.set_tool(Tool::Settings);
         app.ui.open_settings(Some("usage".into()));

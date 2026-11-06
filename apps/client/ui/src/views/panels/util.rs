@@ -224,7 +224,7 @@ pub fn shell_path(path: &str) -> String {
     let safe = !path.is_empty()
         && path
             .chars()
-            .all(|c| c.is_alphanumeric() || "_@%+=:,./\\-".contains(c));
+            .all(|c| c.is_ascii_alphanumeric() || "_@%+=:,./\\-".contains(c));
     if safe {
         return path.to_owned();
     }
@@ -300,6 +300,7 @@ mod tests {
         assert_eq!(shell_path("/tmp/a b.png"), "'/tmp/a b.png'");
         assert_eq!(shell_path("/tmp/it's"), "'/tmp/it'\\''s'");
         assert_eq!(shell_path("C:\\a b"), "\"C:\\a b\"");
+        assert_eq!(shell_path("/tmp/café.png"), "'/tmp/café.png'");
         assert_eq!(dropped_paths(&["/a".into(), "/b c".into()]), "/a '/b c' ");
         assert_eq!(dropped_paths(&[]), "");
     }

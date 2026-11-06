@@ -115,6 +115,18 @@ fn more_items(g: &Status, ask: RwSignal<Option<Ask>>) -> Vec<MenuItem> {
         .as_ref()
         .is_some_and(|p| p.state != "merged" && p.state != "closed");
     let mut items = Vec::new();
+    // ui-next lists "Commit" first; the message comes from the commit box.
+    let commit = MenuItem::new("Commit", move || {
+        if dirty > 0 {
+            s.error
+                .set(Some("Write a message in the box, then commit.".into()));
+        }
+    });
+    items.push(if dirty > 0 {
+        commit.hint("⌘↵")
+    } else {
+        commit.hint("Nothing to commit")
+    });
     if dirty > 0 && remote {
         items.push(MenuItem::new("Commit and push", move || {
             let files = plural(dirty, "file");
