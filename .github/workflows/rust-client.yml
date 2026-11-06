@@ -3,6 +3,8 @@ name: Rust client
 # apps/client, the Rust Frogg Next client "Frogg Next RS" (docs/plans/rust-client.md).
 #
 # - check: the UI compiles for wasm32 and the core, render and UI tests pass.
+# - smoke: the built UI, driven in headless Chromium against a mock-provider dev daemon
+#   (apps/client/e2e/smoke.mts). Bundles wait on it, so a UI that panics never ships.
 # - desktop: Tauri bundles for linux-x64 (deb, AppImage), windows-x64 (nsis) and macos-arm64
 #   (dmg, ad-hoc signed). With FROGG_NEXT_RS_UPDATER_KEY set, the updater artifacts (signed
 #   AppImage, nsis exe and .app.tar.gz, each with a .sig) are produced too.
@@ -94,8 +96,53 @@ jobs:
         working-directory: apps/client
         run: cargo test -p frogg-client-core -p frogg-render -p frogg-ui
 
+  # Opens the real UI: builds the WASM bundle, starts a dev daemon (mock provider, scratch home)
+  # and walks pairing, a new session's streamed reply, reopening it, every settings page and
+  # panel, then the phone layout. Any console error or WASM panic fails it (apps/client/e2e).
+  smoke:
+    name: Browser smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ONNXRUNTIME_NODE_INSTALL: skip
+      LEFTHOOK: "0"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.release-tag || github.ref }}
+      - uses: ./.github/actions/setup-node-deps
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/client
+          key: smoke
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: trunk
+      - name: Install Playwright Chromium
+        timeout-minutes: 10
+        run: npx playwright install --with-deps chromium
+      - name: Build the daemon's library dependencies
+        run: npm run build:server-deps
+      - name: Build the UI
+        working-directory: apps/client/ui
+        run: trunk build
+      - name: Smoke
+        timeout-minutes: 5
+        env:
+          SMOKE_SHOTS: ${{ runner.temp }}/client-smoke
+        run: node --import tsx apps/client/e2e/smoke.mts
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: client-smoke-screenshots
+          path: ${{ runner.temp }}/client-smoke
+          if-no-files-found: ignore
+
   desktop:
-    needs: check
+    needs: [check, smoke]
     strategy:
       fail-fast: false
       matrix:
@@ -160,7 +207,7 @@ jobs:
             apps/client/target/release/bundle/macos/*.app.tar.gz.sig
 
   android:
-    needs: check
+    needs: [check, smoke]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
