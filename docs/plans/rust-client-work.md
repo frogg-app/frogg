@@ -120,8 +120,9 @@ additive edits only. Sizes are S/M/L.
 **7d sessions-shell** — owns `ui/src/views/sessions/**`, `ui/src/views/new_session/**`,
 `ui/src/shell/**`, `ui/src/state/{sessions,projects,ui}.rs`
 
-- M (done): merged terminals in the sessions list (`sessions/merged.tsx`), active host only
-  (other hosts' terminals not merged); S (done): fall back to Sessions when the current tool
+- M (done): merged terminals in the sessions list (`sessions/merged.tsx`), the active host's,
+  then each other online host's (opening one switches host); S (done): fall back to Sessions
+  when the current tool
   stops being offered.
 - M (done): projects dialog and device-local projects — `sessions/ProjectsDialog.tsx`,
   `localProjects.ts`.
