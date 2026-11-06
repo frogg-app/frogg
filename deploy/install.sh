@@ -58,6 +58,7 @@ BRAND_RELEASE_BASE='https://github.com/frogg-app/frogg/releases'
 BRAND_DOCKER_IMAGE='froggapp/frogg'
 BRAND_LEGACY='true'
 BRAND_DAEMON_LINE='stable'
+BRAND_SERVICE_DESCRIPTION='Frogg daemon (Frogg)'
 BRAND_COMMANDS=(frogg frogg)
 # END BRAND DEFAULTS
 
@@ -371,7 +372,7 @@ write_systemd_unit() {
   mkdir -p "${unit_dir}"
   cat > "${unit}" <<EOF
 [Unit]
-Description=${BRAND_NAME} daemon (${BRAND_FULL_NAME})
+Description=${BRAND_SERVICE_DESCRIPTION:-${BRAND_NAME} daemon (${BRAND_FULL_NAME})}
 After=network-online.target
 Wants=network-online.target
 

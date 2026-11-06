@@ -160,7 +160,7 @@ function systemdUnit(input: ServicePlanInput): string {
     stop = `ExecStop=${stopExec}\n`;
   }
   return `[Unit]
-Description=${brand.name} daemon (${brand.fullName})
+Description=${brand.serviceDescription}
 After=network-online.target
 Wants=network-online.target
 

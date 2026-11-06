@@ -66,3 +66,8 @@ test("Windows login registration is named from the brand, without spaces", () =>
   expect(plan.file?.path).toBe(path.join(HOME_DIR, ".acme", "service", "acme-daemon.cmd"));
   expect(plan.file?.contents).toContain("rem Starts the Acme Studio daemon");
 });
+
+test("systemd unit description is the brand's service description", () => {
+  const contents = resolveServicePlan(planInput()).file?.contents ?? "";
+  expect(contents).toContain("Description=Acme Studio daemon (Acme Studio)\n");
+});

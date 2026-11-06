@@ -529,7 +529,13 @@ function nextDaemonIdentity(base: BrandManifest) {
     // The legacy Frogg aliases (a second `frogg` launcher, `Frogg-*-daemon` bundle names, the
     // FDE home migration) belong to the stable daemon: a Frogg Next install must not shadow them.
     legacyFrogg: false,
+    // Its login service carries the Frogg Next brand, not the stable daemon's.
+    serviceDescription: `${nextProductName(base)} daemon (${nextProductName(base)})`,
   };
+}
+
+function nextProductName(manifest: BrandManifest): string {
+  return manifest.next?.name ?? nextName(resolveIdentity(manifest).name);
 }
 
 /** "acme" → "acme next", "Acme Studio" → "Acme Studio Next": follow the name's own casing. */
@@ -541,7 +547,7 @@ function nextName(name: string): string {
 function resolveNext(manifest: BrandManifest, stock: boolean) {
   const identity = resolveIdentity(manifest);
   const input = manifest.next ?? {};
-  const name = input.name ?? nextName(identity.name);
+  const name = nextProductName(manifest);
   const next = {
     enabled: input.enabled ?? manifest.distribution?.froggNext ?? stock,
     name,
@@ -790,6 +796,8 @@ function resolveIdentity(manifest: BrandManifest) {
     installId: id,
     storagePrefix: id === "frogg" ? "" : `${manifest.applicationId}:`,
     legacyFrogg: id === "frogg",
+    /** The login service's description (systemd `Description=`). */
+    serviceDescription: `${manifest.name} daemon (${manifest.fullName ?? manifest.name})`,
   };
 }
 

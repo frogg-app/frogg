@@ -555,6 +555,24 @@ test("a Frogg Next daemon build moves every daemon key aside and keeps the clien
   assert.throws(() => resolveBrandManifest(minimal, { channel: "beta", daemon: "next" }));
 });
 
+test("the login service description carries each line's brand", () => {
+  const frogg = { ...minimal, id: "frogg", name: "Frogg", applicationId: "app.frogg.frogg" };
+  assert.equal(resolveBrandManifest(frogg).serviceDescription, "Frogg daemon (Frogg)");
+  assert.equal(
+    resolveBrandManifest(frogg, { channel: "beta" }).serviceDescription,
+    "Frogg Beta daemon (Frogg Beta)",
+  );
+  assert.equal(
+    resolveBrandManifest(frogg, { daemon: "next" }).serviceDescription,
+    "Frogg Next daemon (Frogg Next)",
+  );
+  assert.equal(
+    resolveBrandManifest({ ...frogg, next: { name: "Tadpole" } }, { daemon: "next" })
+      .serviceDescription,
+    "Tadpole daemon (Tadpole)",
+  );
+});
+
 test("plugins block defaults and overrides", () => {
   const defaults = resolveBrandManifest(minimal).plugins;
   assert.deepEqual(defaults, {
