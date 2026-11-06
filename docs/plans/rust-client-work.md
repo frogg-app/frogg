@@ -151,9 +151,8 @@ additive edits only. Sizes are S/M/L.
   lists in detail, filter note detail (**done**).
 - M: PRs Streams tab, merge split button (allowed methods, auto-merge, disabled reason), live CI
   visuals, expandable jobs, Open logs (**done**). Re-run and cancel are not daemon RPCs (ui-next
-  only shows them when the lab registers handlers), so they stay out. Left: the branch switcher's
-  filter field, this branch's PR row and the stash-and-switch confirm (`tools/BranchMenu.tsx`);
-  the Rust branch menu switches, stashing first when dirty, without asking.
+  only shows them when the lab registers handlers), so they stay out. Branch switcher with
+  filter, this branch's PR and the stash-and-switch step (**done**).
 - L: multi-account usage cards; S: meter prefs (`meterTimer`, `meterSeconds`, `meterHover`,
   `meterAfterReply`) drive refresh (**done**; after-reply only while the Usage panel is open).
 - L: plugin-contributed panels and forms; M: remote-control toggle and capability chips; S:

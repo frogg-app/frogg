@@ -198,6 +198,160 @@ fn more_items(g: &Status, ask: RwSignal<Option<Ask>>) -> Vec<MenuItem> {
     items
 }
 
+/// The branch switcher under the branch name: filter, recent branches with the current one
+/// first, this branch's PR, and a stash-and-switch step when the tree is dirty (ui-next
+/// `tools/BranchMenu.tsx`).
+#[component]
+fn BranchMenu(open: RwSignal<bool>, current: Option<String>) -> impl IntoView {
+    let s = store();
+    let query = RwSignal::new(String::new());
+    let pending = RwSignal::new(None::<String>);
+    let input = NodeRef::<leptos::html::Input>::new();
+    let seq = StoredValue::new(0u64);
+    // Reload (debounced) as the filter changes while open.
+    Effect::new(move |_| {
+        let q = query.get();
+        if !open.get() {
+            return;
+        }
+        pending.set(None);
+        seq.update_value(|n| *n += 1);
+        let mine = seq.get_value();
+        set_timeout(
+            move || {
+                if seq.try_get_value() == Some(mine) {
+                    s.load_branches((!q.trim().is_empty()).then(|| q.trim().to_owned()));
+                }
+            },
+            std::time::Duration::from_millis(120),
+        );
+    });
+    Effect::new(move |_| {
+        if open.get() {
+            if let Some(i) = input.get() {
+                let _ = i.focus();
+            }
+        } else {
+            query.set(String::new());
+        }
+    });
+    let close = Callback::new(move |_| open.set(false));
+    let current = StoredValue::new(current);
+    let pick = move |name: String| {
+        if current.with_value(|c| c.as_deref() == Some(name.as_str())) {
+            open.set(false);
+            return;
+        }
+        if dirty_count() > 0 {
+            pending.set(Some(name));
+            return;
+        }
+        open.set(false);
+        s.switch_branch(name, false);
+    };
+    view! {
+        <Floating open=open on_close=close class="pn-branch-menu">
+            <div class="pn-branch-filter">
+                <input
+                    node_ref=input
+                    class="input"
+                    placeholder="Filter branches and PRs"
+                    aria-label="Filter branches and PRs"
+                    prop:value=move || query.get()
+                    on:input=move |e| query.set(event_target_value(&e))
+                />
+            </div>
+            <div class="pn-branch-list">
+                <span class="t-label pn-branch-group">"Recent"</span>
+                {move || {
+                    let Some(list) = s.branches.get() else {
+                        return view! { <span class="t-mono faint pn-branch-note">"loading branches…"</span> }.into_any();
+                    };
+                    if list.is_empty() {
+                        return view! { <span class="faint pn-branch-note">"No matching branches."</span> }.into_any();
+                    }
+                    let cur = current.get_value();
+                    let mut list = list;
+                    if let Some(i) = list.iter().position(|b| Some(&b.name) == cur.as_ref()) {
+                        let mine = list.remove(i);
+                        list.insert(0, mine);
+                    }
+                    list.into_iter()
+                        .map(|b| {
+                            let on = Some(&b.name) == cur.as_ref();
+                            let name = b.name.clone();
+                            let n2 = b.name.clone();
+                            let sub = on.then(|| {
+                                format!(
+                                    "current{}{}",
+                                    b.ahead.map(|a| format!(" · ↑{a}")).unwrap_or_default(),
+                                    b.behind.map(|x| format!(" ↓{x}")).unwrap_or_default()
+                                )
+                            });
+                            view! {
+                                <button
+                                    class="pn-branch-row"
+                                    class:on=on
+                                    class:picked=move || pending.get().as_deref() == Some(n2.as_str())
+                                    role="menuitem"
+                                    on:click=move |_| pick(name.clone())
+                                >
+                                    <Icon ico=Ico::GitBranch size=13.0 class=if on { "cyan2" } else { "faint" } />
+                                    <span class="pn-branch-row-text">
+                                        <span class="pn-branch-row-name">{b.name.clone()}</span>
+                                        {sub.map(|t| view! { <span class="t-mono faint pn-small">{t}</span> })}
+                                    </span>
+                                </button>
+                            }
+                        })
+                        .collect_view()
+                        .into_any()
+                }}
+                {move || s.pr.get().flatten().map(|p| view! {
+                    <span class="t-label pn-branch-group">"Pull requests"</span>
+                    <div class="pn-branch-row static">
+                        <Icon ico=Ico::GitPullRequest size=13.0 class="faint" />
+                        <span class="pn-branch-row-text">
+                            <span class="pn-branch-row-name">
+                                {format!("{}{}", p.number.map(|n| format!("#{n} ")).unwrap_or_default(), p.title)}
+                            </span>
+                            <span class="t-mono faint pn-small">{p.state}</span>
+                        </span>
+                    </div>
+                })}
+            </div>
+            {move || {
+                let n = dirty_count();
+                (n > 0).then(|| {
+                    let files = plural(n, "uncommitted file");
+                    let text = match pending.get() {
+                        Some(b) => format!("{files}. Stash them and switch to {b}?"),
+                        None => format!("{files}. Switching will offer to stash them."),
+                    };
+                    view! {
+                        <div class="pn-branch-warn">
+                            <i class="pn-diamond pending"></i>
+                            <span class="pn-branch-warn-text">{text}</span>
+                            <button
+                                class="pn-link"
+                                disabled=move || pending.with(Option::is_none)
+                                on:click=move |_| {
+                                    if let Some(b) = pending.get_untracked() {
+                                        open.set(false);
+                                        s.switch_branch(b, true);
+                                    }
+                                }
+                            >
+                                "Stash & switch"
+                            </button>
+                        </div>
+                    }
+                })
+            }}
+        </Floating>
+    }
+}
+
 #[component]
 fn BranchCard(git: Status) -> impl IntoView {
     let s = store();
@@ -207,28 +361,6 @@ fn BranchCard(git: Status) -> impl IntoView {
     let busy = move || s.busy.get().is_some();
     let on_base = git.base_ref.is_some() && git.current_branch == git.base_ref;
     let current = git.current_branch.clone();
-    let branch_items = move || {
-        let dirty = dirty_count() > 0;
-        s.branches
-            .get()
-            .unwrap_or_default()
-            .into_iter()
-            .filter(|b| Some(&b.name) != current.as_ref())
-            .map(|b| {
-                let name = b.name.clone();
-                let mut item = MenuItem::new(b.name.clone(), move || {
-                    store().switch_branch(name.clone(), dirty)
-                })
-                .icon(Ico::GitBranch);
-                if let (Some(a), Some(bh)) = (b.ahead, b.behind) {
-                    if a > 0.0 || bh > 0.0 {
-                        item = item.hint(format!("↑{a} ↓{bh}"));
-                    }
-                }
-                item
-            })
-            .collect::<Vec<_>>()
-    };
     let base = git.base_ref.clone();
     view! {
         <div class="pn-branch cut" style="--c:8px">
@@ -245,10 +377,7 @@ fn BranchCard(git: Status) -> impl IntoView {
                     <span class="pn-branch-name t-mono">{git.current_branch.clone().unwrap_or_else(|| "detached".into())}</span>
                     <Icon ico=Ico::ChevronDown size=12.0 class="faint" />
                 </button>
-                {move || {
-                    let items = branch_items();
-                    view! { <Menu open=menu on_close=Callback::new(move |_| menu.set(false)) items=items /> }
-                }}
+                <BranchMenu open=menu current=current.clone() />
             </div>
             <div class="pn-counts t-mono">
                 {match (&base, on_base) {

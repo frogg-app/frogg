@@ -325,6 +325,9 @@ async function desktop(page: Page, url: string, pairUrl: string, home: string, t
     await page.getByRole("button", { name: "Source control view settings" }).click();
     await page.locator(".pn-quick").getByText("Branch graph").waitFor({ timeout: STEP_TIMEOUT });
     await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: "Switch branch" }).click();
+    await page.locator(".pn-branch-row.on").waitFor({ timeout: STEP_TIMEOUT });
+    await page.keyboard.press("Escape");
   });
 
   await step(page, "files reopen", async () => {
