@@ -1437,7 +1437,7 @@ dependencies = [
 
 [[package]]
 name = "frogg-app"
-version = "1.6.14-next.9"
+version = "1.6.14-next.10"
 dependencies = [
  "base64 0.22.1",
  "log",
@@ -1465,7 +1465,7 @@ dependencies = [
 
 [[package]]
 name = "frogg-client-core"
-version = "1.6.14-next.9"
+version = "1.6.14-next.10"
 dependencies = [
  "base64 0.22.1",
  "frogg-protocol",
@@ -1495,7 +1495,7 @@ dependencies = [
 
 [[package]]
 name = "frogg-render"
-version = "1.6.14-next.9"
+version = "1.6.14-next.10"
 dependencies = [
  "leptos",
  "pulldown-cmark",
@@ -1509,7 +1509,7 @@ dependencies = [
 
 [[package]]
 name = "frogg-render-demo"
-version = "1.6.14-next.9"
+version = "1.6.14-next.10"
 dependencies = [
  "console_error_panic_hook",
  "frogg-render",
@@ -1518,7 +1518,7 @@ dependencies = [
 
 [[package]]
 name = "frogg-ui"
-version = "1.6.14-next.9"
+version = "1.6.14-next.10"
 dependencies = [
  "console_error_panic_hook",
  "frogg-client-core",
