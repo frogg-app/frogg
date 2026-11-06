@@ -1,0 +1,54 @@
+/* Composer slice (7b): clean-cut send, agent controls, context ring, slash groups, stash and
+   shell notes, the resize grip and expand toggle, question cards, streamed text reveal. */
+
+/* ----- clean-cut send ------------------------------------------------------------------ */
+.cut-send-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.cut-send {
+  --cut-bg: var(--raise);
+  --cut-line: var(--line2);
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cyan2);
+  transition:
+    --cut-line 140ms var(--ease),
+    --cut-bg 140ms var(--ease),
+    color 140ms var(--ease),
+    opacity 140ms var(--ease);
+}
+.cut-send:not(.idle):hover {
+  --cut-bg: var(--wash2);
+  --cut-line: var(--cyan2);
+  color: var(--text);
+}
+.cut-send.idle {
+  opacity: 0.55;
+  cursor: default;
+}
+.cut-send-tip {
+  position: absolute;
+  bottom: 36px;
+  right: 0;
+  padding: 4px 8px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  font-size: 11px;
+  color: var(--text);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(2px);
+  transition:
+    opacity 120ms var(--ease),
+    transform 120ms var(--ease);
+  z-index: 5;
+}
+.cut-send-wrap:hover .cut-send-tip {
+  opacity: 1;
+  transform: none;
+}

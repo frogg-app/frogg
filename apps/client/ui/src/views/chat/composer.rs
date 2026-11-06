@@ -13,11 +13,12 @@ use leptos::task::spawn_local;
 use serde_json::{json, Value};
 use wasm_bindgen::JsCast;
 
-use super::{client_or_toast, toast_err};
+use super::chips::{AccountChip, ProviderChip};
+use super::{client_or_toast, session_menu, session_state, toast_err};
 use crate::components::{Ico, Icon, Select, SelectOption};
 use crate::native::PickedFile;
 use crate::shell::toast::ToastKind;
-use crate::state::timeline::sent;
+use crate::state::timeline::{sent, Entry};
 use crate::state::Session;
 
 /// Images up to this size go to the model inline; anything else uploads as a file.
@@ -33,6 +34,8 @@ pub enum AttKind {
     /// Streaming to the host; the signal is the fraction sent (0..=1).
     Uploading(RwSignal<f64>),
     File(Value),
+    /// A fork's conversation context (`buildAgentForkContext`), sent as an attachment.
+    Fork(Value),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -189,7 +192,9 @@ async fn read_files(files: Vec<web_sys::File>) -> Vec<PickedFile> {
     out
 }
 
-async fn send(agent_id: &str, text: &str, atts: &[Att]) -> Result<(), String> {
+/// Sends a message with its attachments: images inline, uploaded files and fork context as
+/// `attachments[]`. Also the held-message send in `session_state`.
+pub(super) async fn send(agent_id: &str, text: &str, atts: &[Att]) -> Result<(), String> {
     let client = crate::state::get()
         .conn
         .client()
@@ -204,7 +209,7 @@ async fn send(agent_id: &str, text: &str, atts: &[Att]) -> Result<(), String> {
     let files: Vec<Value> = atts
         .iter()
         .filter_map(|a| match &a.kind {
-            AttKind::File(v) => Some(v.clone()),
+            AttKind::File(v) | AttKind::Fork(v) => Some(v.clone()),
             _ => None,
         })
         .collect();
@@ -219,6 +224,7 @@ async fn send(agent_id: &str, text: &str, atts: &[Att]) -> Result<(), String> {
                         ("image", Some(format!("data:{mime};base64,{data}")))
                     }
                     AttKind::File(_) => ("file", None),
+                    AttKind::Fork(_) => ("fork", None),
                     _ => return None,
                 };
                 Some(sent::SentAtt {
@@ -254,12 +260,29 @@ struct Command {
 #[component]
 pub fn Composer(
     agent_id: String,
-    #[prop(into)] session: Signal<Option<Session>>,
+    session: Memo<Option<Session>>,
+    /// The timeline, for the provider chip and whether a clean cut has anything to summarise.
+    #[prop(into)]
+    rows: Signal<Vec<Entry>>,
     #[prop(into)] online: Signal<bool>,
     #[prop(into)] provider: Signal<String>,
     #[prop(optional)] compact: bool,
+    /// Set while a draft is written (presence "typing").
+    #[prop(optional)]
+    typing: Option<RwSignal<bool>>,
 ) -> impl IntoView {
-    let draft = DRAFTS.with(|d| d.borrow().get(&agent_id).cloned().unwrap_or_default());
+    let mut draft = DRAFTS.with(|d| d.borrow().get(&agent_id).cloned().unwrap_or_default());
+    // A fork's context waits to ride along with the new session's first message.
+    if let Some(f) = session_menu::take_fork_draft(&agent_id) {
+        draft.atts.insert(
+            0,
+            Att {
+                id: next_att(),
+                name: f.name,
+                kind: AttKind::Fork(f.context),
+            },
+        );
+    }
     let text = RwSignal::new(draft.text);
     let atts = RwSignal::new(draft.atts);
     let sending = RwSignal::new(false);
@@ -284,6 +307,23 @@ pub fn Composer(
             .get()
             .map(|s| s.agent.status == "running")
             .unwrap_or(false)
+    });
+    if let Some(typing) = typing {
+        Effect::new(move |_| typing.set(text.with(|t| !t.trim().is_empty())));
+        on_cleanup(move || {
+            typing.try_set(false);
+        });
+    }
+    // The scissors send: a clean cut first, then this message goes to the fresh conversation.
+    let can_cut = Memo::new(move |_| online.get() && session_state::has_feature("agentCleanCut"));
+    let cut_blocked = Memo::new(move |_| {
+        if running.get() {
+            Some("Wait for the turn to finish to make a clean cut")
+        } else if !rows.with(|r| r.iter().any(|e| e.kind() == "user_message")) {
+            Some("Nothing to summarise yet")
+        } else {
+            None
+        }
     });
     let empty = move || text.with(|t| t.trim().is_empty()) && atts.with(Vec::is_empty);
     let uploading =
@@ -364,10 +404,13 @@ pub fn Composer(
         }
     };
 
-    let submit = move || {
+    let submit = move |cut: bool| {
         let t = text.get_untracked().trim().to_owned();
         let list = atts.get_untracked();
         if !online.get_untracked() || sending.get_untracked() || (t.is_empty() && list.is_empty()) {
+            return;
+        }
+        if cut && cut_blocked.get_untracked().is_some() {
             return;
         }
         if uploading() {
@@ -377,8 +420,23 @@ pub fn Composer(
             );
             return;
         }
-        sending.set(true);
         let agent = id.get_value();
+        // A move or clean cut is rewriting the conversation: hold the message until it lands.
+        if cut || session_state::busy(&agent) {
+            session_state::queue_message(&agent, &t, list);
+            text.set(String::new());
+            atts.set(Vec::new());
+            if cut && !session_state::busy(&agent) {
+                let a = agent.clone();
+                session_state::run_session_op(
+                    &agent,
+                    session_state::cut_text(),
+                    session_state::clean_cut(a, serde_json::Map::new()),
+                );
+            }
+            return;
+        }
+        sending.set(true);
         spawn_local(async move {
             match send(&agent, &t, &list).await {
                 Ok(()) => {
@@ -441,7 +499,7 @@ pub fn Composer(
         }
         if k == "Enter" && !ev.shift_key() && !ev.is_composing() {
             ev.prevent_default();
-            submit();
+            submit(false);
         }
     };
     let on_paste = move |ev: leptos::ev::ClipboardEvent| {
@@ -564,9 +622,11 @@ pub fn Composer(
                     <button class="icon-btn" aria-label="Attach files" title="Attach files" on:click=move |_| pick_files()>
                         <Icon ico=Ico::Plus size=16.0 />
                     </button>
+                    <ProviderChip session=session rows=rows compact=compact />
                     <AgentControls session=session />
-                    <span class="spacer"></span>
+                    <AccountChip session=session />
                     <ContextMeter session=session />
+                    <span class="spacer"></span>
                     {move || {
                         if running.get() && empty() {
                             view! {
@@ -577,7 +637,29 @@ pub fn Composer(
                             .into_any()
                         } else {
                             let idle = empty() || !online.get() || sending.get();
+                            let cut_btn = can_cut.get().then(|| {
+                                let blocked = cut_blocked.get();
+                                let off = idle || blocked.is_some();
+                                let tip = blocked.unwrap_or("Send with a clean cut");
+                                view! {
+                                    <span class="cut-send-wrap">
+                                        <span class="cut-send-tip t-mono">{tip}</span>
+                                        <button
+                                            class="cut-send cut cut-stroke"
+                                            class:idle=off
+                                            style="--c:6px"
+                                            aria-label="Send with a clean cut"
+                                            aria-disabled=off.to_string()
+                                            title=blocked.unwrap_or("Summarises the conversation into a fresh one, then sends")
+                                            on:click=move |_| if !off { submit(true) }
+                                        >
+                                            <Icon ico=Ico::Scissors size=14.0 />
+                                        </button>
+                                    </span>
+                                }
+                            });
                             view! {
+                                {cut_btn}
                                 <button
                                     class="send cut"
                                     class:idle=idle
@@ -585,7 +667,7 @@ pub fn Composer(
                                     aria-label=if running.get() { "Queue" } else { "Send" }
                                     title=if running.get() { "Queue behind the running turn" } else { "Send" }
                                     disabled=idle
-                                    on:click=move |_| submit()
+                                    on:click=move |_| submit(false)
                                 >
                                     <Icon ico=Ico::ArrowUp size=16.0 stroke=2.2 />
                                 </button>
@@ -621,7 +703,7 @@ fn providers_snapshot(set: RwSignal<Option<Value>>) {
 
 /// Model, thinking and mode chips for the live session.
 #[component]
-fn AgentControls(#[prop(into)] session: Signal<Option<Session>>) -> impl IntoView {
+fn AgentControls(session: Memo<Option<Session>>) -> impl IntoView {
     let snapshot = RwSignal::new(None::<Value>);
     providers_snapshot(snapshot);
     let agent = Memo::new(move |_| session.get().map(|s| s.agent));
@@ -743,7 +825,7 @@ fn AgentControls(#[prop(into)] session: Signal<Option<Session>>) -> impl IntoVie
 
 /// How full the context window is, from the agent's last usage.
 #[component]
-fn ContextMeter(#[prop(into)] session: Signal<Option<Session>>) -> impl IntoView {
+fn ContextMeter(session: Memo<Option<Session>>) -> impl IntoView {
     let pct = Memo::new(move |_| {
         let s = session.get()?;
         let u = s.agent.raw.get("lastUsage")?;
