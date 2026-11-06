@@ -1250,3 +1250,38 @@
 .pn-search-pad {
   max-width: 520px;
 }
+.pn-keybar {
+  display: flex;
+  gap: 4px;
+  padding: 6px 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+  flex-shrink: 0;
+}
+.pn-keybar::-webkit-scrollbar {
+  display: none;
+}
+.pn-key {
+  flex: 0 0 auto;
+  min-width: 40px;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease,
+    border-color 0.12s ease;
+}
+.pn-key:active {
+  background: var(--line2);
+}
+.pn-key.on {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}

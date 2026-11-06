@@ -484,12 +484,22 @@ pub fn TerminalSurface(terminal_id: String) -> impl IntoView {
         );
     }
 
-    let on_input = Callback::new(move |data: String| {
+    let ctrl = RwSignal::new(false);
+    let send = move |data: String| {
         client.with_value(|c| {
             if let Some(c) = c {
                 let _ = c.send_terminal_input(&id.get_value(), TerminalInput::Input(data));
             }
         });
+    };
+    // The key bar's Ctrl is sticky for the next key typed on the soft keyboard.
+    let on_input = Callback::new(move |data: String| {
+        if ctrl.get_untracked() {
+            ctrl.set(false);
+            send(with_ctrl(&data));
+        } else {
+            send(data);
+        }
     });
     let on_resize = Callback::new(move |_: (u16, u16)| send_size());
 
@@ -550,6 +560,7 @@ pub fn TerminalSurface(terminal_id: String) -> impl IntoView {
             on:drop=on_drop
         >
             <Terminal handle=handle on_input=on_input on_resize=on_resize autofocus=true />
+            {move || app.viewport.phone().then(|| view! { <KeyBar ctrl=ctrl send=Callback::new(send) /> })}
             <div class="pn-drop-ring" class:on=move || over.get()></div>
             {move || {
                 let s = sending.get();
@@ -578,4 +589,92 @@ fn upload_failed(name: &str, err: String) {
     state::get()
         .toasts
         .push(Toast::new(ToastKind::Error, format!("Could not upload {name}")).detail(err));
+}
+
+/// Keys a phone keyboard lacks, as the bytes a terminal expects.
+const BAR_KEYS: &[(&str, &str, &str)] = &[
+    ("esc", "Escape", "\x1b"),
+    ("tab", "Tab", "\t"),
+    ("↑", "Up", "\x1b[A"),
+    ("↓", "Down", "\x1b[B"),
+    ("←", "Left", "\x1b[D"),
+    ("→", "Right", "\x1b[C"),
+    ("|", "Pipe", "|"),
+    ("~", "Tilde", "~"),
+    ("/", "Slash", "/"),
+    ("-", "Dash", "-"),
+];
+
+/// `data` as typed with Ctrl held: a letter (or one of `@[\\]^_ ?`) becomes its control byte;
+/// anything else passes through.
+pub fn with_ctrl(data: &str) -> String {
+    let mut chars = data.chars();
+    match (chars.next(), chars.next()) {
+        (Some(c), None) => match c.to_ascii_uppercase() {
+            u @ ('@'..='_') => char::from((u as u8) & 0x1f).to_string(),
+            ' ' => "\0".to_owned(),
+            '?' => "\x7f".to_owned(),
+            _ => data.to_owned(),
+        },
+        _ => data.to_owned(),
+    }
+}
+
+/// The phone key bar under the terminal: Esc, Tab, a sticky Ctrl, arrows and the symbols that
+/// hide behind a long press on soft keyboards. Taps never take focus from the terminal.
+#[component]
+fn KeyBar(ctrl: RwSignal<bool>, send: Callback<String>) -> impl IntoView {
+    let keep_focus = |e: web_sys::PointerEvent| e.prevent_default();
+    view! {
+        <div class="pn-keybar" role="toolbar" aria-label="Terminal keys">
+            <button
+                class="pn-key t-mono"
+                class:on=move || ctrl.get()
+                aria-label="Control"
+                aria-pressed=move || ctrl.get().to_string()
+                on:pointerdown=keep_focus
+                on:click=move |_| ctrl.update(|c| *c = !*c)
+            >
+                "ctrl"
+            </button>
+            {BAR_KEYS
+                .iter()
+                .map(|&(label, name, bytes)| {
+                    view! {
+                        <button
+                            class="pn-key t-mono"
+                            aria-label=name
+                            on:pointerdown=keep_focus
+                            on:click=move |_| {
+                                let data = if ctrl.get_untracked() && bytes.len() == 1 {
+                                    with_ctrl(bytes)
+                                } else {
+                                    bytes.to_owned()
+                                };
+                                ctrl.set(false);
+                                send.run(data);
+                            }
+                        >
+                            {label}
+                        </button>
+                    }
+                })
+                .collect_view()}
+        </div>
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::with_ctrl;
+
+    #[test]
+    fn ctrl_bytes() {
+        assert_eq!(with_ctrl("c"), "\x03");
+        assert_eq!(with_ctrl("C"), "\x03");
+        assert_eq!(with_ctrl("["), "\x1b");
+        assert_eq!(with_ctrl("?"), "\x7f");
+        assert_eq!(with_ctrl("ab"), "ab");
+        assert_eq!(with_ctrl("1"), "1");
+    }
 }
