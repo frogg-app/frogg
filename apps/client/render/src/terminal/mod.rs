@@ -124,15 +124,6 @@ impl TerminalHandle {
     }
 }
 
-fn mouse_wheel_bytes(up: bool, row: u16, col: u16) -> String {
-    format!(
-        "\x1b[<{};{};{}M",
-        if up { 64 } else { 65 },
-        col + 1,
-        row + 1
-    )
-}
-
 /// The terminal view. Keys, IME text and pastes go to `on_input` as the bytes to send; the
 /// grid fits its container and reports `(cols, rows)` to `on_resize` when that changes.
 #[component]
@@ -248,9 +239,32 @@ pub fn Terminal(
         if !alt && !e.shift_key() {
             handle.scroll_by(-lines);
         } else if mouse {
-            let (r, c) = handle.with_screen(|s| s.cursor_position());
+            // The cell under the pointer, in the program's own mouse encoding.
+            let (rows_n, cols_n) = handle.size();
+            let cell = match (root.get_untracked(), probe.get_untracked()) {
+                (Some(root), Some(probe)) => {
+                    let p = probe.get_bounding_client_rect();
+                    let grid = root
+                        .query_selector(".fr-term-rows")
+                        .ok()
+                        .flatten()
+                        .map(|g| g.get_bounding_client_rect())
+                        .unwrap_or_else(|| root.get_bounding_client_rect());
+                    (p.width() > 0.0 && p.height() > 0.0).then(|| {
+                        let c = ((e.client_x() as f64 - grid.left()) / p.width()).floor();
+                        let r = ((e.client_y() as f64 - grid.top()) / p.height()).floor();
+                        (
+                            (r.max(0.0) as u16).min(rows_n.saturating_sub(1)),
+                            (c.max(0.0) as u16).min(cols_n.saturating_sub(1)),
+                        )
+                    })
+                }
+                _ => None,
+            };
+            let (r, c) = cell.unwrap_or_else(|| handle.with_screen(|s| s.cursor_position()));
+            let enc = handle.with_screen(|s| s.mouse_protocol_encoding());
             for _ in 0..lines.unsigned_abs() {
-                on_input.run(mouse_wheel_bytes(lines < 0, r, c));
+                on_input.run(model::mouse_wheel_bytes(lines < 0, r, c, enc));
             }
         } else {
             let app = handle.with_screen(|s| s.application_cursor());

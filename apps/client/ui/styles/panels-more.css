@@ -140,6 +140,18 @@
   color: var(--amber);
 }
 
+/* Terminals: cancellable drop uploads */
+.pn-upload {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pn-upload-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* SCM: commit graph */
 .pn-graph-legend {
   display: flex;

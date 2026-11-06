@@ -167,6 +167,33 @@ pub fn rows(screen: &Screen, cursor: bool) -> Vec<Vec<Run>> {
     out
 }
 
+/// A wheel report for the cell (0-based `row`, `col`) in the program's mouse encoding: SGR
+/// (`CSI < b;x;y M`), UTF-8 (X10 with UTF-8 coordinates) or the X10 default (bytes offset by 32,
+/// capped at 223).
+pub fn mouse_wheel_bytes(
+    up: bool,
+    row: u16,
+    col: u16,
+    encoding: vt100::MouseProtocolEncoding,
+) -> String {
+    let button: u32 = if up { 64 } else { 65 };
+    let (x, y) = (col as u32 + 1, row as u32 + 1);
+    match encoding {
+        vt100::MouseProtocolEncoding::Sgr => format!("\x1b[<{button};{x};{y}M"),
+        vt100::MouseProtocolEncoding::Utf8 => {
+            let ch = |v: u32| char::from_u32((v + 32).min(2047)).unwrap_or(' ');
+            format!("\x1b[M{}{}{}", ch(button), ch(x), ch(y))
+        }
+        vt100::MouseProtocolEncoding::Default => {
+            let ch = |v: u32| char::from((v + 32).min(255) as u8);
+            let (b, x, y) = (ch(button), ch(x.min(223)), ch(y.min(223)));
+            // Bytes above 0x7f go out as raw bytes; the input channel is a string, so they
+            // travel as Latin-1 code points.
+            format!("\x1b[M{b}{x}{y}")
+        }
+    }
+}
+
 /// The bytes a key press sends to the program, or `None` to let the browser have it (plain
 /// printable keys arrive through the input element instead, so IME and mobile keyboards work).
 pub fn key_bytes(
