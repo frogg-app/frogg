@@ -6,7 +6,7 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use serde_json::{json, Value};
 
-use crate::components::{Button, ButtonKind, Ico, Icon, Seg};
+use crate::components::{Button, ButtonKind, Ico, Icon, Seg, Select, SelectOption};
 use crate::state::config::{self, call, ns, provider_label, s, Action};
 use crate::state::hosts::Host;
 use crate::state::signin::{open_sign_in, SignInTarget};
@@ -904,10 +904,92 @@ pub fn UsageLimits() -> impl IntoView {
             </RpcStatus>
         </Section>
         <Section title="Meters">
-            <Row label="Warn at"><NumField value=num("warnPct") on_change=set_num("warnPct") unit="%" max=100.0 /></Row>
-            <Row label="Critical at"><NumField value=num("criticalPct") on_change=set_num("criticalPct") unit="%" max=100.0 /></Row>
-            <Row label="Animate meters"><PrefToggle key="meterAnimate" /></Row>
-            <Row label="Suggest switching account near a limit"><PrefToggle key="suggestSwitch" /></Row>
+            <Row label="Refresh on a timer" hint="The usage endpoint rate-limits; Frogg backs off on its own when it does">
+                <PrefToggle key="meterTimer" />
+                <NumField value=num("meterSeconds") on_change=set_num("meterSeconds") unit="s" min=30.0 max=3600.0 />
+            </Row>
+            <Row label="Refresh on hover" hint="Pointer over the usage panel"><PrefToggle key="meterHover" /></Row>
+            <Row label="Refresh after a reply" hint="When a session finishes a turn"><PrefToggle key="meterAfterReply" /></Row>
+            <Row label="Warning at"><NumField value=num("warnPct") on_change=set_num("warnPct") unit="%" min=1.0 max=100.0 /></Row>
+            <Row label="Critical at"><NumField value=num("criticalPct") on_change=set_num("criticalPct") unit="%" min=1.0 max=100.0 /></Row>
+            <Row label="Animate changes"><PrefToggle key="meterAnimate" /></Row>
+        </Section>
+        <Note>"Device settings for the rings in the composer and status bar"</Note>
+        <LimitHit usage=usage />
+    }
+}
+
+/// "When a limit is hit": the host's auto-resume, the composer countdown, account switching.
+#[component]
+fn LimitHit(usage: config::Rpc) -> impl IntoView {
+    let app = crate::state::get();
+    let prefs = app.prefs;
+    let cfg = config::get();
+    let host = Signal::derive(move || {
+        app.conn
+            .active_link()
+            .server_name
+            .unwrap_or_else(|| "host".to_owned())
+    });
+    // Providers with more than one account reporting usage can suggest a switch.
+    let multi = Signal::derive(move || {
+        let list = usage
+            .data
+            .get()
+            .and_then(|d| d.get("providers").and_then(Value::as_array).cloned())
+            .unwrap_or_default();
+        let mut names: Vec<String> = Vec::new();
+        for p in &list {
+            let id = s(p, "providerId");
+            let n = list.iter().filter(|q| s(q, "providerId") == id).count();
+            let label = provider_label(&id);
+            if n > 1 && !names.contains(&label) {
+                names.push(label);
+            }
+        }
+        names
+    });
+    let countdown = vec![
+        SelectOption::new("reset", "Immediately at reset"),
+        SelectOption::new("1m", "1 minute after reset"),
+        SelectOption::new("5m", "5 minutes after reset"),
+        SelectOption::new("off", "No countdown"),
+    ];
+    view! {
+        <Section title="When a limit is hit">
+            <Row label="Resume after the window resets" hint=host>
+                {move || match cfg.flag("/autoResumeOnUsageLimit") {
+                    // COMPAT: daemons before autoResumeOnUsageLimit omit the key.
+                    None => view! { <Pill text="needs a newer daemon" /> }.into_any(),
+                    Some(_) => view! {
+                        <Toggle
+                            value=Signal::derive(move || cfg.flag("/autoResumeOnUsageLimit").unwrap_or(false))
+                            on_change=Callback::new(move |v: bool| cfg.patch(json!({ "autoResumeOnUsageLimit": v })))
+                            label="Resume after the window resets"
+                        />
+                    }.into_any(),
+                }}
+            </Row>
+            <Row label="Auto-resume countdown" hint="Shown in the composer; cancel any time">
+                <Select
+                    options=countdown
+                    value=Signal::derive(move || prefs.text("resumeCountdown"))
+                    on_change=Callback::new(move |v: String| prefs.set("resumeCountdown", v))
+                />
+            </Row>
+            <Row
+                label="Suggest moving to another account"
+                hint=Signal::derive(move || {
+                    let m = multi.get();
+                    if m.is_empty() {
+                        "Needs a second account on the same provider".to_owned()
+                    } else {
+                        format!("Offers the {} account with headroom", m.join(" or "))
+                    }
+                })
+            >
+                <PrefToggle key="suggestSwitch" />
+            </Row>
         </Section>
     }
 }
