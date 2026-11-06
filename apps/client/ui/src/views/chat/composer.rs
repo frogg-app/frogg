@@ -14,7 +14,7 @@ use serde_json::{json, Value};
 use wasm_bindgen::JsCast;
 
 use super::chips::{AccountChip, ProviderChip};
-use super::{client_or_toast, session_menu, session_state, toast_err};
+use super::{client_or_toast, composer_size, session_menu, session_state, toast_err};
 use crate::components::{Ico, Icon, Select, SelectOption};
 use crate::native::PickedFile;
 use crate::shell::toast::ToastKind;
@@ -23,7 +23,13 @@ use crate::state::Session;
 
 /// Images up to this size go to the model inline; anything else uploads as a file.
 const INLINE_IMAGE_MAX: u64 = 20 * 1024 * 1024;
-const MAX_INPUT_PX: i32 = 240;
+
+fn window_height() -> f64 {
+    web_sys::window()
+        .and_then(|w| w.inner_height().ok())
+        .and_then(|h| h.as_f64())
+        .unwrap_or(800.0)
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum AttKind {
@@ -408,19 +414,84 @@ pub fn Composer(
     let uploading =
         move || atts.with(|a| a.iter().any(|x| matches!(x.kind, AttKind::Uploading(_))));
 
-    // Autosize the box to its text, up to a cap.
-    let fit = move || {
-        if let Some(el) = input.get_untracked() {
-            let style = web_sys::HtmlElement::style(&el);
-            let _ = style.set_property("height", "auto");
-            let h = el.scroll_height().min(MAX_INPUT_PX);
-            let _ = style.set_property("height", &format!("{h}px"));
+    // The input's height: follows the text in auto (a hidden mirror wraps like the input and
+    // gives the text's own height), glides between sizes, tracks a grip drag 1:1 and is
+    // remembered per session.
+    let min_h = if compact { 40.0 } else { 48.0 };
+    let size = RwSignal::new(composer_size::load(&agent_id));
+    let content = RwSignal::new(min_h);
+    let win_h = RwSignal::new(window_height());
+    let resize = window_event_listener(leptos::ev::resize, move |_| win_h.set(window_height()));
+    on_cleanup(move || resize.remove());
+    let drag = RwSignal::new(None::<f64>);
+    let drag_start = StoredValue::new((0.0f64, 0.0f64));
+    let mirror = NodeRef::<leptos::html::Div>::new();
+    let bounds = move || composer_size::bounds(min_h, win_h.get());
+    let height = Memo::new(move |_| {
+        drag.get()
+            .unwrap_or_else(|| composer_size::target_height(size.get(), content.get(), bounds()))
+    });
+    let set_size = move |s: composer_size::Size| {
+        size.set(s);
+        composer_size::save(&id.get_value(), s);
+    };
+    let measure = move || {
+        if let Some(m) = mirror.get_untracked() {
+            content.set(f64::from(m.offset_height()));
         }
     };
     Effect::new(move |_| {
         text.track();
-        request_animation_frame(fit);
+        win_h.track();
+        request_animation_frame(measure);
     });
+    let expanded = move || size.get() != composer_size::Size::Auto;
+    let toggle_size = move || {
+        set_size(if size.get_untracked() == composer_size::Size::Auto {
+            composer_size::Size::Expanded
+        } else {
+            composer_size::Size::Auto
+        })
+    };
+    // After a send the big editor folds back; a height the user dragged to stays.
+    let collapse = move || {
+        if size.get_untracked() == composer_size::Size::Expanded {
+            set_size(composer_size::Size::Auto);
+        }
+    };
+    let grip_down = move |ev: leptos::ev::PointerEvent| {
+        ev.prevent_default();
+        if let Some(t) = ev
+            .current_target()
+            .and_then(|t| t.dyn_into::<web_sys::Element>().ok())
+        {
+            let _ = t.set_pointer_capture(ev.pointer_id());
+        }
+        let h = height.get_untracked();
+        drag_start.set_value((f64::from(ev.client_y()), h));
+        drag.set(Some(h));
+    };
+    let grip_move = move |ev: leptos::ev::PointerEvent| {
+        if drag.get_untracked().is_none() {
+            return;
+        }
+        let (y0, h0) = drag_start.get_value();
+        let b = bounds();
+        drag.set(Some(
+            (h0 - (f64::from(ev.client_y()) - y0)).clamp(b.min, b.max),
+        ));
+    };
+    let grip_up = move |_: leptos::ev::PointerEvent| {
+        let Some(end) = drag.get_untracked() else {
+            return;
+        };
+        drag.set(None);
+        set_size(composer_size::settle_drag(
+            end,
+            content.get_untracked(),
+            bounds(),
+        ));
+    };
 
     let slash_query = Memo::new(move |_| {
         let t = text.get();
@@ -477,6 +548,7 @@ pub fn Composer(
 
     // A stashed draft comes back once the message it made way for has gone.
     let restore = move || {
+        collapse();
         let s = stash.get_untracked();
         stash.set(None);
         match s {
@@ -752,6 +824,27 @@ pub fn Composer(
                         />
                     </div>
                 </Show>
+                <div
+                    class="composer-grip"
+                    class:on=move || drag.get().is_some()
+                    role="separator"
+                    aria-orientation="horizontal"
+                    aria-label="Drag to resize the message box"
+                    on:pointerdown=grip_down
+                    on:pointermove=grip_move
+                    on:pointerup=grip_up
+                    on:pointercancel=move |_| drag.set(None)
+                >
+                    <span class="composer-grip-bar"></span>
+                </div>
+                <div
+                    class="composer-input-box"
+                    class:dragging=move || drag.get().is_some()
+                    style:height=move || format!("{}px", height.get())
+                >
+                <div class="composer-mirror" node_ref=mirror aria-hidden="true">
+                    {move || text.with(|t| if t.is_empty() || t.ends_with('\n') { format!("{t} ") } else { t.clone() })}
+                </div>
                 <textarea
                     class="composer-input"
                     node_ref=input
@@ -767,6 +860,7 @@ pub fn Composer(
                     on:keydown=on_key
                     on:paste=on_paste
                 ></textarea>
+                </div>
                 <div class="composer-bar">
                     <button class="icon-btn" aria-label="Attach files" title="Attach files" on:click=move |_| pick_files()>
                         <Icon ico=Ico::Plus size=16.0 />
@@ -776,6 +870,18 @@ pub fn Composer(
                     <AccountChip session=session />
                     <ContextMeter session=session />
                     <span class="spacer"></span>
+                    <button
+                        class="icon-btn composer-expand"
+                        aria-label=move || if expanded() { "Shrink the message box" } else { "Expand the message box" }
+                        title=move || if expanded() { "Shrink the message box" } else { "Expand the message box" }
+                        on:click=move |_| toggle_size()
+                    >
+                        {move || if expanded() {
+                            view! { <Icon ico=Ico::Minimize2 size=14.0 /> }
+                        } else {
+                            view! { <Icon ico=Ico::Maximize2 size=14.0 /> }
+                        }}
+                    </button>
                     {move || {
                         if running.get() && empty() {
                             view! {

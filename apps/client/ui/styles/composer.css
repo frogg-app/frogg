@@ -109,3 +109,70 @@
 .composer-note.shell {
   color: var(--cyan2);
 }
+
+/* ----- input size: grip, glide, mirror ------------------------------------------------- */
+.composer-grip {
+  display: flex;
+  justify-content: center;
+  align-self: center;
+  width: 64px;
+  margin: -8px auto 2px;
+  padding: 4px 18px;
+  cursor: ns-resize;
+  touch-action: none;
+}
+.composer-grip-bar {
+  width: 28px;
+  height: 3px;
+  background: var(--line2);
+  transition:
+    background-color 160ms var(--ease),
+    width 200ms var(--ease);
+}
+.composer-grip:hover .composer-grip-bar {
+  background: var(--muted);
+}
+.composer-grip.on .composer-grip-bar {
+  width: 40px;
+  background: var(--cyan2);
+}
+.composer-input-box {
+  position: relative;
+  overflow: hidden;
+  transition: height var(--glide-ms) var(--ease);
+}
+.composer-input-box.dragging {
+  transition: none;
+}
+.composer-input-box > .composer-input {
+  height: 100%;
+  max-height: none;
+}
+/* Same type and width as the input, never seen: its height is the text's own height. */
+.composer-mirror {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  visibility: hidden;
+  pointer-events: none;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 20px;
+}
+.composer.compact .composer-mirror {
+  font-size: 15px;
+}
+.composer-expand {
+  color: var(--muted);
+}
+.composer-expand:hover {
+  color: var(--text);
+}
+@media (prefers-reduced-motion: reduce) {
+  .composer-input-box {
+    transition: none;
+  }
+}

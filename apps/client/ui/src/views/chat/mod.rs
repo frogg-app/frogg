@@ -4,6 +4,7 @@
 
 mod chips;
 mod composer;
+mod composer_size;
 mod item;
 mod lightbox;
 mod notices;
