@@ -2,11 +2,16 @@
 //! Streaming-friendly: the text is re-parsed on change (pulldown-cmark is fast) but top-level
 //! blocks are keyed by a hash of their source, so only changed blocks touch the DOM.
 
+mod image;
 mod parse;
 
+pub use image::{
+    clear_image_cache, image_data_url, HostImage, ImageLoader, ImageRead, ImageRoot,
+    MAX_IMAGE_BYTES,
+};
 pub use parse::{
-    linkify, parse, plain_text, resolve_image, safe_href, Align, Block, ImageSource, Inline, Item,
-    Node,
+    base64, column_widths, data_url, linkify, parse, plain_text, resolve_image, safe_href, Align,
+    Block, ImageSource, Inline, Item, Node,
 };
 
 use crate::code::CodeFence;
@@ -98,6 +103,7 @@ fn node_view(node: &Node, ctx: Ctx) -> AnyView {
             }
         }
         Node::Table { align, head, rows } => {
+            let widths = column_widths(head, rows);
             let style = |n: usize| match align.get(n).copied().unwrap_or(Align::None) {
                 Align::Center => "text-align:center",
                 Align::Right => "text-align:right",
@@ -107,6 +113,14 @@ fn node_view(node: &Node, ctx: Ctx) -> AnyView {
                 .iter()
                 .enumerate()
                 .map(|(n, c)| view! { <th style=style(n)>{inlines_view(c, ctx)}</th> })
+                .collect_view();
+            let total: u32 = widths.iter().sum::<u32>().max(1);
+            let cols = widths
+                .iter()
+                .map(|w| {
+                    let pct = f64::from(*w) * 100.0 / f64::from(total);
+                    view! { <col style=format!("width:{pct:.3}%") /> }
+                })
                 .collect_view();
             let ncols = align.len();
             let rows = rows
@@ -123,7 +137,8 @@ fn node_view(node: &Node, ctx: Ctx) -> AnyView {
                 .collect_view();
             view! {
                 <div class="fr-md-table">
-                    <table>
+                    <table style=format!("width:max(100%, {total}px)")>
+                        <colgroup>{cols}</colgroup>
                         <thead><tr>{head}</tr></thead>
                         <tbody>{rows}</tbody>
                     </table>
@@ -171,11 +186,11 @@ fn inline_view(inline: &Inline, ctx: Ctx) -> AnyView {
             }
         },
         Inline::Image { src, alt } => {
-            let url = match resolve_image(src, None) {
-                Some(ImageSource::Uri(u)) => Some(u),
-                _ => ctx.image_src.and_then(|cb| cb.run(src.clone())),
+            let direct = matches!(resolve_image(src, None), Some(ImageSource::Uri(_)));
+            let Some(cb) = ctx.image_src.filter(|_| !direct) else {
+                return view! { <HostImage src=src.clone() alt=alt.clone() /> }.into_any();
             };
-            match url {
+            match cb.run(src.clone()) {
                 Some(u) => view! { <img class="fr-md-img" src=u alt=alt.clone() loading="lazy" /> }
                     .into_any(),
                 None => {

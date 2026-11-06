@@ -2,11 +2,13 @@
 //! its pane (command output, the file read, the edit's diff, search hits, a fetched page, a plan,
 //! a subagent's log). Running calls carry a beam; a live settle draws the tick and sweeps once.
 
+use frogg_render::markdown::{HostImage, ImageRoot, MAX_IMAGE_BYTES};
 use frogg_render::{diff_texts, parse_unified, Code, DiffView, Markdown};
 use leptos::prelude::*;
 use serde_json::Value;
 
 use super::item::on_link;
+use super::subwork::{SpawnedElapsed, SpawnedLink};
 use crate::components::{Ico, Icon, StatusGlyph};
 use crate::state::timeline::Entry;
 use crate::state::Bucket;
@@ -147,6 +149,38 @@ pub fn summary(name: &str, d: &Value) -> Summary {
     }
 }
 
+/// Makes host files in markdown and image tool rows load through `host`'s daemon, relative paths
+/// from the session's `cwd` (ui-next `ImageRoot`). Call once in the chat pane.
+pub fn provide_image_root(host: String, cwd: Signal<Option<String>>) {
+    let scope = host.clone();
+    ImageRoot::provide(
+        cwd,
+        Signal::derive(move || scope.clone()),
+        move |cwd, path| {
+            let c = crate::state::get().conn.client_of(&host);
+            Box::pin(async move {
+                let c = c.ok_or_else(|| "Not connected".to_owned())?;
+                let r = c
+                    .read_file(&cwd, &path, Some(MAX_IMAGE_BYTES as u64))
+                    .await
+                    .map_err(|e| e.to_string())?;
+                if r.size > MAX_IMAGE_BYTES as u64 {
+                    return Err("Image too large to preview".into());
+                }
+                Ok((r.mime, r.bytes))
+            })
+        },
+    );
+}
+
+/// A picture the agent looked at shows as the picture, not its bytes.
+fn is_image_file(path: &str) -> bool {
+    let lower = path.to_ascii_lowercase();
+    [".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg"]
+        .iter()
+        .any(|e| lower.ends_with(e))
+}
+
 fn pre(text: &str) -> AnyView {
     let text = if text.len() > PRE_MAX_CHARS {
         let mut cut = PRE_MAX_CHARS;
@@ -187,6 +221,10 @@ pub fn body(d: &Value) -> AnyView {
             .into_any(),
             None => ().into_any(),
         },
+        "read" if is_image_file(path) => {
+            let src = path.to_owned();
+            view! { <div class="tool-pad tool-img"><HostImage src=src alt="" /></div> }.into_any()
+        }
         "read" | "write" => s(d, "content")
             .map(|c| code(c, path))
             .unwrap_or_else(|| ().into_any()),
@@ -288,6 +326,17 @@ pub fn ToolCall(entry: ArcRwSignal<Entry>) -> impl IntoView {
                 .map(str::to_owned)
         })
     });
+    // A subagent call links to its live sub-work row (ticking run time, "Open subagent").
+    let e = entry.clone();
+    let sub_call = Memo::new(move |_| {
+        e.with(|e| {
+            e.item
+                .get("detail")
+                .filter(|d| s(d, "type") == Some("sub_agent"))
+                .and_then(|_| e.str("callId"))
+                .map(str::to_owned)
+        })
+    });
     // Plays once on a live running → completed/failed transition, never on mount.
     let settle = RwSignal::new(Settle::None);
     Effect::new(move |prev: Option<String>| {
@@ -319,23 +368,28 @@ pub fn ToolCall(entry: ArcRwSignal<Entry>) -> impl IntoView {
             if open.get() { " open" } else { "" },
         )
     };
+    // The pane rebuilds only when the detail or error changes, not on every streamed update.
     let e = entry.clone();
-    let pane = move || {
+    let detail =
+        Memo::new(move |_| e.with(|e| e.item.get("detail").cloned().unwrap_or(Value::Null)));
+    let e = entry.clone();
+    let error = Memo::new(move |_| {
         e.with(|e| {
-            let d = e.item.get("detail").cloned().unwrap_or(Value::Null);
-            let err = (e.str("status") == Some("failed"))
+            (e.str("status") == Some("failed"))
                 .then(|| e.item.get("error").cloned())
                 .flatten()
                 .filter(|x| !x.is_null())
                 .map(|x| match x {
                     Value::String(s) => s,
                     other => other.to_string(),
-                });
-            view! {
-                {err.map(|m| view! { <div class="tool-err t-mono">{m}</div> })}
-                <Clamp>{body(&d)}</Clamp>
-            }
+                })
         })
+    });
+    let pane = move || {
+        view! {
+            {move || error.get().map(|m| view! { <div class="tool-err t-mono">{m}</div> })}
+            <Clamp>{move || detail.with(body)}</Clamp>
+        }
     };
     let ui = crate::state::get().ui;
     view! {
@@ -353,6 +407,7 @@ pub fn ToolCall(entry: ArcRwSignal<Entry>) -> impl IntoView {
                 <span class="tool-verb">{move || head.get().1}</span>
                 <span class="tool-arg">{move || head.get().2}</span>
                 {move || head.get().3.map(|m| view! { <span class="tool-meta t-mono">{m}</span> })}
+                {move || sub_call.get().map(|c| view! { <SpawnedElapsed call_id=c /> })}
                 {move || {
                     if running() {
                         view! { <StatusGlyph bucket=Bucket::Working size=7.0 /> }.into_any()
@@ -374,7 +429,8 @@ pub fn ToolCall(entry: ArcRwSignal<Entry>) -> impl IntoView {
             </button>
             <Show when=move || open.get()>
                 <div class="tool-body">
-                    {pane.clone()}
+                    {pane}
+                    {move || sub_call.get().map(|c| view! { <SpawnedLink call_id=c /> })}
                     {move || child.get().map(|id| view! {
                         <button class="tool-link" on:click=move |_| ui.select(Some(id.clone()))>
                             <Icon ico=Ico::ArrowUpRight size=12.0 />
@@ -387,25 +443,83 @@ pub fn ToolCall(entry: ArcRwSignal<Entry>) -> impl IntoView {
     }
 }
 
-/// Clamps tall content behind a "Show more" fade (ui-next `chat/Clamp.tsx`).
+/// Content only this much taller than the cap shows in full: a toggle for a few lines is noise.
+const CLAMP_SLACK: i32 = 64;
+
+/// A see more / see less glide: quick for short reveals, capped for huge ones.
+fn clamp_ms(dist: i32) -> i32 {
+    (200.0 + f64::from(dist.abs()) / 8.0).min(420.0).round() as i32
+}
+
+/// Caps tall content at `BODY_CAP` with a fade and a "Show more" bar (ui-next `chat/Clamp.tsx`).
+/// The height glides open to the full content and back; a ResizeObserver remeasures as the
+/// content grows (streamed output, images loading). Content that fits renders as is.
 #[component]
 pub fn Clamp(children: Children) -> impl IntoView {
-    let more = RwSignal::new(false);
-    let tall = RwSignal::new(false);
+    use wasm_bindgen::closure::Closure;
+    use wasm_bindgen::JsCast;
+    let cap = BODY_CAP as i32;
+    let open = RwSignal::new(false);
+    let full = RwSignal::new(0i32);
+    // Animate only after the first measure: the initial layout is instant.
+    let placed = RwSignal::new(false);
     let el = NodeRef::<leptos::html::Div>::new();
+    let observer = StoredValue::new_local(None::<(web_sys::ResizeObserver, Closure<dyn FnMut()>)>);
     Effect::new(move |_| {
-        if let Some(d) = el.get() {
-            request_animation_frame(move || {
-                tall.set(d.scroll_height() as u32 > BODY_CAP + 24);
-            });
+        let Some(d) = el.get() else { return };
+        let d2 = d.clone();
+        let cb = Closure::<dyn FnMut()>::new(move || {
+            let h = d2.offset_height();
+            if full.try_get_untracked() != Some(h) {
+                let _ = full.try_set(h);
+            }
+        });
+        if let Ok(ro) = web_sys::ResizeObserver::new(cb.as_ref().unchecked_ref()) {
+            ro.observe(&d);
+            observer.set_value(Some((ro, cb)));
+        }
+        full.set(d.offset_height());
+        request_animation_frame(move || {
+            let _ = placed.try_set(true);
+        });
+    });
+    on_cleanup(move || {
+        if let Some((ro, _)) = observer.try_update_value(Option::take).flatten() {
+            ro.disconnect();
         }
     });
+    let clamps = move || full.get() > cap + CLAMP_SLACK;
+    let style = move || {
+        let f = full.get();
+        if !clamps() {
+            return "height:auto".to_owned();
+        }
+        let to = if open.get() { f } else { cap };
+        if placed.get() {
+            format!(
+                "height:{to}px;transition:height {ms}ms var(--ease)",
+                ms = clamp_ms(f - cap)
+            )
+        } else {
+            format!("height:{to}px")
+        }
+    };
     view! {
-        <div class="clamp" class:clamped=move || tall.get() && !more.get()>
-            <div class="clamp-inner" node_ref=el>{children()}</div>
-            <Show when=move || tall.get()>
-                <button class="clamp-more t-mono" on:click=move |_| more.update(|m| *m = !*m)>
-                    {move || if more.get() { "Show less" } else { "Show more" }}
+        <div class="clamp" class:open=move || open.get()>
+            <div class="clamp-clip" style=style>
+                <div class="clamp-inner" node_ref=el>{children()}</div>
+                <Show when=clamps>
+                    <div class="clamp-veil" aria-hidden="true"></div>
+                </Show>
+            </div>
+            <Show when=clamps>
+                <button
+                    class="clamp-more"
+                    aria-expanded=move || open.get().to_string()
+                    on:click=move |_| open.update(|m| *m = !*m)
+                >
+                    <Icon ico=Ico::ChevronDown size=13.0 class="clamp-chev" />
+                    <span>{move || if open.get() { "Show less" } else { "Show more" }}</span>
                 </button>
             </Show>
         </div>

@@ -475,14 +475,10 @@ pub fn SessionState(
             }
         }
     });
+    // Running subagents and background commands the agent waits on.
     let pending = Memo::new(move |_| {
-        work.items.with(|items| {
-            items
-                .iter()
-                // Every listed item is a subagent this session started.
-                .filter(|x| x.status == "running")
-                .count()
-        })
+        work.items
+            .with(|items| super::subwork::model::pending_background(items))
     });
     let card = Memo::new(move |_| {
         let s = session.get()?;

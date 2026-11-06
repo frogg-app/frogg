@@ -142,3 +142,72 @@ fn hrefs_and_images() {
         })
     );
 }
+
+#[test]
+fn table_column_widths() {
+    let n =
+        nodes("| a | description |\n|---|:---:|\n| `xy` | **a much longer cell here** |\n| z |\n");
+    let Node::Table { head, rows, .. } = &n[0] else {
+        panic!("not a table: {n:?}")
+    };
+    // Short columns hold the minimum; widths come from plain text (markup does not count).
+    let w = column_widths(head, rows);
+    assert_eq!(w, vec![56, (23.0f64 * 7.4 + 24.0).round() as u32]);
+    // Very long cells cap at the maximum; ragged rows widen the column count.
+    let long = vec![vec![Inline::Text("x".repeat(500))], vec![t("b")]];
+    assert_eq!(column_widths(&[vec![t("h")]], &[long]), vec![300, 56]);
+}
+
+#[test]
+fn table_cells_keep_inline_markdown() {
+    let n = nodes("| a |\n|---|\n| **b** [l](https://x.y) |\n");
+    let Node::Table { rows, .. } = &n[0] else {
+        panic!()
+    };
+    assert_eq!(rows[0][0][0], Inline::Strong(vec![t("b")]));
+    assert!(matches!(rows[0][0][2], Inline::Link { .. }));
+}
+
+#[test]
+fn base64_and_data_urls() {
+    assert_eq!(base64(b""), "");
+    assert_eq!(base64(b"f"), "Zg==");
+    assert_eq!(base64(b"fo"), "Zm8=");
+    assert_eq!(base64(b"foo"), "Zm9v");
+    assert_eq!(base64(b"foobar"), "Zm9vYmFy");
+    assert_eq!(base64(&[0xff, 0xfe, 0x00]), "//4A");
+    assert_eq!(data_url("image/png", b"hi"), "data:image/png;base64,aGk=");
+}
+
+#[test]
+fn host_image_checks() {
+    assert_eq!(
+        image_data_url("image/png", b"hi").as_deref(),
+        Ok("data:image/png;base64,aGk=")
+    );
+    assert_eq!(
+        image_data_url("text/plain", b"hi"),
+        Err("Not an image".to_owned())
+    );
+    let big = vec![0u8; MAX_IMAGE_BYTES + 1];
+    assert_eq!(
+        image_data_url("image/png", &big),
+        Err("Image too large to preview".to_owned())
+    );
+}
+
+#[test]
+fn image_inline_in_paragraph() {
+    let n = nodes("see ![shot](./a.png) here");
+    assert_eq!(
+        n[0],
+        Node::Para(vec![
+            t("see "),
+            Inline::Image {
+                src: "./a.png".into(),
+                alt: "shot".into()
+            },
+            t(" here"),
+        ])
+    );
+}
