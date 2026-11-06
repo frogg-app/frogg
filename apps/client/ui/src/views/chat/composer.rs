@@ -48,6 +48,8 @@ pub enum AttKind {
 pub struct Att {
     pub id: u64,
     pub name: String,
+    /// Bytes as picked (0 for a fork's context), for the upload label and dedupe.
+    pub size: u64,
     pub kind: AttKind,
 }
 
@@ -114,9 +116,38 @@ fn base64(bytes: &[u8]) -> String {
         .unwrap_or_default()
 }
 
+/// Whether an attachment with this name and size is already on the message.
+pub fn is_dup(atts: &[Att], name: &str, size: u64) -> bool {
+    atts.iter()
+        .any(|a| a.name == name && a.size == size && !matches!(a.kind, AttKind::Fork(_)))
+}
+
+/// "512 B", "1.5 KB", "12 MB" (ui-next `formatBytes`).
+pub fn format_bytes(n: u64) -> String {
+    if n < 1024 {
+        return format!("{n} B");
+    }
+    let units = ["KB", "MB", "GB", "TB"];
+    let mut v = n as f64 / 1024.0;
+    let mut i = 0;
+    while v >= 1024.0 && i < units.len() - 1 {
+        v /= 1024.0;
+        i += 1;
+    }
+    if v >= 10.0 {
+        format!("{} {}", v.round(), units[i])
+    } else {
+        format!("{} {}", (v * 10.0).round() / 10.0, units[i])
+    }
+}
+
 /// Turns picked files into attachments: images inline, the rest uploaded to the host.
 fn attach(files: Vec<PickedFile>, atts: RwSignal<Vec<Att>>) {
     for f in files {
+        // The same file picked, pasted or dropped twice rides along once.
+        if atts.with_untracked(|a| is_dup(a, &f.name, f.size)) {
+            continue;
+        }
         let id = next_att();
         if f.mime.starts_with("image/") && f.size <= INLINE_IMAGE_MAX {
             let data = base64(&f.bytes);
@@ -124,6 +155,7 @@ fn attach(files: Vec<PickedFile>, atts: RwSignal<Vec<Att>>) {
                 a.push(Att {
                     id,
                     name: f.name.clone(),
+                    size: f.size,
                     kind: AttKind::Image {
                         mime: f.mime.clone(),
                         data,
@@ -140,6 +172,7 @@ fn attach(files: Vec<PickedFile>, atts: RwSignal<Vec<Att>>) {
             a.push(Att {
                 id,
                 name: f.name.clone(),
+                size: f.size,
                 kind: AttKind::Uploading(progress),
             })
         });
@@ -361,6 +394,7 @@ pub fn Composer(
             Att {
                 id: next_att(),
                 name: f.name,
+                size: 0,
                 kind: AttKind::Fork(f.context),
             },
         );
@@ -369,7 +403,9 @@ pub fn Composer(
     let atts = RwSignal::new(draft.atts);
     let stash = RwSignal::new(draft.stash);
     let sending = RwSignal::new(false);
-    let drop_over = RwSignal::new(false);
+    // dragenter/dragleave fire for every child crossed: a depth count keeps the highlight steady.
+    let drag_depth = RwSignal::new(0i32);
+    let drop_over = Memo::new(move |_| drag_depth.get() > 0);
     let commands = RwSignal::new(None::<Vec<Command>>);
     let command_error = RwSignal::new(false);
     let hi = RwSignal::new(0usize);
@@ -640,6 +676,9 @@ pub fn Composer(
         });
     };
     let pick_files = move || {
+        if !online.get_untracked() {
+            return;
+        }
         spawn_local(async move {
             match crate::native::pick_files(true).await {
                 Ok(files) => attach(files, atts),
@@ -693,7 +732,7 @@ pub fn Composer(
     };
     let on_paste = move |ev: leptos::ev::ClipboardEvent| {
         let files = transfer_files(ev.as_ref(), "clipboardData");
-        if files.is_empty() {
+        if files.is_empty() || !online.get_untracked() {
             return;
         }
         ev.prevent_default();
@@ -701,9 +740,9 @@ pub fn Composer(
     };
     let on_drop = move |ev: leptos::ev::DragEvent| {
         ev.prevent_default();
-        drop_over.set(false);
+        drag_depth.set(0);
         let files = transfer_files(ev.as_ref(), "dataTransfer");
-        if !files.is_empty() {
+        if !files.is_empty() && online.get_untracked() {
             spawn_local(async move { attach(read_files(files).await, atts) });
         }
     };
@@ -763,11 +802,18 @@ pub fn Composer(
                 class="composer-box cut cut-stroke"
                 class:drop=move || drop_over.get()
                 style="--c:10px"
-                on:dragover=move |ev: leptos::ev::DragEvent| {
-                    ev.prevent_default();
-                    drop_over.set(true);
+                on:dragenter=move |ev: leptos::ev::DragEvent| {
+                    if online.get_untracked() {
+                        ev.prevent_default();
+                        drag_depth.update(|d| *d += 1);
+                    }
                 }
-                on:dragleave=move |_| drop_over.set(false)
+                on:dragover=move |ev: leptos::ev::DragEvent| {
+                    if online.get_untracked() {
+                        ev.prevent_default();
+                    }
+                }
+                on:dragleave=move |_| drag_depth.update(|d| *d = (*d - 1).max(0))
                 on:drop=on_drop
             >
                 {move || stash.get().map(|s| view! {
@@ -794,8 +840,10 @@ pub fn Composer(
                                 let aid = a.id;
                                 let ico = match a.kind {
                                     AttKind::Image { .. } => Ico::Image,
-                                    _ => Ico::Paperclip,
+                                    AttKind::Fork(_) => Ico::GitFork,
+                                    _ => Ico::FileText,
                                 };
+                                let size = a.size;
                                 let progress = match a.kind {
                                     AttKind::Uploading(p) => Some(p),
                                     _ => None,
@@ -807,7 +855,7 @@ pub fn Composer(
                                         <span class="att-name t-mono">{a.name}</span>
                                         {progress.map(|p| view! {
                                             <span class="att-up t-label">
-                                                {move || format!("{}%", (p.get() * 100.0).round() as u32)}
+                                                {move || format!("{}% of {}", (p.get() * 100.0).floor() as u32, format_bytes(size))}
                                             </span>
                                             <span class="att-bar" style:width=move || format!("{:.1}%", p.get() * 100.0)></span>
                                         })}
@@ -851,7 +899,7 @@ pub fn Composer(
                     rows="1"
                     placeholder=placeholder
                     prop:value=move || text.get()
-                    disabled=move || sending.get()
+                    readonly=move || sending.get()
                     on:input=move |ev| {
                         text.set(event_target_value(&ev));
                         hi.set(0);
@@ -862,7 +910,13 @@ pub fn Composer(
                 ></textarea>
                 </div>
                 <div class="composer-bar">
-                    <button class="icon-btn" aria-label="Attach files" title="Attach files" on:click=move |_| pick_files()>
+                    <button
+                        class="icon-btn"
+                        aria-label="Attach images or files"
+                        title="Images go to the model; files go to the host"
+                        disabled=move || !online.get()
+                        on:click=move |_| pick_files()
+                    >
                         <Icon ico=Ico::Plus size=16.0 />
                     </button>
                     <ProviderChip session=session rows=rows compact=compact />
@@ -1251,6 +1305,7 @@ mod tests {
             atts: vec![Att {
                 id: 1,
                 name: "a.png".into(),
+                size: 3,
                 kind: AttKind::File(Value::Null),
             }],
         };
@@ -1258,6 +1313,21 @@ mod tests {
         assert!(is_shell_escape("  !ls -la"));
         assert!(!is_shell_escape("! ls"));
         assert!(!is_shell_escape("hi !ls"));
+    }
+
+    #[test]
+    fn attachments_dedupe_and_sizes() {
+        let a = vec![Att {
+            id: 1,
+            name: "x.txt".into(),
+            size: 10,
+            kind: AttKind::File(Value::Null),
+        }];
+        assert!(is_dup(&a, "x.txt", 10));
+        assert!(!is_dup(&a, "x.txt", 11));
+        assert_eq!(format_bytes(512), "512 B");
+        assert_eq!(format_bytes(1536), "1.5 KB");
+        assert_eq!(format_bytes(12 * 1024 * 1024), "12 MB");
     }
 
     #[test]

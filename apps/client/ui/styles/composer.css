@@ -176,3 +176,22 @@
     transition: none;
   }
 }
+
+/* ----- attachment chips ---------------------------------------------------------------- */
+.composer .att-chip {
+  border: 1px solid var(--line);
+  padding: 4px 8px;
+  overflow: hidden;
+}
+.composer .att-bar {
+  background: var(--mint);
+}
+.composer .att-up {
+  font-size: 10.5px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.composer-bar .icon-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
