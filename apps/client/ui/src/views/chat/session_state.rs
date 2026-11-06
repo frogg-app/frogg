@@ -549,6 +549,7 @@ pub fn SessionState(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
 
     fn entry(item: Value) -> Entry {
         Entry {

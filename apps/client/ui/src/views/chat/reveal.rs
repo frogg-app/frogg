@@ -244,9 +244,12 @@ fn collect(root: &web_sys::Node, out: &mut Vec<TextNode>, total: &mut usize, top
     }
 }
 
+/// A scramble overlay settling: (overlay, host span, word, born).
+type Scrambling = (web_sys::Element, web_sys::Element, Vec<char>, f64);
+
 thread_local! {
     /// Scramble overlays settling: (overlay, host span, word, born).
-    static SCRAMBLES: RefCell<Vec<(web_sys::Element, web_sys::Element, Vec<char>, f64)>> =
+    static SCRAMBLES: RefCell<Vec<Scrambling>> =
         const { RefCell::new(Vec::new()) };
 }
 
@@ -521,7 +524,7 @@ mod tests {
     #[test]
     fn typewriter_drains_backlog() {
         // A small backlog types at about the steady rate.
-        let (n, _) = type_step(0, 2, 1.0 / 60.0, 0.0);
+        let (n, _) = type_step(0, 2, 0.01, 0.0);
         assert_eq!(n, 0);
         let (n, acc) = type_step(0, 2, 0.1, 0.0);
         assert_eq!(n, 2.min((0.1f64 * (55.0 + 6.0)).floor() as usize));
