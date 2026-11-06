@@ -1,0 +1,6 @@
+# Leptos `erase_components`: views and component props are type-erased (`AnyView`) instead of
+# monomorphised per `view!` tree. Cuts the release WASM by about a fifth (2.65 -> 2.12 MB
+# gzipped) with no behaviour change. Applies to the browser build only; native crates and tests
+# are unaffected. A `RUSTFLAGS` env var overrides this, so keep the cfg in it if you set one.
+[target.wasm32-unknown-unknown]
+rustflags = ["--cfg", "erase_components"]
