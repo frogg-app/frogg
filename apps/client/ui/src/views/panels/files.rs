@@ -900,6 +900,8 @@ pub fn FileViewer(
     }
     let mode = RwSignal::new("source".to_owned());
     let generation = RwSignal::new(0u32);
+    // Bumped by a revert: the editor's textarea is uncontrolled, so it rebuilds from the file.
+    let reverted = RwSignal::new(0u32);
     let saving = RwSignal::new(false);
     let save_error = RwSignal::new(None::<String>);
     let ask = RwSignal::new(None::<Ask>);
@@ -930,12 +932,16 @@ pub fn FileViewer(
             f.pin_tab(&path_s.get_value());
         }
     });
-    let revert = move || {
+    let clear = move || {
         let k = key.get_untracked();
         drafts().update(|d| {
             d.remove(&k);
         });
         save_error.set(None);
+    };
+    let revert = move || {
+        clear();
+        reverted.update(|n| *n += 1);
     };
     let edit = move |text: String| {
         let k = key.get_untracked();
@@ -944,7 +950,7 @@ pub fn FileViewer(
             .or_else(|| doc.get_untracked().and_then(|d| d.ok()));
         let Some(base) = base else { return };
         if base.text.as_deref() == Some(text.as_str()) {
-            revert();
+            clear();
             return;
         }
         drafts().update(|d| {
@@ -1094,7 +1100,7 @@ pub fn FileViewer(
             </div>
             {move || save_error.get().map(|e| view! { <div class="pn-error t-mono pn-save-error">{e}</div> })}
             <div class="pn-viewer-body">
-                {move || match doc.get() {
+                {move || match (reverted.track(), doc.get()).1 {
                     None => view! { <SkeletonRows rows=10 icon=false /> }.into_any(),
                     Some(Err(e)) => view! { <div class="pn-error t-mono">{e}</div> }.into_any(),
                     Some(Ok(d)) if d.text.is_some() && mode.get() == "edit" => {
