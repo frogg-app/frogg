@@ -108,7 +108,7 @@ pub fn install() {
             || ui.new_session_open.get_untracked()
             || ui.host_sheet_open.get_untracked();
         let bare = !is_typing(&ev) && !ev.meta_key() && !ev.ctrl_key() && !ev.alt_key() && !modal;
-        if bare && (key == "j" || key == "k") {
+        if bare && (key == "j" || key == "k") && !overlay_open() {
             ev.prevent_default();
             move_selection(key == "j");
             return;
