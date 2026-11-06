@@ -240,6 +240,12 @@ export interface AgentRunOptions {
   resumeFrom?: AgentPersistenceHandle;
   maxThinkingTokens?: number;
   clientMessageId?: string;
+  /**
+   * Daemon-initiated continuation (a turn resumed after a daemon restart). A user prompt
+   * that arrives while it runs is queued behind it instead of interrupting it. Not read by
+   * providers.
+   */
+  continuation?: boolean;
 }
 
 export interface AgentSteerOptions extends AgentRunOptions {

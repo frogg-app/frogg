@@ -109,6 +109,7 @@ export async function resumeInterruptedAgents(
         agentStorage: deps.agentStorage,
         agentId: record.id,
         prompt: INTERRUPTED_TURN_CONTINUATION_PROMPT,
+        runOptions: { continuation: true },
         unarchive: false,
         logger,
       });

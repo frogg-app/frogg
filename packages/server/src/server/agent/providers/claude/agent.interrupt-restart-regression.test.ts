@@ -1042,3 +1042,39 @@ test("auto-completes an open autonomous turn when a foreground prompt starts", a
   subscribedEvents.close();
   await session.close();
 });
+
+test("a turn canceled while its query is starting never sends its prompt to the next turn", async () => {
+  const queries: ScriptedQuery[] = [];
+  queryFactory.mockImplementation(({ prompt }: { prompt: AsyncIterable<unknown> }) => {
+    const scriptedQuery = createScriptedQuery({
+      prompt,
+      sessionId: "cold-start-replace-session",
+      handlePrompt: ({ query }) => {
+        query.emit(buildSuccessResult("cold-start-replace-session"));
+      },
+    });
+    queries.push(scriptedQuery);
+    return scriptedQuery;
+  });
+
+  const session = await new ClaudeAgentClient({
+    logger: createTestLogger(),
+    queryFactory,
+    resolveBinary: async () => "/test/claude/bin",
+  }).createSession({ provider: "claude", cwd: process.cwd() });
+
+  // The resumed turn is still building its query (a cold start after a daemon restart) when
+  // the user's message replaces it.
+  const resumed = session.startTurn("resumed turn");
+  await session.interrupt();
+  const replacement = session.startTurn("user message");
+  await Promise.all([resumed, replacement]);
+
+  await waitFor(() => queries[0]?.prompts.length === 1);
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  expect(queryFactory).toHaveBeenCalledTimes(1);
+  expect(queries[0]?.prompts.map((p) => p.text)).toEqual(["user message"]);
+  expect(queries[0]?.interrupt).not.toHaveBeenCalled();
+
+  await session.close();
+});

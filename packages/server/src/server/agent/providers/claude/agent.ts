@@ -2418,6 +2418,12 @@ class ClaudeAgentSession implements AgentSession {
         this.transcriptFollower?.poll(true);
       }
       await this.ensureQuery();
+      // Canceled (or replaced) while the query was starting — a cold resume after a daemon
+      // restart can take seconds. Pushing now would hand this prompt to the next turn's query,
+      // where the pending interrupt cuts its reply short and drops that turn's own message.
+      if (this.closed || this.activeForegroundTurnId !== turnId) {
+        return { turnId };
+      }
       if (!this.input) {
         throw new Error("Claude session input stream not initialized");
       }
@@ -3260,7 +3266,23 @@ class ClaudeAgentSession implements AgentSession {
     return { kind: "fork", messageId: previousTurn.assistantMessageId };
   }
 
-  private async ensureQuery(): Promise<Query> {
+  private ensureQuery(): Promise<Query> {
+    if (this.query && !this.queryRestartNeeded) {
+      return Promise.resolve(this.query);
+    }
+    // Concurrent callers (a turn replaced while its query was still starting) share one
+    // creation; two would each build a query and the loser's process would be orphaned.
+    if (!this.queryCreation) {
+      this.queryCreation = this.createQuery().finally(() => {
+        this.queryCreation = null;
+      });
+    }
+    return this.queryCreation;
+  }
+
+  private queryCreation: Promise<Query> | null = null;
+
+  private async createQuery(): Promise<Query> {
     if (this.query && !this.queryRestartNeeded) {
       return this.query;
     }

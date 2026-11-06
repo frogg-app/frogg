@@ -2557,6 +2557,9 @@ export class AgentManager {
     agent.lastError = undefined;
 
     const pendingRun = this.runs.createPendingRun(agentId);
+    if (options?.continuation) {
+      pendingRun.continuation = true;
+    }
     // The provider sees the clean-cut summary ahead of the message; the
     // timeline records only what the user wrote.
     const cleanCutSummary = this.getPendingCleanCutSummary(agentId);
@@ -2750,6 +2753,41 @@ export class AgentManager {
       }
       throw error;
     }
+  }
+
+  /**
+   * Queue a user prompt behind a daemon-initiated continuation (a turn resumed after a
+   * restart) instead of interrupting it. Waits for the continuation to start, then steers the
+   * prompt into it when the provider can; otherwise waits for it to finish. Returns null when
+   * no continuation is in flight (or it has settled), so the caller dispatches normally.
+   */
+  async queueBehindContinuation(
+    agentId: string,
+    prompt: AgentPromptInput,
+    options?: AgentSteerOptions,
+  ): Promise<{ status: "steered" } | null> {
+    const run = this.runs.getPendingRun(agentId);
+    if (!run?.continuation || run.settled) {
+      return null;
+    }
+    if (run.start.status === "pending") {
+      await Promise.race([
+        this.waitForAgentRunStart(agentId).catch(() => undefined),
+        run.settledPromise,
+      ]);
+    }
+    if (!run.settled && run.start.status === "started") {
+      try {
+        const steered = await this.steerAgentRun(agentId, prompt, options);
+        if (steered.status === "accepted") {
+          return { status: "steered" };
+        }
+      } catch (error) {
+        this.logger.debug({ err: error, agentId }, "Steer behind continuation not delivered");
+      }
+    }
+    await run.settledPromise;
+    return null;
   }
 
   async steerAgentRun(

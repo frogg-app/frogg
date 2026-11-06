@@ -18,6 +18,8 @@ export interface PendingForegroundRun {
     | { status: "pending" }
     | { status: "started"; turnId: string }
     | { status: "failed"; error: string };
+  /** Set for a daemon-initiated continuation; user prompts queue behind it. */
+  continuation?: boolean;
   settled: boolean;
   settledPromise: Promise<void>;
   resolveSettled: () => void;

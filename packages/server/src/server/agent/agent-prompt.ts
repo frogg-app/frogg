@@ -20,6 +20,7 @@ export type AgentRunController = Pick<
   | "hasInFlightRun"
   | "replaceAgentRun"
   | "steerOrReplaceActiveTurn"
+  | "queueBehindContinuation"
   | "streamAgent"
 >;
 
@@ -103,6 +104,16 @@ export async function startAgentRun(
   // intercept lives at this layer so it covers every prompt entrypoint.
   if (agentManager.tryRunOutOfBand(agentId, prompt, options?.runOptions)) {
     return { disposition: "out_of_band" };
+  }
+  // A turn the daemon resumed after a restart is not the user's to interrupt by accident: a
+  // prompt sent while it runs is steered into it, or waits for it to finish.
+  if (!options?.runOptions?.continuation) {
+    const steerOptions = options?.clearPendingPermissions
+      ? { ...options.runOptions, clearPendingPermissions: true }
+      : options?.runOptions;
+    if (await agentManager.queueBehindContinuation(agentId, prompt, steerOptions)) {
+      return { disposition: "steered" };
+    }
   }
   const steered = await steerOrReplaceActiveRun(agentManager, agentId, prompt, options);
   if (steered?.disposition === "steered") {

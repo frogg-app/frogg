@@ -157,6 +157,10 @@ If the provider's prompt cache has expired by then, the daemon makes an
 [automatic clean cut](/docs/using-frogg/clean-cut/#automatic-clean-cut-on-a-cold-cache) first.
 The same applies when an agent resumes after its usage limit resets.
 
+A message you send while a resumed turn is running does not interrupt it. Providers that
+accept messages mid-turn (Claude, Codex) take it into the running turn; others answer it once
+the resumed turn finishes. Stop still cancels the resumed turn.
+
 To keep agent processes alive across daemon restarts entirely, opt in to independent
 execution with `FROGG_EXECUTION_SERVICE=1` on the daemon. It is off by default; check it
 with `frogg execution-status`.

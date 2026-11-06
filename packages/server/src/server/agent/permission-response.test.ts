@@ -36,6 +36,10 @@ class FakePermissionAgentManager {
     return this.outOfBandHandled;
   }
 
+  async queueBehindContinuation(): Promise<null> {
+    return null;
+  }
+
   getAgent() {
     return undefined;
   }
