@@ -942,3 +942,52 @@ fn relay_connection_is_end_to_end_encrypted() {
     sink.text(&STANDARD.encode(info));
     assert_eq!(client.state(), ConnectionState::Connected);
 }
+
+#[test]
+fn upload_cancel_ends_the_stream_short() {
+    use frogg_client_core::binary::{decode_file_frame, FileFrame};
+    let mut h = harness();
+    h.open_and_greet();
+    let flag = Rc::new(std::cell::Cell::new(false));
+    let r = {
+        let c = h.client.clone();
+        let flag = flag.clone();
+        h.spawn(async move {
+            let data = [7u8; 10];
+            let read = |a: u64, b: u64| {
+                // Cancel once the first chunk has been read.
+                flag.set(true);
+                data[a as usize..b as usize].to_vec()
+            };
+            c.upload_file_stream_cancellable(
+                FileUploadInput {
+                    file_name: "a.bin".into(),
+                    mime_type: "application/octet-stream".into(),
+                    size: 10,
+                    modified_at: None,
+                    chunk_size: Some(4),
+                    read: &read,
+                    on_progress: None,
+                },
+                &|| flag.get(),
+            )
+            .await
+        })
+    };
+    h.pool.run_until_stalled();
+    assert!(matches!(
+        r.borrow_mut().take().unwrap(),
+        Err(Error::Cancelled)
+    ));
+    let frames: Vec<FileFrame> = h
+        .socket()
+        .binary
+        .borrow()
+        .iter()
+        .map(|b| decode_file_frame(b).unwrap())
+        .collect();
+    assert_eq!(frames.len(), 3);
+    assert!(matches!(frames[0], FileFrame::Begin { .. }));
+    assert!(matches!(&frames[1], FileFrame::Chunk { payload, .. } if payload.len() == 4));
+    assert!(matches!(frames[2], FileFrame::End { .. }));
+}
