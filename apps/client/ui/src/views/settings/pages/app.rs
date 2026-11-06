@@ -88,8 +88,7 @@ pub fn GettingStarted() -> impl IntoView {
 }
 
 /// Privacy & feedback: usage statistics for the connected host, and Report a bug. This build
-/// has no statistics or bug-report collector, so nothing leaves the device from here except
-/// the host's own switch, which the daemon owns.
+/// has no statistics collector of its own, so only the host's switch (the daemon's) is shown.
 #[component]
 pub fn Privacy() -> impl IntoView {
     let app = crate::state::get();
@@ -104,9 +103,6 @@ pub fn Privacy() -> impl IntoView {
     });
     view! {
         <Section title="Usage statistics">
-            <Row label="Send usage statistics" hint="This build has no statistics collector, so nothing is ever sent from this device.">
-                <Toggle value=false disabled=true on_change=Callback::new(|_| {}) label="Send usage statistics" />
-            </Row>
             <Row
                 label=Signal::derive(move || format!("Send from {}", host.get()))
                 hint=Signal::derive(move || match host_stats.get() {

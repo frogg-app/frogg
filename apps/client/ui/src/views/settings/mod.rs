@@ -49,7 +49,7 @@ pub struct Page {
     pub label: &'static str,
     pub icon: Ico,
     pub scope: Scope,
-    /// Pages without a body are listed (muted) but not built yet.
+    /// Pages without a body yet; they stay out of the list and search until built.
     pub built: bool,
 }
 
@@ -224,7 +224,10 @@ pub const PAGES: &[Page] = &[
 ];
 
 pub fn find(id: &str) -> &'static Page {
-    PAGES.iter().find(|p| p.id == id).unwrap_or(&PAGES[0])
+    PAGES
+        .iter()
+        .find(|p| p.id == id && p.built)
+        .unwrap_or(&PAGES[0])
 }
 
 /// The host label: the daemon's own name once known, else the saved name.
@@ -246,7 +249,9 @@ pub fn SettingsNav() -> impl IntoView {
             .filter_map(|scope| {
                 let pages: Vec<&'static Page> = PAGES
                     .iter()
-                    .filter(|p| p.scope == *scope && p.label.to_lowercase().contains(&needle))
+                    .filter(|p| {
+                        p.built && p.scope == *scope && p.label.to_lowercase().contains(&needle)
+                    })
                     .collect();
                 (!pages.is_empty()).then_some((*scope, pages))
             })
@@ -290,7 +295,6 @@ pub fn SettingsNav() -> impl IntoView {
                                             <button
                                                 class="set-nav-item"
                                                 class:on=move || on.get()
-                                                class:muted=!p.built
                                                 on:click=move |_| app.ui.open_settings(Some(id.to_owned()))
                                             >
                                                 <Brackets on=on />
