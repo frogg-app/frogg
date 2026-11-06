@@ -31,17 +31,28 @@ fn command_of(p: &Value) -> Option<String> {
     }
 }
 
-fn answer(agent_id: &str, request_id: &str, response: Value, done: &'static str, detail: String) {
+/// Returns whether the answer was sent, so callers can re-enable their buttons on failure.
+fn answer(
+    agent_id: &str,
+    request_id: &str,
+    response: Value,
+    done: &'static str,
+    detail: String,
+) -> bool {
     let Some(c) = client_or_toast() else {
-        return;
+        return false;
     };
     match c.respond_to_permission(agent_id, request_id, response) {
         Ok(()) => {
             crate::state::get()
                 .toasts
                 .push(crate::shell::toast::Toast::new(ToastKind::Ok, done).detail(detail));
+            true
         }
-        Err(e) => toast_err("Could not answer", e),
+        Err(e) => {
+            toast_err("Could not answer", e);
+            false
+        }
     }
 }
 
@@ -100,25 +111,27 @@ pub fn PermissionCard(
         } else {
             "Approved"
         };
-        answer(
+        let sent = answer(
             &a,
             &r,
             json!({ "behavior": "allow", "selectedActionId": selected }),
             done,
             w,
         );
+        busy.set(sent);
     };
     let deny = move || {
         busy.set(true);
         let (a, r, w) = ctx.get_value();
         let done = if plan { "Plan rejected" } else { "Denied" };
-        answer(
+        let sent = answer(
             &a,
             &r,
             json!({ "behavior": "deny", "message": "Denied from Frogg" }),
             done,
             w,
         );
+        busy.set(sent);
     };
     let send_reply = move || {
         let t = reply.get_untracked().trim().to_owned();
@@ -127,13 +140,14 @@ pub fn PermissionCard(
         }
         busy.set(true);
         let (a, r, w) = ctx.get_value();
-        answer(
+        let sent = answer(
             &a,
             &r,
             json!({ "behavior": "deny", "message": t }),
             "Reply sent",
             w,
         );
+        busy.set(sent);
     };
     let meta = [Some(if plan { "Plan mode".to_owned() } else { name }), mode]
         .into_iter()
