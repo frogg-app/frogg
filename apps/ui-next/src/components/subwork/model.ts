@@ -115,6 +115,7 @@ export interface TimelineSrc {
     name?: string;
     status?: string;
     detail?: { type?: string; command?: string; output?: string } | null;
+    metadata?: { taskId?: unknown; status?: unknown } | null;
   };
 }
 
@@ -231,11 +232,18 @@ export function fromTimeline(parentId: string, entries: TimelineSrc[], now: numb
     if (it.type !== "tool_call" || it.detail?.type !== "shell" || !it.callId) continue;
     if (!it.detail.output || !BG_OUTPUT.test(it.detail.output)) continue;
     const taskId = BG_ID.exec(it.detail.output)?.[1];
-    const note = taskId ? notes.find((n) => n.item.callId?.includes(taskId)) : undefined;
+    // Claude's notifications carry the task id in `metadata.taskId` (the call id is a fresh
+    // uuid); older shapes put it in the call id.
+    const note = taskId
+      ? notes.find((n) => n.item.callId?.includes(taskId) || n.item.metadata?.taskId === taskId)
+      : undefined;
     const started = ms(e.timestamp);
     let status: SubWorkStatus = "running";
-    if (note) status = note.item.status === "failed" ? "failed" : "done";
-    else if (started !== null && now - started > BG_STALE_MS) status = "idle";
+    if (note) {
+      const meta = note.item.metadata?.status;
+      const noteStatus = typeof meta === "string" ? meta : note.item.status;
+      status = noteStatus === "failed" || noteStatus === "killed" ? "failed" : "done";
+    } else if (started !== null && now - started > BG_STALE_MS) status = "idle";
     out.push({
       id: `bg:${it.callId}`,
       kind: "background-task",
