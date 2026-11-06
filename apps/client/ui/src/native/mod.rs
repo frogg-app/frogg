@@ -527,6 +527,9 @@ pub fn on_open_url(callback: impl Fn(String) + 'static) {
     let live = callback.clone();
     listen(OPEN_URL_EVENT, move |payload| {
         if let Some(url) = payload.as_str() {
+            // The shell also keeps it as pending (for a UI still loading); drop that copy so a
+            // later reload doesn't offer the same link again.
+            fire("take_pending_link", serde_json::Value::Null);
             live(url.to_owned());
         }
     });

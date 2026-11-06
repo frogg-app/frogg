@@ -1,8 +1,10 @@
 //! System back on phones (the Android back button, a browser's back): the WebView's history
 //! drives it. While anything sits above the root, one guard entry is kept on the history stack;
 //! a back press pops it, closes the topmost thing (palette, sheet, popover, detail view, a tab
-//! other than Sessions) and re-arms the guard. At the root the press falls through to the
-//! WebView, which on Android leaves the app (wry's activity goes back while it can, then exits).
+//! other than Sessions) and re-arms the guard. Sheets and popovers portalled into the body aren't
+//! in app state, so a MutationObserver on the body arms the guard when one appears. When
+//! everything has closed by other means the stale guard is dropped, so at the root the press
+//! falls through to the WebView, which on Android leaves the app.
 
 use std::cell::Cell;
 
@@ -28,6 +30,29 @@ fn arm() {
         if h.push_state(&JsValue::from_str("frogg-back"), "").is_ok() {
             GUARDED.with(|g| g.set(true));
         }
+    }
+}
+
+/// Drops a guard nothing needs any more, so the next back press isn't swallowed.
+fn disarm() {
+    if !GUARDED.with(Cell::get) {
+        return;
+    }
+    GUARDED.with(|g| g.set(false));
+    if let Some(h) = history() {
+        let _ = h.back();
+    }
+}
+
+/// Arms or drops the guard to match what is open.
+fn sync(app: AppState) {
+    if !app.viewport.phone() {
+        return;
+    }
+    if can_back(app) || overlay_open() {
+        arm();
+    } else {
+        disarm();
     }
 }
 
@@ -106,10 +131,11 @@ fn go_back(app: AppState) -> bool {
 pub fn install() {
     let app = crate::state::get();
     Effect::new(move |_| {
-        if app.viewport.phone() && can_back(app) {
-            arm();
-        }
+        // Tracks the viewport and app-state overlays; the DOM check below is untracked.
+        let _ = app.viewport.phone() && can_back(app);
+        untrack(|| sync(app));
     });
+    observe_overlays(app);
     let handle = window_event_listener(leptos::ev::popstate, move |_| {
         if !GUARDED.with(Cell::get) {
             return;
@@ -123,4 +149,25 @@ pub fn install() {
         }
     });
     std::mem::forget(handle);
+}
+
+/// Watches the body's children for sheets and popovers mounting or unmounting.
+fn observe_overlays(app: AppState) {
+    use wasm_bindgen::{closure::Closure, JsCast};
+    let Some(body) = web_sys::window()
+        .and_then(|w| w.document())
+        .and_then(|d| d.body())
+    else {
+        return;
+    };
+    let cb = Closure::<dyn FnMut()>::new(move || untrack(|| sync(app)));
+    let Ok(observer) = web_sys::MutationObserver::new(cb.as_ref().unchecked_ref()) else {
+        return;
+    };
+    let init = web_sys::MutationObserverInit::new();
+    init.set_child_list(true);
+    if observer.observe_with_options(&body, &init).is_ok() {
+        cb.forget();
+        std::mem::forget(observer);
+    }
 }

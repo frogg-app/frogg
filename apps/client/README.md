@@ -64,8 +64,3 @@ CI (`.github/workflows/rust-client.yml`) runs the wasm check and the core/render
 desktop bundles and the Android APK, and attaches them to `-next.N` releases.
 
 Release wasm size at the time of writing: about 5.1 MB raw, 1.9 MB gzip.
-
-## Known gaps
-
-- Android back: a sheet or popover opened from the root screen isn't closed by back (it leaves
-  the app); everywhere else back closes the topmost view first.
