@@ -129,10 +129,12 @@ pub fn summary(name: &str, d: &Value) -> Summary {
         "plain_text" => Summary {
             ico: Ico::Wrench,
             verb: s(d, "label").unwrap_or(name).to_owned(),
+            // Task notifications repeat the label as the text: say it once.
             arg: s(d, "text")
                 .unwrap_or("")
                 .lines()
                 .next()
+                .filter(|t| Some(*t) != s(d, "label"))
                 .unwrap_or("")
                 .to_owned(),
             meta: None,
