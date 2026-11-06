@@ -11,7 +11,8 @@ use frogg_client_core::protocol::inbound;
 #[cfg(target_arch = "wasm32")]
 use frogg_client_core::{relay, ws};
 use frogg_client_core::{
-    ClientConfig, ClientOptions, ConnectOptions, ConnectionState, DaemonClient, ErrorInfo, Event, SessionFrame,
+    ClientConfig, ClientOptions, ConnectOptions, ConnectionState, DaemonClient, ErrorInfo, Event,
+    SessionFrame,
 };
 use leptos::prelude::*;
 use leptos::task::spawn_local;
@@ -51,6 +52,9 @@ pub struct Link {
     pub server_id: Option<String>,
     pub version: Option<String>,
     pub error: Option<String>,
+    /// Retries stopped after the host failed to answer [`GIVE_UP_AFTER`] times in a row; only a
+    /// user action (Retry, picking the host) dials again.
+    pub paused: bool,
 }
 
 impl Default for Link {
@@ -62,6 +66,7 @@ impl Default for Link {
             server_id: None,
             version: None,
             error: None,
+            paused: false,
         }
     }
 }
@@ -92,6 +97,8 @@ pub const LOCAL_DAEMON: &str = "127.0.0.1:9969";
 /// so a gone host doesn't fill the console with failed handshakes.
 const RECONNECT_BASE_MS: u64 = 4_000;
 const RECONNECT_MAX_MS: u64 = 300_000;
+/// Consecutive failed dials (first try included) before retries stop until the user asks.
+pub const GIVE_UP_AFTER: u32 = 5;
 
 /// Where the page itself was served from, when that may be a daemon (http(s), not the Trunk dev
 /// server or the Tauri webview).
@@ -441,6 +448,7 @@ impl Connections {
                     l.attempt += 1;
                 }
                 l.conn = Conn::Connecting;
+                l.paused = false;
             }),
             // Connected means server_info arrived.
             Event::State(ConnectionState::Connected) => self.on_connected(host_id),
@@ -456,9 +464,18 @@ impl Connections {
                         }
                         None => c.last_error(),
                     });
+                // Synchronous with the core's reconnect decision: turning reconnect off here makes
+                // this drop the last dial until the user asks again.
+                let give_up = self.link_untracked(host_id).attempt + 1 >= GIVE_UP_AFTER;
+                if give_up {
+                    if let Some(c) = self.client_of(host_id) {
+                        c.set_reconnect_enabled(false);
+                    }
+                }
                 self.set_link(host_id, |l| {
                     l.conn = Conn::Offline;
                     l.error = error;
+                    l.paused = give_up;
                 });
             }
             Event::State(ConnectionState::Idle) => {}

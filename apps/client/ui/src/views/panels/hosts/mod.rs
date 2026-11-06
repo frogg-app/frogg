@@ -112,6 +112,7 @@ fn HostRow(h: Host) -> impl IntoView {
             Conn::Online => format!("{} sessions", count.get()),
             Conn::Connecting if l.attempt > 0 => format!("retrying (attempt {})…", l.attempt + 1),
             Conn::Connecting => "connecting…".to_owned(),
+            Conn::Offline if l.paused => "stopped retrying".to_owned(),
             Conn::Offline => "offline".to_owned(),
         }
     };
@@ -458,13 +459,19 @@ fn SavedHost(host: Host, on_back: Option<Callback<()>>) -> impl IntoView {
     let mismatch = identity_mismatch(last_error(&host.id).as_ref());
     let status = move || {
         let last = last.clone();
-        match link.get().conn {
+        let l = link.get();
+        match l.conn {
             Conn::Online => format!("Connected in the background · {} sessions.", count.get()),
             Conn::Connecting => "Connecting…".to_owned(),
             Conn::Offline => format!(
-                "Can't reach it right now{}. Frogg keeps retrying.",
+                "Can't reach it right now{}. {}",
                 last.map(|l| format!("; last connected {l}"))
-                    .unwrap_or_default()
+                    .unwrap_or_default(),
+                if l.paused {
+                    "Frogg stopped retrying; switch to it to try again."
+                } else {
+                    "Frogg keeps retrying."
+                }
             ),
         }
     };
