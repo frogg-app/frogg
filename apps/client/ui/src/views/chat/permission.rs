@@ -367,7 +367,7 @@ fn QuestionCard(agent_id: String, p: Value, questions: Vec<Question>) -> impl In
         .hosts
         .active_id
         .get_untracked()
-        .and_then(|h| app.agents.get(&h, &agent_id))
+        .and_then(|h| app.agents.get_untracked(&h, &agent_id))
         .map(|s| crate::state::config::provider_label(&s.agent.provider));
     let total = questions.len();
     let questions = StoredValue::new(questions);

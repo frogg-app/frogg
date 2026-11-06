@@ -850,7 +850,7 @@ impl SubWork {
                 let _ = this.subagents.try_set(list);
             });
         }
-        let session = app.agents.get(&host, parent);
+        let session = app.agents.get_untracked(&host, parent);
         if let Some(cwd) = session.as_ref().map(|s| s.agent.cwd.clone()) {
             let _ = client.subscribe_terminals(&cwd, None);
             let c = client.clone();
@@ -907,7 +907,7 @@ impl SubWork {
             "script_status_update" => {
                 let ws = self.ctx.with_untracked(|c| {
                     c.as_ref()
-                        .and_then(|(h, id)| crate::state::get().agents.get(h, id))
+                        .and_then(|(h, id)| crate::state::get().agents.get_untracked(h, id))
                         .and_then(|s| {
                             s.agent
                                 .raw
@@ -929,7 +929,7 @@ impl SubWork {
             "terminals_changed" => {
                 let cwd = crate::state::get()
                     .agents
-                    .get(host, parent)
+                    .get_untracked(host, parent)
                     .map(|s| s.agent.cwd);
                 if cwd.is_none() || p.get("cwd").and_then(Value::as_str) != cwd.as_deref() {
                     return;

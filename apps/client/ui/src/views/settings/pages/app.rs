@@ -240,7 +240,7 @@ fn BugReport() -> impl IntoView {
         let provider = sid
             .as_deref()
             .zip(host.as_deref())
-            .and_then(|(s, h)| app.agents.get(h, s))
+            .and_then(|(s, h)| app.agents.get_untracked(h, s))
             .map(|s| s.agent.provider);
         act.run(
             "preview",

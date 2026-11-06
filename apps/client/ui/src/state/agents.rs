@@ -184,6 +184,12 @@ impl Agents {
             .with(|m| m.get(host_id).and_then(|s| s.get(agent_id)).cloned())
     }
 
+    /// `get` for event handlers, component setup and tasks (no tracking context).
+    pub fn get_untracked(&self, host_id: &str, agent_id: &str) -> Option<Session> {
+        self.by_host
+            .with_untracked(|m| m.get(host_id).and_then(|s| s.get(agent_id)).cloned())
+    }
+
     pub fn buckets(&self, host_id: Option<&str>) -> Buckets {
         let mut b = Buckets::default();
         let Some(host_id) = host_id else {
