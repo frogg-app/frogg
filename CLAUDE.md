@@ -24,4 +24,4 @@ Everything else lives in [AGENTS.md](AGENTS.md).
 ## Replies
 
 Be terse. Use a few short bullets: the outcome first, then any action the user must take. No
-tables, recaps or detail the user didn't ask for. Tell subagents the same.
+tables, recaps or detail the user didn't ask for. This is for replies to the user; subagents reporting to an orchestrator can be as detailed as the task needs.
