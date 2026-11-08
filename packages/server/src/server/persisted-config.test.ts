@@ -35,6 +35,21 @@ describe("PersistedConfigSchema daemon auth config", () => {
   });
 });
 
+describe("loadPersistedConfig Frogg Next beta config", () => {
+  test("loads a config a Frogg Next beta wrote with usage statistics on", () => {
+    const home = createTempHome();
+    try {
+      writeFileSync(
+        path.join(home, "config.json"),
+        JSON.stringify({ version: 1, daemon: { usageStats: true } }),
+      );
+      expect(loadPersistedConfig(home).daemon?.usageStats).toBe(true);
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+});
+
 describe("PersistedConfigSchema removed plugin keys", () => {
   test("rejects plugin keys in the schema; loading strips them first", () => {
     expect(PersistedConfigSchema.safeParse({ version: 1, pluginsEnabled: true }).success).toBe(

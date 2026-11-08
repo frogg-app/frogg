@@ -349,6 +349,9 @@ export const PersistedConfigSchema = z
         autoArchiveAfterMerge: z.boolean().optional(),
         worktreeRetentionDays: z.number().int().min(0).max(3650).optional(),
         autoResumeOnUsageLimit: z.boolean().optional(),
+        // COMPAT(nextDowngrade): Frogg Next betas (1.6.14-beta.1 to .10) write this opt-in. This
+        // line has no usage statistics; accept and keep the key so their config still loads.
+        usageStats: z.boolean().optional(),
         // COMPAT(cleanCutSettings): the v1.6.2 switch, superseded by `cleanCut.auto`
         // in v1.6.5. `false` still turns off both automatic triggers while
         // `cleanCut.auto` leaves them unset. Remove after 2027-09-27.
