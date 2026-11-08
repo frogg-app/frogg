@@ -254,8 +254,8 @@ macro_rules! material_tokens {
     };
 }
 
-const MATERIAL_TOKENS: Pairs = material_tokens!("#1d3270", "#d6e2ff");
-const MATERIAL_LIGHT_TOKENS: Pairs = material_tokens!("#dbe6ff", "#0b2a6b");
+const MATERIAL_TOKENS: Pairs = material_tokens!("#004f58", "#a2eef8");
+const MATERIAL_LIGHT_TOKENS: Pairs = material_tokens!("#c4f2f7", "#002f34");
 
 /// Material details the tokens alone don't cover: solid selection markers and no accent
 /// stripes on buttons.
@@ -298,11 +298,11 @@ const MATERIAL_CSS: &str = r#"
 }
 "#;
 
-/// Material 3–style, restrained: neutral greys, one muted blue accent, calm status colours.
+/// Material 3–style, restrained: neutral greys, one cyan accent, calm status colours.
 pub const MATERIAL: ThemeDef = ThemeDef {
     id: "material",
     label: "Material",
-    description: "Rounded, flat and quiet: neutral greys with one clear blue accent.",
+    description: "Rounded, flat and quiet: neutral greys with one clear cyan accent.",
     scheme: "dark",
     palette: &[
         ("bg", "#111317"),
@@ -312,14 +312,14 @@ pub const MATERIAL: ThemeDef = ThemeDef {
         ("text", "#e3e4e8"),
         ("muted", "#a8acb4"),
         ("faint", "#7a7f88"),
-        ("cyan", "#4c7dff"),
-        ("cyan2", "#8eadff"),
-        ("deep", "#1d3270"),
+        ("cyan", "#4fc8d8"),
+        ("cyan2", "#8ee3ee"),
+        ("deep", "#004f58"),
         ("mint", "#86c09c"),
         ("violet", "#b4abd6"),
         ("amber", "#d9b36e"),
         ("coral", "#eb9a93"),
-        ("onAccent", "#03102e"),
+        ("onAccent", "#00363d"),
         ("onWarn", "#2e2000"),
         ("addText", "#bfe0c8"),
         ("delText", "#f3c6c3"),
@@ -376,7 +376,7 @@ pub const MATERIAL: ThemeDef = ThemeDef {
 pub const MATERIAL_LIGHT: ThemeDef = ThemeDef {
     id: "material-light",
     label: "Material Light",
-    description: "Material on light surfaces: the same shapes and blue accent.",
+    description: "Material on light surfaces: the same shapes and cyan accent.",
     scheme: "light",
     palette: &[
         ("bg", "#f3f4f6"),
@@ -386,9 +386,9 @@ pub const MATERIAL_LIGHT: ThemeDef = ThemeDef {
         ("text", "#1b1d21"),
         ("muted", "#4f545c"),
         ("faint", "#6f747d"),
-        ("cyan", "#1f5ae6"),
-        ("cyan2", "#1749c0"),
-        ("deep", "#0b2a6b"),
+        ("cyan", "#007a85"),
+        ("cyan2", "#00626b"),
+        ("deep", "#002f34"),
         ("mint", "#2f7a4f"),
         ("violet", "#5d5296"),
         ("amber", "#8a5d00"),
