@@ -34,6 +34,16 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+      # main is the line from before Frogg Next; Frogg Next lives on frogg-next. A branch cut
+      # from the old main (before the split) carries the Frogg Next merge and would bring it all
+      # back. Port the change onto main instead. docs/plans/split-main-and-main-next.md.
+      - name: Keep Frogg Next off main
+        if: github.ref == 'refs/heads/main' || github.base_ref == 'main'
+        run: |
+          if git merge-base --is-ancestor 28fff87e HEAD 2>/dev/null; then
+            echo "::error::This history contains the Frogg Next merge (28fff87e). Rebase the change onto main, or target frogg-next."
+            exit 1
+          fi
       # Release cuts and promotions only change versions on code main already tested; the
       # release workflow checks that main run instead of repeating it here. Code on main is
       # only "already tested" if CI passed on it: a feature pushed together with its cut never
