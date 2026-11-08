@@ -6,8 +6,8 @@ use serde_json::{json, Value};
 
 use crate::components::{Button, ButtonKind, Ico, Icon, Seg, Select, SelectOption};
 use crate::state::look;
-use crate::theme::themes::{alpha, find_theme, is_hex, OVERRIDABLE};
-use crate::theme::{resolve, ThemeChoice, THEMES};
+use crate::theme::themes::{find_theme, is_hex, OVERRIDABLE};
+use crate::theme::{resolve, ThemeChoice};
 use crate::views::settings::kit::*;
 
 fn token_hint(key: &str) -> &'static str {
@@ -93,13 +93,24 @@ fn ThemeSettings() -> impl IntoView {
     view! {
         <Section title="Theme">
             <div class="theme-cards">
-                {THEMES
-                    .iter()
+                {move || theme
+                    .list()
+                    .into_iter()
                     .map(|t| {
                         let id = t.id;
                         let p = resolve(&ThemeChoice { id: id.to_owned(), ..Default::default() });
                         let c = |k: &str| p.get(k).to_owned();
                         let kw = t.syntax.iter().find(|(k, _)| *k == "keyword").map(|(_, v)| v.to_string()).unwrap_or_else(|| c("violet"));
+                        let tok = |k: &str, d: &str| t.tokens.iter().find(|(n, _)| *n == k).map(|(_, v)| v.to_string()).unwrap_or_else(|| d.to_owned());
+                        let r = tok("r-card", "0px");
+                        // The card previews its own theme, so its colours are custom properties
+                        // read by the `.mini*` rules rather than the active theme's.
+                        let preview = format!(
+                            "--m-bg:{};--m-bg2:{};--m-line:{};--m-panel:{};--m-text:{};--m-muted:{};--m-faint:{};--m-cyan:{};--m-mint:{};--m-amber:{};--m-coral:{};--m-kw:{kw};--m-r:{};--m-ri:{}",
+                            c("bg"), c("bg2"), c("line"), c("panel"), c("text"), c("muted"), c("faint"), c("cyan"), c("mint"), c("amber"), c("coral"),
+                            if r == "0px" { "0px".to_owned() } else { "8px".to_owned() },
+                            if r == "0px" { "0px" } else { "2px" },
+                        );
                         let on = move || current.get() == id;
                         view! {
                             <button
@@ -110,24 +121,16 @@ fn ThemeSettings() -> impl IntoView {
                                 aria-label=format!("{} theme", t.label)
                                 on:click=move |_| pick(id)
                             >
-                                <span class="mini" style=format!("background:{};border-color:{}", c("bg"), c("line"))>
-                                    <span class="mini-rail" style=format!("background:{};border-right-color:{}", c("bg2"), c("line"))>
-                                        <i style=format!("background:{}", c("cyan"))></i>
-                                        <i style=format!("background:{}", c("faint"))></i>
-                                        <i style=format!("background:{}", c("faint"))></i>
-                                    </span>
+                                <span class="mini" style=preview>
+                                    <span class="mini-rail"><i></i><i></i><i></i></span>
                                     <span class="mini-body">
-                                        <i class="mini-line" style=format!("background:{};width:70%", c("text"))></i>
-                                        <i class="mini-line" style=format!("background:{};width:90%", c("muted"))></i>
-                                        <span class="mini-panel" style=format!("background:{};border-color:{}", c("panel"), c("line"))>
-                                            <i class="mini-line" style=format!("background:{kw}")></i>
-                                            <i class="mini-line" style=format!("background:{};width:50%", c("mint"))></i>
+                                        <i class="mini-line"></i>
+                                        <i class="mini-line"></i>
+                                        <span class="mini-panel">
+                                            <i class="mini-line"></i>
+                                            <i class="mini-line"></i>
                                         </span>
-                                        <span class="mini-foot">
-                                            <i style=format!("background:{};width:30px", c("cyan"))></i>
-                                            <i style=format!("background:{};width:16px", alpha(&c("amber"), 0.25))></i>
-                                            <i style=format!("background:{};width:16px", alpha(&c("coral"), 0.25))></i>
-                                        </span>
+                                        <span class="mini-foot"><i></i><i></i><i></i></span>
                                     </span>
                                 </span>
                                 <span class="theme-card-text">

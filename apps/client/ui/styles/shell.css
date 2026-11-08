@@ -26,9 +26,9 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--line);
+  border-right: var(--bw) solid var(--line);
   background: var(--bg2);
-  transition: width 200ms var(--ease);
+  transition: width calc(200ms * var(--motion)) var(--ease);
 }
 .side.tablet {
   width: 300px;
@@ -54,7 +54,7 @@
   bottom: 0;
   z-index: 5;
   box-shadow: 0 0 24px color-mix(in srgb, var(--shadow) 50%, transparent);
-  animation: drawer-in 200ms var(--ease) both;
+  animation: drawer-in calc(200ms * var(--motion)) var(--ease) both;
 }
 .main > .scrim {
   z-index: 4;
@@ -92,10 +92,10 @@
   gap: 4px;
   padding: 12px 9px 8px;
   background: var(--bg);
-  border-right: 1px solid var(--line);
+  border-right: var(--bw) solid var(--line);
   transition:
-    width 200ms var(--ease),
-    box-shadow 200ms ease-out;
+    width calc(200ms * var(--motion)) var(--ease),
+    box-shadow calc(200ms * var(--motion)) ease-out;
 }
 .rail.open {
   width: 212px;
@@ -104,7 +104,7 @@
   border-right-color: var(--line2);
   box-shadow:
     10px 0 28px color-mix(in srgb, var(--shadow) 55%, transparent),
-    1px 0 0 color-mix(in srgb, var(--cyan2) 8%, transparent);
+    1px 0 0 color-mix(in srgb, var(--cyan2) calc(8% * var(--glow)), transparent);
 }
 .rail-logo {
   display: flex;
@@ -121,10 +121,10 @@
 }
 .rail-word {
   margin-left: 6px;
-  font-size: 16px;
+  font-size: calc(16px * var(--text-scale));
   opacity: 0;
   white-space: nowrap;
-  transition: opacity 180ms ease-out;
+  transition: opacity calc(180ms * var(--motion)) ease-out;
 }
 .rail-sep {
   flex: none;
@@ -157,11 +157,7 @@
 }
 .ri.on,
 .ri-press:hover .ri.on {
-  --cut-bg: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--cyan2) 18%, transparent),
-    color-mix(in srgb, var(--cyan) 10%, transparent)
-  );
+  --cut-bg: var(--accent-soft);
   color: var(--cyan2);
 }
 .ri.kbd:focus-within,
@@ -172,7 +168,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  border: 1px solid color-mix(in srgb, var(--cyan2) 45%, transparent);
+  border: var(--bw) solid color-mix(in srgb, var(--cyan2) 45%, transparent);
 }
 .ri-icon {
   position: relative;
@@ -186,11 +182,11 @@
 .ri-label {
   flex: 1;
   margin: 0 10px 0 4px;
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
   color: var(--muted);
   white-space: nowrap;
   opacity: 0;
-  transition: opacity 160ms ease-out;
+  transition: opacity calc(160ms * var(--motion)) ease-out;
 }
 .ri.on .ri-label {
   color: var(--cyan2);
@@ -199,7 +195,7 @@
 .ri-label.shown,
 .rail-pin-t.shown {
   opacity: 1;
-  transition: opacity 200ms ease-out 60ms;
+  transition: opacity calc(200ms * var(--motion)) ease-out calc(60ms * var(--motion));
 }
 .rail-glide {
   position: absolute;
@@ -207,8 +203,8 @@
   top: 0;
   width: 2px;
   height: 28px;
-  background: linear-gradient(var(--cyan2), var(--cyan));
-  transition: transform 450ms var(--ease);
+  background: var(--accent-bar);
+  transition: transform calc(450ms * var(--motion)) var(--ease);
   z-index: 1;
 }
 .rail-pin {
@@ -227,11 +223,11 @@
 }
 .rail-pin-t {
   margin-left: 4px;
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale));
   color: var(--faint);
   white-space: nowrap;
   opacity: 0;
-  transition: opacity 160ms ease-out;
+  transition: opacity calc(160ms * var(--motion)) ease-out;
 }
 
 /* ---- Status bar (StatusBar.tsx) ---- */
@@ -241,7 +237,7 @@
   display: flex;
   align-items: stretch;
   background: var(--bg);
-  border-top: 1px solid var(--line);
+  border-top: var(--bw) solid var(--line);
   overflow: hidden;
 }
 .sb-seg {
@@ -258,12 +254,12 @@ button.sb-seg:hover {
   background: color-mix(in srgb, var(--cyan) 12%, transparent);
 }
 .sb-brand-t {
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
   font-weight: 600;
   color: var(--cyan2);
 }
 .sb-t {
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale));
   color: var(--muted);
 }
 .sb-needs {
@@ -284,7 +280,7 @@ button.sb-seg:hover {
 }
 .dot.connecting {
   background: var(--amber);
-  animation: breathe 1.6s ease-in-out infinite;
+  animation: breathe calc(1.6s * var(--motion)) ease-in-out infinite;
 }
 .dot.offline {
   background: var(--coral);
@@ -299,7 +295,7 @@ button.sb-seg:hover {
   gap: 2px;
   padding: 6px 4px max(env(safe-area-inset-bottom), 6px);
   background: var(--bg);
-  border-top: 1px solid var(--line);
+  border-top: var(--bw) solid var(--line);
 }
 .tab-pill {
   --cut-bg: color-mix(in srgb, var(--cyan2) 10%, transparent);
@@ -322,9 +318,9 @@ button.sb-seg:hover {
   color: var(--cyan2);
 }
 .tab-l {
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--text-scale));
   color: var(--faint);
-  transition: color 200ms ease-out;
+  transition: color calc(200ms * var(--motion)) ease-out;
 }
 .tab.on .tab-l {
   color: var(--cyan2);
@@ -340,7 +336,7 @@ button.sb-seg:hover {
   background: var(--bg);
   display: flex;
   flex-direction: column;
-  animation: tool-menu-in 220ms var(--ease) both;
+  animation: tool-menu-in calc(220ms * var(--motion)) var(--ease) both;
 }
 @keyframes tool-menu-in {
   0% {
@@ -359,7 +355,7 @@ button.sb-seg:hover {
 }
 .tool-menu-title {
   flex: 1;
-  font-size: 18px;
+  font-size: calc(18px * var(--text-scale));
 }
 .tool-menu-body {
   overflow: auto;
@@ -403,7 +399,7 @@ button.sb-seg:hover {
 }
 .tm-label {
   flex: 1;
-  font-size: 14.5px;
+  font-size: calc(14.5px * var(--text-scale));
   color: var(--text);
 }
 .tm-row.on .tm-label {
@@ -440,12 +436,12 @@ button.sb-seg:hover {
 }
 .palette-input {
   padding: 16px 18px;
-  font-size: 16px;
+  font-size: calc(16px * var(--text-scale));
   font-family: var(--font-body);
   color: var(--text);
   background: transparent;
   border: 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: var(--bw) solid var(--line);
   outline: none;
 }
 .palette-input::placeholder {
@@ -466,7 +462,7 @@ button.sb-seg:hover {
   width: calc(100% - 12px);
   margin: 0 6px;
   padding: 8px 10px;
-  border: 1px solid transparent;
+  border: var(--bw) solid transparent;
 }
 .palette-row.on {
   background: color-mix(in srgb, var(--cyan) 10%, transparent);
@@ -483,7 +479,7 @@ button.sb-seg:hover {
   color: var(--cyan2);
 }
 .palette-hint {
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale));
 }
 .palette-empty {
   display: block;
@@ -494,7 +490,7 @@ button.sb-seg:hover {
   flex-wrap: wrap;
   gap: 16px;
   padding: 10px 16px;
-  border-top: 1px solid var(--line);
+  border-top: var(--bw) solid var(--line);
 }
 .palette-fh {
   display: flex;
@@ -502,7 +498,7 @@ button.sb-seg:hover {
   gap: 6px;
 }
 .palette-fh-t {
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale));
   color: var(--faint);
 }
 
@@ -530,8 +526,8 @@ button.sb-seg:hover {
   display: grid;
   grid-template-rows: 1fr;
   transition:
-    grid-template-rows 180ms var(--ease),
-    padding 180ms var(--ease);
+    grid-template-rows calc(180ms * var(--motion)) var(--ease),
+    padding calc(180ms * var(--motion)) var(--ease);
 }
 .toast-slot.leaving {
   grid-template-rows: 0fr;
@@ -541,22 +537,22 @@ button.sb-seg:hover {
   --cut-bg: var(--raise);
   --cut-line: var(--line2);
   min-height: 0;
-  filter: drop-shadow(0 14px 34px var(--scrim));
+  filter: var(--elev-drop-2);
 }
 .toast-slot.leaving .toast {
   overflow: hidden;
 }
 .toast-in-side {
-  animation: toast-in-side 200ms var(--ease) both;
+  animation: toast-in-side calc(200ms * var(--motion)) var(--ease) both;
 }
 .toast-in-up {
-  animation: toast-in-up 200ms var(--ease) both;
+  animation: toast-in-up calc(200ms * var(--motion)) var(--ease) both;
 }
 .toast-out-side {
-  animation: toast-out-side 140ms var(--ease-out) both;
+  animation: toast-out-side calc(140ms * var(--motion)) var(--ease-out) both;
 }
 .toast-out-down {
-  animation: toast-out-down 140ms var(--ease-out) both;
+  animation: toast-out-down calc(140ms * var(--motion)) var(--ease-out) both;
 }
 .toast.k-ok {
   --k: var(--mint);
@@ -587,7 +583,7 @@ button.sb-seg:hover {
   pointer-events: none;
 }
 .toast-corners.snap {
-  animation: corner 160ms var(--ease) 60ms both;
+  animation: corner calc(160ms * var(--motion)) var(--ease) calc(60ms * var(--motion)) both;
 }
 .tc {
   position: absolute;
@@ -617,7 +613,7 @@ button.sb-seg:hover {
   margin-bottom: 5px;
 }
 .toast-tag {
-  font-size: 9.5px;
+  font-size: calc(9.5px * var(--text-scale));
   color: var(--k);
 }
 .toast-ok {
@@ -629,12 +625,12 @@ button.sb-seg:hover {
   background: var(--cyan);
 }
 .toast-title {
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
   font-weight: 500;
   line-height: 18px;
 }
 .toast-detail {
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale));
   color: var(--faint);
   margin-top: 3px;
   line-height: 16px;
@@ -651,7 +647,7 @@ button.sb-seg:hover {
   opacity: 0.85;
   background: var(--k);
   transform-origin: left center;
-  animation: drain 4200ms linear both;
+  animation: drain calc(4200ms * var(--motion)) linear both;
 }
 .toast-drain.held {
   animation-play-state: paused;
@@ -679,11 +675,11 @@ button.sb-seg:hover {
 }
 .panel-title {
   flex: 1;
-  font-size: 15px;
+  font-size: calc(15px * var(--text-scale));
 }
 .reveal-ch {
   display: inline-block;
-  animation: reveal-ch 260ms var(--ease) both;
+  animation: reveal-ch calc(260ms * var(--motion)) var(--ease) both;
 }
 @keyframes reveal-ch {
   0% {
@@ -702,7 +698,7 @@ button.sb-seg:hover {
 }
 .group-count {
   color: var(--faint);
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--text-scale));
 }
 .stub-note {
   display: flex;
@@ -712,7 +708,7 @@ button.sb-seg:hover {
 }
 .stub-text {
   color: var(--muted);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale));
   line-height: 18px;
 }
 .srow {
@@ -723,7 +719,7 @@ button.sb-seg:hover {
   width: calc(100% - 16px);
   margin: 0 8px;
   padding: 8px 10px;
-  transition: background 120ms ease-out;
+  transition: background calc(120ms * var(--motion)) ease-out;
 }
 .srow:hover {
   background: var(--wash2);
@@ -739,7 +735,7 @@ button.sb-seg:hover {
   gap: 2px;
 }
 .srow-title {
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--text-scale));
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -748,7 +744,7 @@ button.sb-seg:hover {
   color: var(--cyan2);
 }
 .srow-meta {
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale));
   color: var(--faint);
   white-space: nowrap;
   overflow: hidden;
@@ -764,7 +760,7 @@ button.sb-seg:hover {
 .detail-bar {
   display: flex;
   padding: 8px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: var(--bw) solid var(--line);
 }
 .detail-empty {
   flex: 1;
@@ -777,11 +773,11 @@ button.sb-seg:hover {
   text-align: center;
 }
 .detail-title {
-  font-size: 16px;
+  font-size: calc(16px * var(--text-scale));
 }
 .detail-note {
   color: var(--faint);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale));
   max-width: 360px;
 }
 
@@ -797,10 +793,10 @@ button.sb-seg:hover {
   display: flex;
   flex-direction: column;
   padding: 18px 24px 14px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: var(--bw) solid var(--line);
 }
 .home-title {
-  font-size: 22px;
+  font-size: calc(22px * var(--text-scale));
   margin-top: 4px;
 }
 .home-body {
@@ -840,7 +836,7 @@ button.sb-seg:hover {
 }
 .home-card-sub {
   color: var(--faint);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale));
   margin-top: 4px;
 }
 .home-ask {
@@ -851,12 +847,12 @@ button.sb-seg:hover {
   flex-direction: column;
 }
 .home-ask-title {
-  font-size: 28px;
+  font-size: calc(28px * var(--text-scale));
   text-align: center;
   margin: 16px 0;
 }
 .home-body.phone .home-ask-title {
-  font-size: 22px;
+  font-size: calc(22px * var(--text-scale));
 }
 .composer-stub {
   --cut-bg: var(--panel);
@@ -872,7 +868,7 @@ button.sb-seg:hover {
   outline: none;
   background: transparent;
   color: var(--text);
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale));
   line-height: 20px;
 }
 .composer-input::placeholder {
@@ -887,10 +883,10 @@ button.sb-seg:hover {
   padding: 4px 8px;
   background: var(--wash2);
   color: var(--muted);
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale));
 }
 .send {
-  --cut-bg: linear-gradient(135deg, var(--cyan2), var(--cyan) 55%, var(--deep));
+  --cut-bg: var(--accent-fill);
   width: 30px;
   height: 30px;
   display: flex;
@@ -934,10 +930,10 @@ button.sb-seg:hover {
 }
 .host-name {
   font-weight: 600;
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
 }
 .host-addr {
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale));
   color: var(--faint);
   white-space: nowrap;
   overflow: hidden;
@@ -954,7 +950,7 @@ button.sb-seg:hover {
   flex-direction: column;
   gap: 10px;
   padding-top: 6px;
-  border-top: 1px solid var(--line);
+  border-top: var(--bw) solid var(--line);
 }
 .add-host > .t-label {
   margin-top: 8px;
@@ -981,12 +977,12 @@ button.sb-seg:hover {
   gap: 2px;
 }
 .coming-title {
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
   font-weight: 600;
 }
 .coming-sub {
   color: var(--faint);
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale));
   line-height: 16px;
 }
 
@@ -1000,7 +996,7 @@ button.sb-seg:hover {
 }
 .settings-hint {
   color: var(--faint);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
 }
 
 /* Desktop title strip (shell/title_bar.rs, ui-next TitleBar.tsx). */
@@ -1013,7 +1009,7 @@ button.sb-seg:hover {
   display: flex;
   align-items: center;
   background: var(--bg);
-  border-bottom: 1px solid var(--line);
+  border-bottom: var(--bw) solid var(--line);
   user-select: none;
   -webkit-user-select: none;
   padding-left: 14px;
@@ -1024,7 +1020,7 @@ button.sb-seg:hover {
 .title-text {
   flex: 1;
   color: var(--faint);
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale));
   pointer-events: none;
 }
 .title-controls {
@@ -1040,8 +1036,8 @@ button.sb-seg:hover {
   color: var(--muted);
   cursor: default;
   transition:
-    background 0.12s ease,
-    color 0.12s ease;
+    background calc(0.12s * var(--motion)) ease,
+    color calc(0.12s * var(--motion)) ease;
 }
 .title-bar.linux .title-btn {
   width: 38px;
@@ -1075,7 +1071,7 @@ body.has-title-bar .root {
   gap: 0;
 }
 .pair-title {
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale));
   font-weight: 600;
   padding-bottom: 6px;
 }
@@ -1085,11 +1081,11 @@ body.has-title-bar .root {
   justify-content: space-between;
   gap: 16px;
   padding: 9px 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: var(--bw) solid var(--line);
 }
 .pair-k {
   color: var(--muted);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
 }
 .pair-v {
   flex-shrink: 1;
@@ -1098,7 +1094,7 @@ body.has-title-bar .root {
   text-overflow: ellipsis;
   white-space: nowrap;
   text-align: right;
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
 }
 .pair-v.warn {
   color: var(--coral);
@@ -1111,17 +1107,17 @@ body.has-title-bar .root {
 }
 .pair-fp-t {
   color: var(--cyan2);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale));
 }
 .pair-note {
   color: var(--muted);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
   line-height: 18px;
   padding-top: 8px;
 }
 .pair-err {
   color: var(--coral);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale));
   line-height: 18px;
   padding-top: 8px;
 }
@@ -1130,7 +1126,7 @@ body.has-title-bar .root {
 .toast-hud {
   position: relative;
   background-color: var(--panel);
-  border: 1px solid var(--line2);
+  border: var(--bw) solid var(--line2);
   background-image:
     repeating-linear-gradient(
       0deg,
@@ -1151,7 +1147,7 @@ body.has-title-bar .root {
 }
 .toast-ticks.snap,
 .toast-gem.snap {
-  animation: corner 160ms var(--ease) 60ms both;
+  animation: corner calc(160ms * var(--motion)) var(--ease) calc(60ms * var(--motion)) both;
 }
 .tk {
   position: absolute;
@@ -1196,13 +1192,13 @@ body.has-title-bar .root {
   background: var(--k);
 }
 .toast-hud-tag {
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--text-scale));
   letter-spacing: 1.2px;
   font-weight: 600;
   color: var(--k);
 }
 .toast-hud-meta {
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--text-scale));
   color: var(--faint);
   min-width: 0;
   overflow: hidden;
@@ -1217,13 +1213,13 @@ body.has-title-bar .root {
   padding: 9px 12px 12px;
 }
 .toast-hud-body .toast-detail {
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale));
   color: var(--muted);
 }
 .toast-hud-act {
   display: block;
   margin-top: 8px;
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale));
   letter-spacing: 1px;
   color: var(--k);
 }
@@ -1262,7 +1258,7 @@ body.has-title-bar .root {
   margin-top: 7px;
 }
 .toast-link {
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale));
   font-weight: 500;
   color: var(--k);
 }

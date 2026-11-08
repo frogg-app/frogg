@@ -97,6 +97,7 @@ pub fn init() -> AppState {
     onboarding::init();
     signin::init();
     look::init();
+    crate::views::panels::plugins::init_plugin_themes();
     app
 }
 

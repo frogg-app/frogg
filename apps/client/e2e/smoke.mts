@@ -14,6 +14,7 @@
 //   SMOKE_DAEMON_PORT   daemon port (default 6795); SMOKE_WEB_PORT static server (default 6796)
 //   SMOKE_DAEMON_ROOT   checkout whose packages/server runs the daemon (default this repo)
 //   SMOKE_SHOTS         directory for screenshots of each step (optional)
+//   SMOKE_THEME         theme id to start in (seeds the stored theme choice; optional)
 //   SMOKE_HEADED=1      watch it run
 //   SMOKE_WARN=1        print console warnings (debug builds: untracked reads, disposed signals)
 import { spawn, execFileSync, type ChildProcess } from "node:child_process";
@@ -325,6 +326,10 @@ async function desktop(page: Page, url: string, pairUrl: string, home: string, t
       await item.click();
       await page.waitForTimeout(120);
       if (problems.length) throw new Error(`errors on ${stepName}`);
+      // The theme picker lives on the first page (You); keep a shot of it.
+      if (i === 0 && shots) {
+        await page.screenshot({ path: path.join(shots, "settings-you.png"), fullPage: true });
+      }
     }
     log(`visited ${n} settings pages`);
   });
@@ -472,6 +477,12 @@ try {
     const url = `http://127.0.0.1:${webPort}/?daemon=127.0.0.1:${daemonPort}`;
     const title = "Smoke session";
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    if (process.env.SMOKE_THEME) {
+      const choice = JSON.stringify({ id: process.env.SMOKE_THEME, overrides: {} });
+      await ctx.addInitScript((c) => {
+        if (!localStorage.getItem("frogg.next.theme")) localStorage.setItem("frogg.next.theme", c);
+      }, choice);
+    }
     const page = await ctx.newPage();
     watch(page);
     await desktop(page, url, pairUrl, userHome, title);

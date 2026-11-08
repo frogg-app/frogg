@@ -3,7 +3,7 @@
 
 /* ----- header -------------------------------------------------------------------------- */
 .chat-title-reveal {
-  animation: rise 200ms var(--ease) both;
+  animation: rise calc(200ms * var(--motion)) var(--ease) both;
 }
 .sm-anchor {
   position: relative;
@@ -20,7 +20,7 @@
 }
 .sm-mut {
   color: var(--muted);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale));
   line-height: 20px;
 }
 .sm-warn {
@@ -28,18 +28,18 @@
   flex-direction: column;
   gap: 8px;
   padding: 12px;
-  border: 1px solid color-mix(in srgb, var(--amber) 35%, transparent);
+  border: var(--bw) solid color-mix(in srgb, var(--amber) 35%, transparent);
   background: color-mix(in srgb, var(--amber) 6%, transparent);
 }
 .sm-warn-head {
   font-weight: 600;
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale));
 }
 .sm-ck {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
 }
 .sm-choices {
   display: flex;
@@ -51,14 +51,14 @@
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  border: 1px solid transparent;
+  border: var(--bw) solid transparent;
   background: var(--wash);
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--text-scale));
   text-align: left;
   cursor: pointer;
   transition:
-    border-color 120ms var(--ease),
-    background 120ms var(--ease);
+    border-color calc(120ms * var(--motion)) var(--ease),
+    background calc(120ms * var(--motion)) var(--ease);
 }
 .sm-choice:hover {
   border-color: var(--line);
@@ -70,7 +70,7 @@
 .sm-radio {
   width: 8px;
   height: 8px;
-  border: 1px solid var(--muted);
+  border: var(--bw) solid var(--muted);
   transform: rotate(45deg);
 }
 .sm-choice.on .sm-radio {
@@ -83,7 +83,7 @@
   --k: var(--mint);
   --kw: color-mix(in srgb, var(--mint) 7%, transparent);
   margin-top: 18px;
-  animation: rise 200ms var(--ease) both;
+  animation: rise calc(200ms * var(--motion)) var(--ease) both;
 }
 .st-failed {
   --k: var(--coral);
@@ -103,11 +103,11 @@
   background: var(--kw);
 }
 .st-v-bracket .st-card {
-  border: 1px solid var(--line2);
+  border: var(--bw) solid var(--line2);
   overflow: visible;
 }
 .st-v-banner .st-card {
-  border-bottom: 1px solid var(--line);
+  border-bottom: var(--bw) solid var(--line);
 }
 .st-trim {
   position: absolute;
@@ -118,7 +118,7 @@
   bottom: 0;
   width: 3px;
   transform-origin: top;
-  animation: st-draw-y 220ms var(--ease) 60ms both;
+  animation: st-draw-y calc(220ms * var(--motion)) var(--ease) calc(60ms * var(--motion)) both;
 }
 .st-v-banner .st-trim {
   right: 0;
@@ -148,7 +148,7 @@
     calc(100% - 2px) calc(100% - 10px),
     100% calc(100% - 10px)
   );
-  animation: snap 160ms var(--ease) 60ms both;
+  animation: snap calc(160ms * var(--motion)) var(--ease) calc(60ms * var(--motion)) both;
 }
 .st-flash {
   position: absolute;
@@ -158,10 +158,10 @@
 }
 .st-failed .st-flash {
   background: var(--coral);
-  animation: st-flash 520ms ease-out 80ms both;
+  animation: st-flash calc(520ms * var(--motion)) ease-out calc(80ms * var(--motion)) both;
 }
 .st-review .st-card {
-  animation: st-glow 900ms ease-out 80ms both;
+  animation: st-glow calc(900ms * var(--motion)) ease-out calc(80ms * var(--motion)) both;
 }
 .st-body {
   display: flex;
@@ -178,8 +178,8 @@
   gap: 8px;
 }
 .st-tag {
-  font-size: 10px;
-  letter-spacing: 1.6px;
+  font-size: calc(10px * var(--text-scale));
+  letter-spacing: var(--label-tracking);
   font-weight: 600;
   color: var(--k);
 }
@@ -196,19 +196,19 @@
   flex-direction: column;
 }
 .st-title {
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale));
   font-weight: 600;
   color: var(--text);
 }
 .st-detail {
   color: var(--muted);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
   line-height: 18px;
   margin-top: 2px;
   overflow-wrap: anywhere;
 }
 .st-detail.mono {
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale));
   color: var(--text);
 }
 @keyframes st-draw-y {
@@ -243,7 +243,7 @@
     box-shadow: 0 0 0 0 color-mix(in srgb, var(--mint) 0%, transparent);
   }
   35% {
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--mint) 16%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--mint) calc(16% * var(--glow)), transparent);
   }
   100% {
     box-shadow: 0 0 0 0 color-mix(in srgb, var(--mint) 0%, transparent);
@@ -271,7 +271,7 @@
   background: color-mix(in srgb, var(--amber) 8%, transparent);
 }
 .nt-t {
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale));
   color: var(--muted);
 }
 .nt-t b,
@@ -280,20 +280,20 @@
   color: var(--text);
 }
 .nt-warn-t {
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale));
   color: var(--amber);
 }
 .nt-clock {
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale));
   color: var(--text);
 }
 .nt-hint {
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale));
   color: var(--faint);
   flex-shrink: 1;
 }
 .nt-preview {
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale));
   color: var(--text);
   flex: 1;
   min-width: 60px;
@@ -302,7 +302,7 @@
   text-overflow: ellipsis;
 }
 .nt-link {
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
   color: var(--muted);
   background: none;
   border: 0;
@@ -327,7 +327,7 @@
   left: 0;
   width: 25%;
   background-image: linear-gradient(90deg, transparent, var(--cyan2), transparent);
-  animation: beam 1.4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  animation: beam calc(1.4s * var(--motion)) cubic-bezier(0.45, 0, 0.55, 1) infinite;
 }
 @media (prefers-reduced-motion: reduce) {
   .nt-beam,
@@ -355,7 +355,7 @@
   background: none;
   border: 0;
   cursor: pointer;
-  transition: background 120ms var(--ease);
+  transition: background calc(120ms * var(--motion)) var(--ease);
 }
 .vw-row:hover {
   background: var(--wash);
@@ -370,7 +370,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 9px;
+  font-size: calc(9px * var(--text-scale));
   font-weight: 700;
   color: var(--on-accent);
   flex: none;
@@ -387,10 +387,10 @@
   width: 6px;
   height: 6px;
   background: var(--mint);
-  animation: breathe 1.6s var(--ease) infinite;
+  animation: breathe calc(1.6s * var(--motion)) var(--ease) infinite;
 }
 .vw-lead {
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
   color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
@@ -400,7 +400,7 @@
   color: var(--text);
 }
 .vw-rest {
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
   color: var(--faint);
   white-space: nowrap;
 }
@@ -422,14 +422,14 @@
 .vw-name {
   flex: 1;
   min-width: 0;
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale));
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .vw-act {
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale));
   color: var(--faint);
 }
 .vw-act.active {
@@ -463,7 +463,7 @@
   flex: none;
 }
 .chip-t {
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale));
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -491,7 +491,7 @@
 }
 .chip-reuse {
   color: var(--mint);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale));
   line-height: 19px;
 }
 .chip-field {

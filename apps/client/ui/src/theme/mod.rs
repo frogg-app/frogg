@@ -1,5 +1,6 @@
-//! Theme: palettes as CSS custom properties on `:root`, the stored choice, layout breakpoints.
-//! Motion keyframes and fonts live in `styles/theme.css`.
+//! Theme: palettes as CSS custom properties on `:root`, shape/type/depth tokens and theme CSS as
+//! an injected stylesheet, the stored choice, layout breakpoints. Base tokens, motion keyframes
+//! and fonts live in `styles/theme.css`; the contract is `styles/THEMING.md`.
 
 pub mod layout;
 pub mod themes;
@@ -7,7 +8,7 @@ pub mod themes;
 use leptos::prelude::*;
 use wasm_bindgen::JsCast;
 
-pub use themes::{alpha, resolve, ThemeChoice, ThemeDef, THEMES};
+pub use themes::{alpha, resolve, ThemeChoice, ThemeDef, ThemeSpec, THEMES};
 
 use crate::state::storage;
 
@@ -32,6 +33,8 @@ pub fn read_stored() -> ThemeChoice {
 #[derive(Clone, Copy)]
 pub struct ThemeStore {
     pub choice: RwSignal<ThemeChoice>,
+    /// Bumped whenever the set of available themes changes (plugin themes come and go).
+    pub catalog: RwSignal<u32>,
 }
 
 impl ThemeStore {
@@ -40,7 +43,27 @@ impl ThemeStore {
         apply(&choice);
         Self {
             choice: RwSignal::new(choice),
+            catalog: RwSignal::new(0),
         }
+    }
+
+    /// Every theme the picker offers: built-ins, then contributed ones. Tracks `catalog`.
+    pub fn list(&self) -> Vec<&'static ThemeDef> {
+        self.catalog.track();
+        themes::all()
+    }
+
+    /// Replaces the contributed themes with `contributed` (owner id, spec). A stored choice of a
+    /// theme that is not (yet) available falls back to Material without being forgotten, so it
+    /// comes back when its plugin does.
+    pub fn set_contributed(&self, contributed: &[(String, ThemeSpec)]) {
+        let ids: Vec<String> = contributed
+            .iter()
+            .filter_map(|(owner, spec)| themes::register(owner, spec))
+            .collect();
+        themes::retain_registered(&ids);
+        self.catalog.update(|n| *n += 1);
+        apply(&self.choice.get_untracked());
     }
 
     pub fn set(&self, choice: ThemeChoice) {
@@ -109,6 +132,18 @@ pub fn apply(choice: &ThemeChoice) {
     }
     let _ = style.set_property("color-scheme", r.def.scheme);
     let _ = el.set_attribute("data-scheme", r.def.scheme);
+    let _ = el.set_attribute("data-theme", r.def.id);
+    let token = |k: &str, d: &str| -> String {
+        r.def
+            .tokens
+            .iter()
+            .find(|(n, _)| *n == k)
+            .map(|(_, v)| (*v).to_owned())
+            .unwrap_or_else(|| d.to_owned())
+    };
+    let _ = el.set_attribute("data-corners", &token("corners", "cut"));
+    let _ = el.set_attribute("data-ornaments", &token("ornaments", "on"));
+    inject_theme_css(r.def);
     storage::set_json(
         SHELL_KEY,
         &serde_json::json!({
@@ -118,4 +153,40 @@ pub fn apply(choice: &ThemeChoice) {
             "symbols": r.get("muted"),
         }),
     );
+}
+
+/// Writes the theme's non-colour tokens and raw CSS into one `<style>` at the end of `<head>`, so
+/// it follows the base styles; inline user prefs on `<html>` (fonts) still win over it.
+fn inject_theme_css(def: &ThemeDef) {
+    let doc = document();
+    let Some(head) = doc.head() else {
+        return;
+    };
+    let el = match doc.get_element_by_id("frogg-theme") {
+        Some(el) => el,
+        None => {
+            let Ok(el) = doc.create_element("style") else {
+                return;
+            };
+            el.set_id("frogg-theme");
+            el
+        }
+    };
+    el.set_text_content(Some(&theme_css(def)));
+    // Re-append so it stays last even if styles were added after it.
+    let _ = head.append_child(&el);
+}
+
+/// The stylesheet text for a theme: `:root:root { --token: value; … }` then its CSS.
+pub fn theme_css(def: &ThemeDef) -> String {
+    let mut out = String::from(":root:root {\n");
+    for (k, v) in def.tokens {
+        if matches!(*k, "corners" | "ornaments") {
+            continue;
+        }
+        out.push_str(&format!("  --{k}: {v};\n"));
+    }
+    out.push_str("}\n");
+    out.push_str(def.css);
+    out
 }

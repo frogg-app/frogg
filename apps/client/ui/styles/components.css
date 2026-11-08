@@ -5,6 +5,7 @@
   --c: 8px;
   --cut-bg: transparent;
   --cut-line: transparent;
+  --cc: calc(var(--c) * var(--cut-k));
   position: relative;
   isolation: isolate;
 }
@@ -16,23 +17,23 @@
   pointer-events: none;
   background: var(--cut-bg);
   clip-path: polygon(
-    var(--c) 0,
+    var(--cc) 0,
     100% 0,
-    100% calc(100% - var(--c)),
-    calc(100% - var(--c)) 100%,
+    100% calc(100% - var(--cc)),
+    calc(100% - var(--cc)) 100%,
     0 100%,
-    0 var(--c)
+    0 var(--cc)
   );
-  transition: background 120ms ease-out;
+  transition: background calc(120ms * var(--motion)) ease-out;
 }
 .cut.flip::before {
   clip-path: polygon(
     0 0,
-    calc(100% - var(--c)) 0,
-    100% var(--c),
+    calc(100% - var(--cc)) 0,
+    100% var(--cc),
     100% 100%,
-    var(--c) 100%,
-    0 calc(100% - var(--c))
+    var(--cc) 100%,
+    0 calc(100% - var(--cc))
   );
 }
 /* A 1px ring along the whole outline, diagonals included. */
@@ -43,17 +44,17 @@
   z-index: -1;
   pointer-events: none;
   background: var(--cut-line);
-  --n: calc(var(--c) + 0.414px);
-  --f: calc(100% - var(--c) - 0.414px);
+  --n: calc(var(--cc) + 0.414px);
+  --f: calc(100% - var(--cc) - 0.414px);
   clip-path: polygon(
     evenodd,
-    var(--c) 0,
+    var(--cc) 0,
     100% 0,
-    100% calc(100% - var(--c)),
-    calc(100% - var(--c)) 100%,
+    100% calc(100% - var(--cc)),
+    calc(100% - var(--cc)) 100%,
     0 100%,
-    0 var(--c),
-    var(--c) 0,
+    0 var(--cc),
+    var(--cc) 0,
     var(--n) 1px,
     calc(100% - 1px) 1px,
     calc(100% - 1px) var(--f),
@@ -62,17 +63,17 @@
     1px var(--n),
     var(--n) 1px
   );
-  transition: background 120ms ease-out;
+  transition: background calc(120ms * var(--motion)) ease-out;
 }
 .cut-stroke.flip::after {
   clip-path: polygon(
     evenodd,
     0 0,
-    calc(100% - var(--c)) 0,
-    100% var(--c),
+    calc(100% - var(--cc)) 0,
+    100% var(--cc),
     100% 100%,
-    var(--c) 100%,
-    0 calc(100% - var(--c)),
+    var(--cc) 100%,
+    0 calc(100% - var(--cc)),
     0 0,
     1px 1px,
     var(--f) 1px,
@@ -96,10 +97,10 @@
 }
 .logo-ripple:hover .logo-face,
 :hover > .logo-ripple .logo-face {
-  animation: logo-ripple 1.12s ease-in-out infinite;
+  animation: logo-ripple calc(1.12s * var(--motion)) ease-in-out infinite;
 }
 .logo-ripple:active .logo-face {
-  animation: logo-ripple 0.42s ease-out 1;
+  animation: logo-ripple calc(0.42s * var(--motion)) ease-out 1;
 }
 @keyframes logo-ripple {
   0% {
@@ -145,7 +146,7 @@
   border-top: calc(var(--g) / 2) solid transparent;
   border-bottom: calc(var(--g) / 2) solid transparent;
   border-left: var(--g) solid var(--cyan);
-  animation: breathe 1.6s ease-in-out infinite both;
+  animation: breathe calc(1.6s * var(--motion)) ease-in-out infinite both;
 }
 .glyph-working.still {
   animation: none;
@@ -154,7 +155,7 @@
   width: calc(var(--g) - 2px);
   height: calc(var(--g) - 2px);
   margin: 1px;
-  border: 1px solid var(--faint);
+  border: var(--bw) solid var(--faint);
   transform: rotate(45deg);
 }
 
@@ -168,13 +169,13 @@
   padding: 0 3px;
   background: var(--amber);
   color: var(--on-warn);
-  font: 600 9px/14px var(--font-mono);
+  font: 600 calc(9px * var(--text-scale))/14px var(--font-mono);
   text-align: center;
 }
 .kbd {
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale));
   padding: 0 5px;
-  border: 1px solid var(--line2);
+  border: var(--bw) solid var(--line2);
   color: var(--muted);
 }
 .icon-btn {
@@ -183,7 +184,7 @@
   justify-content: center;
   padding: 4px;
   color: var(--muted);
-  transition: color 120ms ease-out;
+  transition: color calc(120ms * var(--motion)) ease-out;
 }
 .icon-btn:hover {
   color: var(--text);
@@ -200,7 +201,7 @@
   justify-content: center;
   gap: 7px;
   padding: 6px 11px;
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale));
   font-weight: 600;
   white-space: nowrap;
   user-select: none;
@@ -213,13 +214,13 @@
   cursor: default;
 }
 .btn-l {
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale));
   font-weight: 600;
 }
 .btn-k {
-  font-size: 9.5px;
+  font-size: calc(9.5px * var(--text-scale));
   padding: 0 4px;
-  border: 1px solid var(--line2);
+  border: var(--bw) solid var(--line2);
 }
 .btn-stripe {
   display: none;
@@ -242,7 +243,7 @@
   --cut-bg: color-mix(in srgb, var(--coral) 16%, transparent);
 }
 .btn-gradient {
-  --cut-bg: linear-gradient(135deg, var(--cyan2), var(--cyan) 55%, var(--deep));
+  --cut-bg: var(--accent-fill);
   color: var(--on-accent);
 }
 .btn-gradient:hover::before {
@@ -318,7 +319,7 @@
   gap: 2px;
   padding: 3px;
   background: var(--bg);
-  border: 1px solid var(--line);
+  border: var(--bw) solid var(--line);
 }
 .seg-pill {
   position: absolute;
@@ -332,11 +333,11 @@
   position: relative;
   flex: 1;
   padding: 6px 12px;
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale));
   color: var(--faint);
   text-align: center;
   white-space: nowrap;
-  transition: color 200ms ease-out;
+  transition: color calc(200ms * var(--motion)) ease-out;
 }
 .seg-opt:hover {
   color: var(--text);
@@ -352,11 +353,11 @@
   gap: 6px;
 }
 .field-hint {
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale));
   color: var(--faint);
 }
 .field-err {
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale));
   color: var(--coral);
 }
 .input,
@@ -364,14 +365,14 @@
   width: 100%;
   padding: 9px 12px;
   background: var(--bg);
-  border: 1px solid var(--line);
+  border: var(--bw) solid var(--line);
   color: var(--text);
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--text-scale));
   outline: none;
-  transition: border-color 120ms ease-out;
+  transition: border-color calc(120ms * var(--motion)) ease-out;
 }
 .input.t-mono {
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale));
   color: var(--text);
 }
 .input:hover,
@@ -392,7 +393,7 @@
   gap: 8px;
   margin: 0 8px;
   padding: 7px 8px;
-  animation: fade 240ms ease-out both;
+  animation: fade calc(240ms * var(--motion)) ease-out both;
 }
 .skel-chip {
   width: 12px;
@@ -416,7 +417,7 @@
   );
   background-size: 200% 100%;
   background-attachment: fixed;
-  animation: shimmer 1.6s linear infinite;
+  animation: shimmer calc(1.6s * var(--motion)) linear infinite;
 }
 
 /* ---- Brackets (Brackets.tsx, in place) ---- */
@@ -427,7 +428,7 @@
   inset: 0;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 120ms ease-in;
+  transition: opacity calc(120ms * var(--motion)) ease-in;
 }
 .brackets .bk {
   position: absolute;
@@ -436,7 +437,7 @@
   border-color: var(--cyan2);
   border-style: solid;
   border-width: 0;
-  transition: transform 120ms ease-in;
+  transition: transform calc(120ms * var(--motion)) ease-in;
 }
 .brackets .tl {
   left: 0;
@@ -468,11 +469,11 @@
 }
 .brackets.on {
   opacity: 1;
-  transition: opacity 140ms var(--ease);
+  transition: opacity calc(140ms * var(--motion)) var(--ease);
 }
 .brackets.on .bk {
   transform: none;
-  transition: transform 140ms cubic-bezier(0.34, 1.8, 0.64, 1);
+  transition: transform calc(140ms * var(--motion)) cubic-bezier(0.34, 1.8, 0.64, 1);
 }
 
 /* ---- Overlays: layer, scrim, sheet, floating, menu, select ---- */
@@ -508,7 +509,7 @@
   max-height: 86vh;
   display: flex;
   flex-direction: column;
-  filter: drop-shadow(0 16px 40px color-mix(in srgb, var(--shadow) 55%, transparent));
+  filter: var(--elev-drop-2);
 }
 .sheet.phone {
   position: absolute;
@@ -533,7 +534,7 @@
 }
 .sheet-title {
   flex: 1;
-  font-size: 16px;
+  font-size: calc(16px * var(--text-scale));
 }
 .sheet-body {
   overflow: auto;
@@ -556,8 +557,8 @@
   overflow: auto;
   padding: 4px 0;
   background: var(--raise);
-  border: 1px solid var(--line2);
-  box-shadow: 0 16px 40px color-mix(in srgb, var(--shadow) 67%, transparent);
+  border: var(--bw) solid var(--line2);
+  box-shadow: var(--elev-2);
 }
 .floating.down {
   top: calc(100% + 4px);
@@ -580,7 +581,7 @@
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--text-scale));
   color: var(--text);
 }
 .menu-item:hover,
@@ -594,7 +595,7 @@
   flex: 1;
 }
 .menu-hint {
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale));
 }
 .select-wrap {
   position: relative;
@@ -611,7 +612,7 @@
 .select.chip {
   padding: 4px 8px;
   background: var(--wash2);
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale));
 }
 .select.chip:hover {
   background: var(--wash3);
@@ -636,9 +637,111 @@
 }
 .opt-hint {
   color: var(--faint);
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale));
   margin-top: 2px;
 }
 .opt-check {
   color: var(--cyan2);
+}
+
+/* ---- Shape contract (THEMING.md): every surface takes its radius from a role token. All of
+   them are 0 in the Bracket look; a rounded theme sets them. Cut shapes read `--cut-r`. ---- */
+.tool,
+.composer-box,
+.set-card,
+.pn-card,
+.pn-ucard,
+.pn-pr,
+.pn-viewer,
+.pn-editor,
+.pn-msg,
+.pn-bubble,
+.pn-plugin-item,
+.pn-acct,
+.hd-card,
+.hd-banner,
+.ob-card,
+.ob-concept,
+.ob-list-box,
+.home-card,
+.inbox-box,
+.inbox-detail,
+.ns-box,
+.ns-browse,
+.ns-prompt,
+.subwork,
+.tl-todo,
+.tl-user,
+.tl-relay,
+.crash-trace,
+.theme-card,
+.hosts-panel,
+.proj-browse {
+  --cut-r: var(--r-card);
+  border-radius: var(--r-card);
+}
+.floating,
+.menu,
+.select-menu,
+.sheet,
+.palette,
+.pop,
+.toast {
+  --cut-r: var(--r-menu);
+  border-radius: var(--r-menu);
+}
+.sheet.phone {
+  --cut-r: var(--r-menu) var(--r-menu) 0 0;
+  border-radius: var(--r-menu) var(--r-menu) 0 0;
+}
+.btn,
+.cut-send,
+.chip-btn {
+  --cut-r: var(--r-button);
+  border-radius: var(--r-button);
+}
+.input,
+.field-box,
+.seg,
+.slist-filter,
+.set-search,
+.pn-search-box,
+.pn-file-search {
+  --cut-r: var(--r-field);
+  border-radius: var(--r-field);
+}
+.chip,
+.select.chip,
+.ns-chip,
+.ob-chip,
+.att-chip,
+.tl-user-chip,
+.pn-mode-chip,
+.pn-badge,
+.hrow-badge,
+.skel-chip,
+.seg-pill,
+.seg-opt,
+.vw-avatar {
+  --cut-r: var(--r-chip);
+  border-radius: var(--r-chip);
+}
+.ri,
+.srow,
+.srow2,
+.set-nav-item,
+.pn-row,
+.host-row,
+.tm-row,
+.menu-item,
+.opt,
+.q-opt,
+.sm-choice,
+.choice,
+.ob-choice,
+.slash-opt,
+.vw-row,
+.prov-row {
+  --cut-r: var(--r-row);
+  border-radius: var(--r-row);
 }

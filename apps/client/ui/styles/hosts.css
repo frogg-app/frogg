@@ -45,7 +45,7 @@
   align-items: center;
   justify-content: center;
   border-bottom: 2px solid var(--cyan);
-  font-size: 20px;
+  font-size: calc(20px * var(--text-scale));
   font-weight: 600;
   white-space: pre;
 }
@@ -55,12 +55,12 @@
 .pair-link {
   padding: 9px 12px;
   background: var(--bg);
-  border: 1px solid var(--line);
+  border: var(--bw) solid var(--line);
   overflow: hidden;
 }
 .pair-link .t-mono {
   display: block;
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
@@ -68,23 +68,23 @@
 }
 .pair-note {
   color: var(--muted);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
   line-height: 18px;
 }
 .pair-note .t-mono {
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale));
 }
 .pair-foot {
   display: flex;
   align-items: center;
   gap: 12px;
   padding-top: 12px;
-  border-top: 1px solid var(--line);
+  border-top: var(--bw) solid var(--line);
 }
 .pair-foot-t {
   flex: 1;
   color: var(--muted);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
 }
 .pair-foot-t.err {
   color: var(--coral);
@@ -97,7 +97,7 @@
 }
 .route-ms {
   color: var(--faint);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale));
 }
 
 /* Here now / Tailscale / Service URL cards. */
@@ -113,7 +113,7 @@
   min-width: 0;
 }
 .hn-line .t-mono {
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -148,7 +148,7 @@
 .upd-bar > div {
   height: 100%;
   background: var(--cyan);
-  transition: width 0.3s ease;
+  transition: width calc(0.3s * var(--motion)) ease;
 }
 
 /* Offline banner (ui-next hosts/Offline.tsx). */
@@ -181,21 +181,21 @@
   background: var(--amber);
 }
 .off-flag.live {
-  animation: breathe 1.6s ease-in-out infinite both;
+  animation: breathe calc(1.6s * var(--motion)) ease-in-out infinite both;
 }
 .off-body {
   color: var(--muted);
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--text-scale));
   line-height: 21px;
 }
 .off-hint {
   color: var(--text);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
   line-height: 19px;
 }
 .off-ids {
   color: var(--faint);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale));
 }
 .off-banner .set-acts {
   margin-top: 4px;
@@ -218,7 +218,7 @@
   inset: 0 auto 0 0;
   width: 25%;
   background: var(--coral);
-  animation: retry-beam 1.4s ease-in-out infinite;
+  animation: retry-beam calc(1.4s * var(--motion)) ease-in-out infinite;
 }
 @keyframes retry-beam {
   from {
@@ -236,11 +236,11 @@
 }
 .retry-on {
   color: var(--coral);
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale));
 }
 .retry-idle {
   color: var(--faint);
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale));
 }
 
 /* Here now card. */
@@ -254,21 +254,21 @@
 }
 .hn-name {
   display: block;
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .hn-sub {
   display: block;
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
 }
 .hn-sub.mint {
   color: var(--mint);
 }
 .hn-err {
   color: var(--coral);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
 }
 .hn-request {
   display: flex;
@@ -301,7 +301,7 @@
 /* Service URL dialog. */
 .svc-body {
   color: var(--muted);
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--text-scale));
   line-height: 20px;
 }
 .svc-choice {
@@ -309,10 +309,10 @@
   align-items: center;
   gap: 12px;
   padding: 11px 12px;
-  border: 1px solid var(--line);
+  border: var(--bw) solid var(--line);
   background: none;
   color: var(--text);
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--text-scale));
   text-align: left;
   cursor: pointer;
 }
@@ -323,7 +323,7 @@
 .svc-diamond {
   width: 8px;
   height: 8px;
-  border: 1px solid var(--muted);
+  border: var(--bw) solid var(--muted);
   transform: rotate(45deg);
 }
 .svc-choice.on .svc-diamond {
@@ -370,18 +370,18 @@
 }
 .shp-kind {
   font-weight: 600;
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale));
 }
 .shp-meta {
   margin-left: auto;
   color: var(--muted);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale));
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 .shp-title {
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--text-scale));
 }
 .shp-chamfer {
   --cut-bg: color-mix(in srgb, var(--tint) 4%, transparent);
@@ -408,19 +408,19 @@
   gap: 6px;
   padding: 4px 10px;
   color: var(--bg);
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--text-scale));
   font-weight: 700;
   letter-spacing: 1px;
 }
 .shp-tab-card {
   align-self: stretch;
   background: color-mix(in srgb, var(--tint) 6%, transparent);
-  border: 1px solid color-mix(in srgb, var(--tint) 45%, transparent);
+  border: var(--bw) solid color-mix(in srgb, var(--tint) 45%, transparent);
   padding-top: 8px;
 }
 .shp-soft {
   border-radius: 6px;
-  border: 1px solid var(--line2);
+  border: var(--bw) solid var(--line2);
   background: var(--raise);
   padding-top: 16px;
   overflow: hidden;
@@ -436,7 +436,7 @@
   background: var(--tint);
 }
 .shp-hud {
-  border: 1px solid color-mix(in srgb, var(--tint) 25%, transparent);
+  border: var(--bw) solid color-mix(in srgb, var(--tint) 25%, transparent);
   padding: 3px;
   gap: 0;
 }
@@ -448,13 +448,13 @@
   background: color-mix(in srgb, var(--tint) 8%, transparent);
 }
 .shp-hud-t {
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale));
   letter-spacing: 1.5px;
   color: var(--tint);
 }
 .shp-hud-meta {
   margin-left: auto;
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--text-scale));
   letter-spacing: 1px;
   color: var(--muted);
 }
@@ -470,8 +470,8 @@
   align-items: center;
   background: var(--bg);
   transition:
-    border-color 120ms var(--ease),
-    box-shadow 120ms var(--ease);
+    border-color calc(120ms * var(--motion)) var(--ease),
+    box-shadow calc(120ms * var(--motion)) var(--ease);
 }
 .shp-input input {
   flex: 1;
@@ -480,7 +480,7 @@
   border: 0;
   outline: none;
   color: var(--text);
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--text-scale));
   padding: 7px 10px;
 }
 .shp-in-chamfer {
@@ -509,7 +509,7 @@
 }
 .shp-in-soft {
   border-radius: 4px;
-  border: 1px solid var(--line2);
+  border: var(--bw) solid var(--line2);
 }
 .shp-in-soft.on {
   border-color: var(--cyan);
@@ -517,18 +517,18 @@
 }
 .shp-in-hud {
   background: transparent;
-  border-bottom: 1px solid var(--line2);
+  border-bottom: var(--bw) solid var(--line2);
   padding-left: 8px;
 }
 .shp-in-hud.on {
   border-bottom-color: var(--cyan);
 }
 .shp-in-hud input {
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
   padding-left: 4px;
 }
 .shp-prompt {
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
   color: var(--faint);
 }
 .shp-in-hud.on .shp-prompt {
@@ -538,11 +538,11 @@
   width: 100%;
   max-width: 360px;
   background: var(--bg2);
-  border: 1px solid var(--line);
+  border: var(--bw) solid var(--line);
 }
 .dp-sw-row {
   padding: 10px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: var(--bw) solid var(--line);
 }
 .dp-sw-row:last-child {
   border-bottom: 0;
@@ -555,39 +555,40 @@
 .dp-sw-title {
   flex: 1;
   min-width: 0;
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--text-scale));
   font-weight: 500;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 .dp-sw-time {
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--text-scale));
   color: var(--faint);
 }
 .dp-stream {
   max-width: 480px;
 }
 .dp-h-hero {
-  font-size: 26px;
+  font-size: calc(26px * var(--text-scale));
 }
 .dp-h-crash {
-  font-size: 20px;
+  font-size: calc(20px * var(--text-scale));
   color: var(--coral);
 }
 .dp-h-panel {
-  font-size: 15px;
+  font-size: calc(15px * var(--text-scale));
 }
 .dp-wipe {
   mask-image: linear-gradient(90deg, #000 0%, #000 40%, transparent 55%, transparent 100%);
   mask-size: 300% 100%;
   mask-repeat: no-repeat;
-  animation: dp-wipe 620ms var(--ease) both;
+  animation: dp-wipe calc(620ms * var(--motion)) var(--ease) both;
 }
 @keyframes dp-wipe {
   0% {
     mask-position: 100% 0;
-    text-shadow: 0 0 14px color-mix(in srgb, var(--cyan2) 90%, transparent);
+    text-shadow: 0 0 calc(14px * var(--glow))
+      color-mix(in srgb, var(--cyan2) calc(90% * var(--glow)), transparent);
   }
   100% {
     mask-position: 0% 0;

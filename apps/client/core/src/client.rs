@@ -478,6 +478,11 @@ impl DaemonClient {
     // ---- listeners --------------------------------------------------------------------------
 
     /// Registers a listener; returns a handle for [`DaemonClient::unsubscribe`].
+    /// True when both handles share one connection.
+    pub fn same_as(&self, other: &DaemonClient) -> bool {
+        Rc::ptr_eq(&self.inner, &other.inner)
+    }
+
     pub fn subscribe(&self, listener: impl Fn(&Event) + 'static) -> u64 {
         let id = self.next_id();
         self.inner

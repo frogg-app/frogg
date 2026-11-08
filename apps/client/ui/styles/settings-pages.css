@@ -25,7 +25,7 @@
 }
 .set-faint {
   color: var(--faint);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
 }
 .set-measured {
   display: flex;
@@ -55,8 +55,8 @@
   margin-bottom: 12px;
 }
 .set-eyebrow {
-  font-size: 11px;
-  letter-spacing: 1.6px;
+  font-size: calc(11px * var(--text-scale));
+  letter-spacing: var(--label-tracking);
   color: var(--muted);
   font-weight: 600;
 }
@@ -84,7 +84,7 @@
   margin: 0;
   white-space: pre-wrap;
   word-break: break-word;
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
   color: var(--text);
   user-select: text;
   max-height: 360px;
@@ -125,7 +125,7 @@
 }
 .set-hint-inline {
   color: var(--faint);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale));
 }
 .set-fields {
   display: flex;
@@ -170,13 +170,13 @@
 .set-label-chip {
   --tint: var(--muted);
   padding: 2px 7px;
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale));
   color: var(--tint);
   background: color-mix(in srgb, var(--tint) 15%, transparent);
 }
 .set-label-sub {
   color: var(--faint);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale));
 }
 .set-swatches {
   display: flex;
@@ -190,8 +190,8 @@
   border: 2px solid transparent;
   cursor: pointer;
   transition:
-    border-color 120ms ease,
-    transform 120ms ease;
+    border-color calc(120ms * var(--motion)) ease,
+    transform calc(120ms * var(--motion)) ease;
 }
 .set-swatch:hover {
   transform: scale(1.1);

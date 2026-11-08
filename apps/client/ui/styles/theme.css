@@ -2,46 +2,119 @@
    palette and derived tokens onto :root at startup and on every switch; the values below are
    Material (the default) so the first paint before the WASM loads already matches. */
 :root {
-  --bg: #16181b;
-  --bg2: #1a1d20;
-  --panel: #1d2024;
-  --raise: #25292d;
-  --text: #eceff1;
-  --muted: #a3abb2;
-  --faint: #6c757d;
-  --cyan: #82aaff;
-  --cyan2: #b0c9ff;
-  --deep: #3f5fa8;
-  --mint: #8fcf96;
-  --violet: #c3a6ef;
-  --amber: #ffcb6b;
-  --coral: #f07178;
-  --on-accent: #0f1a2e;
-  --on-warn: #1f1600;
-  --add-text: #c2e6c6;
-  --del-text: #ffc4c8;
+  --bg: #131416;
+  --bg2: #17181b;
+  --panel: #1c1d21;
+  --raise: #25272b;
+  --text: #e4e5e8;
+  --muted: #aaadb3;
+  --faint: #7c8088;
+  --cyan: #94b4e8;
+  --cyan2: #b5cbf0;
+  --deep: #3d5a8c;
+  --mint: #86c59a;
+  --violet: #b9a9e0;
+  --amber: #dfb866;
+  --coral: #e8918c;
+  --on-accent: #0e1c33;
+  --on-warn: #241a00;
+  --add-text: #bfe0c8;
+  --del-text: #f3c6c3;
   --ink: #ffffff;
   --shadow: #000000;
-  --line: rgba(255, 255, 255, 0.07);
+  --line: rgba(255, 255, 255, 0.08);
   --line2: rgba(255, 255, 255, 0.14);
   --wash: rgba(255, 255, 255, 0.03);
-  --wash2: rgba(255, 255, 255, 0.05);
-  --wash3: rgba(255, 255, 255, 0.1);
-  --scrim: rgba(10, 11, 13, 0.6);
-  --coral-wash: rgba(240, 113, 120, 0.08);
-  --cyan-wash: rgba(130, 170, 255, 0.1);
-  --cyan-wash2: rgba(130, 170, 255, 0.18);
-  --cyan-wash3: rgba(130, 170, 255, 0.28);
-  --cyan-dim: #6c8dd4;
-  --mint-dim: #7cb483;
+  --wash2: rgba(255, 255, 255, 0.055);
+  --wash3: rgba(255, 255, 255, 0.09);
+  --scrim: rgba(0, 0, 0, 0.5);
+  --coral-wash: rgba(232, 145, 140, 0.08);
+  --cyan-wash: rgba(148, 180, 232, 0.1);
+  --cyan-wash2: rgba(148, 180, 232, 0.18);
+  --cyan-wash3: rgba(148, 180, 232, 0.28);
+  --cyan-dim: #7b95c0;
+  --mint-dim: #74ab86;
 
+  /* ---- Shape, type, depth and motion tokens (THEMING.md). The defaults are the Bracket look
+     (cut corners, glow); a theme overrides any of them through `ThemeDef::tokens`. ---- */
+  /* Type */
   --font-body: "Inter", system-ui, sans-serif;
   --font-display: "Space Grotesk", var(--font-body);
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-label: var(--font-mono);
+  --text-scale: 1;
+  --fw-display: 600;
+  --fw-strong: 600;
+  --label-transform: uppercase;
+  --label-tracking: 1.6px;
+  --label-size: 10.5px;
+  --label-weight: 400;
+  /* Shape: `--corners`-driven rules live under :root[data-corners]. */
+  --cut-k: 1;
+  --r-sm: 4px;
+  --r-md: 8px;
+  --r-card: 0px;
+  --r-menu: 0px;
+  --r-button: 0px;
+  --r-field: 0px;
+  --r-chip: 0px;
+  --r-cut: 0px;
+  --r-row: 0px;
+  --bw: 1px;
+  /* Depth */
+  --elev-1: none;
+  --elev-2: 0 16px 40px color-mix(in srgb, var(--shadow) 67%, transparent);
+  --elev-3: 0 24px 48px color-mix(in srgb, var(--shadow) 45%, transparent);
+  --elev-drop-1: drop-shadow(0 10px 24px color-mix(in srgb, var(--shadow) 40%, transparent));
+  --elev-drop-2: drop-shadow(0 16px 40px color-mix(in srgb, var(--shadow) 55%, transparent));
+  --elev-drop-3: drop-shadow(0 24px 48px color-mix(in srgb, var(--shadow) 45%, transparent));
+  --glow: 1;
+  --accent-fill: linear-gradient(135deg, var(--cyan2), var(--cyan) 55%, var(--deep));
+  --accent-bar: linear-gradient(var(--cyan2), var(--cyan));
+  --accent-soft: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--cyan2) 18%, transparent),
+    color-mix(in srgb, var(--cyan) 10%, transparent)
+  );
+  --banner-wash: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--cyan) 8%, transparent),
+    transparent 60%
+  );
+  /* Motion: every transition and animation duration is multiplied by --motion (0 = instant). */
+  --motion: 1;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-out: cubic-bezier(0.4, 0, 1, 1);
-  --glide-ms: 200ms;
+  --glide-ms: calc(200ms * var(--motion));
   color-scheme: dark;
+}
+
+/* ---- Rounded corners: a theme with `corners: round` turns every cut shape into a rounded one.
+   The fill keeps its layer (clip-path flattens to a rectangle via --cut-k 0); the stroke ring
+   becomes a plain border following the radius. ---- */
+:root[data-corners="round"] {
+  --cut-k: 0;
+}
+:root[data-corners="round"] .cut::before {
+  border-radius: var(--cut-r, var(--r-cut));
+}
+:root[data-corners="round"] .cut-stroke::after {
+  clip-path: none;
+  background: none;
+  border: var(--bw) solid var(--cut-line);
+  border-radius: var(--cut-r, var(--r-cut));
+}
+
+/* ---- Ornaments off: corner brackets, scanline/grid textures and sweep beams are decoration;
+   a theme with `ornaments: off` drops them. ---- */
+:root[data-ornaments="off"] .brackets .bk,
+:root[data-ornaments="off"] .shp-brackets,
+:root[data-ornaments="off"] .toast-ticks,
+:root[data-ornaments="off"] .ornament {
+  display: none;
+}
+:root[data-ornaments="off"] .toast-hud {
+  background-image: none;
 }
 
 /* Fonts: ui-next/assets/fonts, copied to dist/assets/fonts by Trunk. */
@@ -333,7 +406,8 @@
     box-shadow: 0 0 0 transparent;
   }
   35% {
-    box-shadow: 0 0 22px color-mix(in srgb, var(--mint) 32%, transparent);
+    box-shadow: 0 0 calc(22px * var(--glow))
+      color-mix(in srgb, var(--mint) calc(32% * var(--glow)), transparent);
   }
   100% {
     box-shadow: 0 0 0 transparent;
@@ -405,43 +479,43 @@
 
 /* Motion utility classes (tokens.ts: motion, overlayMotion, toastMotion, stateMotion). */
 .m-breathe {
-  animation: breathe 1.6s ease-in-out infinite both;
+  animation: breathe calc(1.6s * var(--motion)) ease-in-out infinite both;
 }
 .m-snap {
-  animation: snap 220ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  animation: snap calc(220ms * var(--motion)) cubic-bezier(0.23, 1, 0.32, 1) both;
 }
 .m-enter {
-  animation: enter 200ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  animation: enter calc(200ms * var(--motion)) cubic-bezier(0.23, 1, 0.32, 1) both;
 }
 .m-fade {
-  animation: fade 150ms ease-out both;
+  animation: fade calc(150ms * var(--motion)) ease-out both;
 }
 .m-afterglow {
-  animation: afterglow 1.2s ease-out both;
+  animation: afterglow calc(1.2s * var(--motion)) ease-out both;
 }
 .m-pop-down {
-  animation: pop-down 160ms var(--ease) both;
+  animation: pop-down calc(160ms * var(--motion)) var(--ease) both;
 }
 .m-pop-up {
-  animation: pop-up 160ms var(--ease) both;
+  animation: pop-up calc(160ms * var(--motion)) var(--ease) both;
 }
 .m-pop-out {
-  animation: pop-out 110ms var(--ease-out) both;
+  animation: pop-out calc(110ms * var(--motion)) var(--ease-out) both;
 }
 .m-rise {
-  animation: rise 170ms var(--ease) both;
+  animation: rise calc(170ms * var(--motion)) var(--ease) both;
 }
 .m-fade-in {
-  animation: fade 160ms var(--ease) both;
+  animation: fade calc(160ms * var(--motion)) var(--ease) both;
 }
 .m-fade-out {
-  animation: fade-out 110ms var(--ease-out) both;
+  animation: fade-out calc(110ms * var(--motion)) var(--ease-out) both;
 }
 .m-sheet-in {
-  animation: sheet-in 200ms var(--ease) both;
+  animation: sheet-in calc(200ms * var(--motion)) var(--ease) both;
 }
 .m-sheet-out {
-  animation: sheet-out 140ms var(--ease-out) both;
+  animation: sheet-out calc(140ms * var(--motion)) var(--ease-out) both;
 }
 .m-shimmer-text {
   background-image: linear-gradient(
@@ -456,13 +530,13 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: shimmer 2s linear infinite;
+  animation: shimmer calc(2s * var(--motion)) linear infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
   * {
-    animation-duration: 1ms !important;
+    animation-duration: calc(1ms * var(--motion)) !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 1ms !important;
+    transition-duration: calc(1ms * var(--motion)) !important;
   }
 }

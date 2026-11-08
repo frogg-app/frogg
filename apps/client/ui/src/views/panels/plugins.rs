@@ -1052,3 +1052,72 @@ fn Sources(l: Lists, ask: RwSignal<Option<Ask>>) -> impl IntoView {
         </div>
     }
 }
+
+/// Plugin themes (`contributes.themes`, styles/THEMING.md): whenever the active host comes
+/// online, and on every `plugins.changed`, the contributed themes are re-read and handed to the
+/// theme store, which lists them in Settings → You. Hosts without plugins contribute none.
+pub fn init_plugin_themes() {
+    let app = state::get();
+    let reload = move || {
+        let Some(c) = app.conn.client().filter(|c| c.is_connected()) else {
+            return;
+        };
+        spawn_local(async move {
+            let Ok(v) = state::config::ns(
+                &c,
+                "plugins.get_contributions.request",
+                serde_json::json!({}),
+            )
+            .await
+            else {
+                return;
+            };
+            app.theme.set_contributed(&contributed_themes(&v));
+        });
+    };
+    Effect::new(
+        move |prev: Option<Option<frogg_client_core::DaemonClient>>| {
+            let online = state::config::feature("plugins") == Some(true);
+            let client = app.conn.client().filter(|_| online);
+            let had = prev.flatten();
+            match client.as_ref() {
+                Some(c) => {
+                    if !had.as_ref().is_some_and(|p| p.same_as(c)) {
+                        c.subscribe(move |e| {
+                            if let frogg_client_core::Event::Session(f) = e {
+                                if f.kind == "plugins.changed" {
+                                    reload();
+                                }
+                            }
+                        });
+                    }
+                    reload();
+                }
+                None if had.is_some() => app.theme.set_contributed(&[]),
+                None => {}
+            }
+            client
+        },
+    );
+}
+
+/// `(pluginId, spec)` for every theme in a `plugins.get_contributions` payload.
+pub fn contributed_themes(v: &Value) -> Vec<(String, crate::theme::ThemeSpec)> {
+    v["contributions"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .flat_map(|c| {
+            let owner = c["pluginId"].as_str().unwrap_or_default().to_owned();
+            c["themes"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter_map(move |t| {
+                    serde_json::from_value::<crate::theme::ThemeSpec>(t.clone())
+                        .ok()
+                        .map(|s| (owner.clone(), s))
+                })
+        })
+        .collect()
+}

@@ -16,10 +16,10 @@
   justify-content: center;
   color: var(--cyan2);
   transition:
-    --cut-line 140ms var(--ease),
-    --cut-bg 140ms var(--ease),
-    color 140ms var(--ease),
-    opacity 140ms var(--ease);
+    --cut-line calc(140ms * var(--motion)) var(--ease),
+    --cut-bg calc(140ms * var(--motion)) var(--ease),
+    color calc(140ms * var(--motion)) var(--ease),
+    opacity calc(140ms * var(--motion)) var(--ease);
 }
 .cut-send:not(.idle):hover {
   --cut-bg: var(--wash2);
@@ -36,16 +36,16 @@
   right: 0;
   padding: 4px 8px;
   background: var(--panel);
-  border: 1px solid var(--line);
-  font-size: 11px;
+  border: var(--bw) solid var(--line);
+  font-size: calc(11px * var(--text-scale));
   color: var(--text);
   white-space: nowrap;
   pointer-events: none;
   opacity: 0;
   transform: translateY(2px);
   transition:
-    opacity 120ms var(--ease),
-    transform 120ms var(--ease);
+    opacity calc(120ms * var(--motion)) var(--ease),
+    transform calc(120ms * var(--motion)) var(--ease);
   z-index: 5;
 }
 .cut-send-wrap:hover .cut-send-tip {
@@ -64,11 +64,11 @@
 }
 .ctx-arc {
   transition:
-    stroke-dashoffset 420ms var(--ease),
-    stroke 200ms var(--ease);
+    stroke-dashoffset calc(420ms * var(--motion)) var(--ease),
+    stroke calc(200ms * var(--motion)) var(--ease);
 }
 .ctx-pct {
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale));
   color: var(--faint);
 }
 
@@ -79,7 +79,7 @@
 }
 .slash-head {
   padding: 10px 14px 4px;
-  font-size: 9.5px;
+  font-size: calc(9.5px * var(--text-scale));
 }
 .slash .slash-opt {
   width: calc(100% - 8px);
@@ -100,7 +100,7 @@
 /* ----- stash and shell notes ----------------------------------------------------------- */
 .composer-note {
   margin-bottom: 6px;
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale));
   color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
@@ -126,8 +126,8 @@
   height: 3px;
   background: var(--line2);
   transition:
-    background-color 160ms var(--ease),
-    width 200ms var(--ease);
+    background-color calc(160ms * var(--motion)) var(--ease),
+    width calc(200ms * var(--motion)) var(--ease);
 }
 .composer-grip:hover .composer-grip-bar {
   background: var(--muted);
@@ -159,11 +159,11 @@
   white-space: pre-wrap;
   overflow-wrap: break-word;
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale));
   line-height: 20px;
 }
 .composer.compact .composer-mirror {
-  font-size: 15px;
+  font-size: calc(15px * var(--text-scale));
 }
 .composer-expand {
   color: var(--muted);
@@ -179,7 +179,7 @@
 
 /* ----- attachment chips ---------------------------------------------------------------- */
 .composer .att-chip {
-  border: 1px solid var(--line);
+  border: var(--bw) solid var(--line);
   padding: 4px 8px;
   overflow: hidden;
 }
@@ -187,7 +187,7 @@
   background: var(--mint);
 }
 .composer .att-up {
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--text-scale));
   color: var(--muted);
   white-space: nowrap;
 }
@@ -207,10 +207,10 @@
 .q-kind {
   color: var(--amber);
   font-weight: 600;
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale));
 }
 .q-text {
-  font-size: 15px;
+  font-size: calc(15px * var(--text-scale));
   line-height: 22px;
   margin-top: 10px;
 }
@@ -227,7 +227,7 @@
   text-align: left;
   border-left: 0;
   background: transparent;
-  transition: background 140ms var(--ease);
+  transition: background calc(140ms * var(--motion)) var(--ease);
 }
 .perm.question .q-opt:hover {
   background: var(--wash);
@@ -244,11 +244,11 @@
   width: 9px;
   height: 9px;
   margin-top: 5px;
-  border: 1px solid var(--muted);
+  border: var(--bw) solid var(--muted);
   transform: rotate(45deg);
   transition:
-    background-color 140ms var(--ease),
-    border-color 140ms var(--ease);
+    background-color calc(140ms * var(--motion)) var(--ease),
+    border-color calc(140ms * var(--motion)) var(--ease);
 }
 .q-mark.multi {
   transform: none;
@@ -264,7 +264,7 @@
   flex: 1;
 }
 .perm.question .q-opt-label {
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale));
 }
 .q-input {
   margin-top: 6px;
@@ -274,7 +274,7 @@
   margin-top: 12px;
 }
 .q-dismiss {
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale));
   color: var(--muted);
 }
 .q-dismiss:hover {
@@ -309,14 +309,16 @@
 @keyframes rv-glow {
   0% {
     color: var(--cyan2);
-    text-shadow: 0 0 10px color-mix(in srgb, var(--cyan) 95%, transparent);
+    text-shadow: 0 0 calc(10px * var(--glow))
+      color-mix(in srgb, var(--cyan) calc(95% * var(--glow)), transparent);
   }
 }
 @keyframes rv-wipe {
   0% {
     mask-position: 100% 0;
     -webkit-mask-position: 100% 0;
-    text-shadow: 0 0 10px color-mix(in srgb, var(--cyan2) 90%, transparent);
+    text-shadow: 0 0 calc(10px * var(--glow))
+      color-mix(in srgb, var(--cyan2) calc(90% * var(--glow)), transparent);
   }
   100% {
     mask-position: 0% 0;
@@ -336,20 +338,20 @@
 }
 .rv-fade {
   position: relative;
-  animation: rv-fade 180ms var(--ease) backwards;
+  animation: rv-fade calc(180ms * var(--motion)) var(--ease) backwards;
 }
 .rv-blur {
-  animation: rv-blur 220ms var(--ease) backwards;
+  animation: rv-blur calc(220ms * var(--motion)) var(--ease) backwards;
 }
 .rv-slide {
   position: relative;
-  animation: rv-slide 200ms var(--ease) backwards;
+  animation: rv-slide calc(200ms * var(--motion)) var(--ease) backwards;
 }
 .rv-type {
-  animation: rv-type 90ms linear backwards;
+  animation: rv-type calc(90ms * var(--motion)) linear backwards;
 }
 .rv-glow {
-  animation: rv-glow 700ms ease-out backwards;
+  animation: rv-glow calc(700ms * var(--motion)) ease-out backwards;
 }
 .rv-wipe {
   mask-image: linear-gradient(90deg, #000 0%, #000 40%, transparent 55%, transparent 100%);
@@ -358,7 +360,7 @@
   -webkit-mask-size: 300% 100%;
   mask-repeat: no-repeat;
   -webkit-mask-repeat: no-repeat;
-  animation: rv-wipe 420ms var(--ease);
+  animation: rv-wipe calc(420ms * var(--motion)) var(--ease);
 }
 /* Scramble: the real text holds the layout (transparent) under a settling noise overlay. */
 .rv-scr {
@@ -389,7 +391,7 @@
 }
 .rv-caret.idle .fr-md > :last-child::after,
 .rv-caret.idle .fr-md:empty::after {
-  animation: rv-blink 1000ms linear infinite;
+  animation: rv-blink calc(1000ms * var(--motion)) linear infinite;
 }
 @media (prefers-reduced-motion: reduce) {
   .rv {
