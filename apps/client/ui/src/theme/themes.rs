@@ -42,7 +42,7 @@ const LABEL_TINT: Pairs = &[
 
 pub const GRAPHITE: ThemeDef = ThemeDef {
     id: "graphite",
-    label: "Graphite",
+    label: "High Tech",
     description: "Bracket shapes on neutral graphite with a calm blue accent.",
     scheme: "dark",
     palette: &[
@@ -110,7 +110,7 @@ pub const GRAPHITE: ThemeDef = ThemeDef {
 
 pub const GRAPHITE_LIGHT: ThemeDef = ThemeDef {
     id: "graphite-light",
-    label: "Graphite Light",
+    label: "High Tech Light",
     description: "Bracket shapes on light paper surfaces, the same calm blue accent.",
     scheme: "light",
     palette: &[
