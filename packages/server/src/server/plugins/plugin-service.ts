@@ -1241,6 +1241,7 @@ export class PluginService {
         views: c.views ?? [],
         composerActions: c.composerActions ?? [],
         settings: c.settings ?? [],
+        themes: granted.includes("ui.contribute") ? (c.themes ?? []) : [],
         badges: p.runtime?.badgeMap ?? {},
       });
     }

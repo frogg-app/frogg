@@ -6,6 +6,7 @@ import {
   PluginPanelContributionSchema,
   PluginSessionActionContributionSchema,
   PluginSettingFieldSchema,
+  PluginThemeContributionSchema,
 } from "./manifest.js";
 
 /**
@@ -143,6 +144,8 @@ export const PluginContributionSetSchema = z.object({
   views: z.array(PluginViewContributionSchema).optional(),
   composerActions: z.array(PluginComposerActionContributionSchema).optional(),
   settings: z.array(PluginSettingFieldSchema),
+  /** Themes for the Rust client; only from plugins granted "ui.contribute". */
+  themes: z.array(PluginThemeContributionSchema).optional(),
   /** ctx.ui.setBadge values keyed by contribution id (panel/command/sessionAction). */
   badges: z.record(z.string(), z.string()),
 });

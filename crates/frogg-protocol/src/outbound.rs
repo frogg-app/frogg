@@ -950,6 +950,8 @@ pub struct PluginsGetContributionsResponsePayloadContributionsItem {
     pub composer_actions:
         Option<Vec<PluginsGetContributionsResponsePayloadContributionsItemComposerActionsItem>>,
     pub settings: Vec<PluginsGetContributionsResponsePayloadContributionsItemSettingsItem>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub themes: Option<Vec<PluginsGetContributionsResponsePayloadContributionsItemThemesItem>>,
     pub badges: serde_json::Value,
 }
 
@@ -1036,6 +1038,36 @@ pub enum PluginsGetContributionsResponsePayloadContributionsItemSettingsItemType
 pub struct PluginsGetContributionsResponsePayloadContributionsItemSettingsItemOptionsItem {
     pub value: String,
     pub label: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsGetContributionsResponsePayloadContributionsItemThemesItem {
+    pub id: String,
+    pub label: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub scheme: Option<PluginsGetContributionsResponsePayloadContributionsItemThemesItemScheme>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub extends: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub colors: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tokens: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub syntax: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub terminal: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub css: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum PluginsGetContributionsResponsePayloadContributionsItemThemesItemScheme {
+    #[serde(rename = "dark")]
+    Dark,
+    #[serde(rename = "light")]
+    Light,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

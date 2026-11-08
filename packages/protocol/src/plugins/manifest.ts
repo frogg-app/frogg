@@ -161,6 +161,35 @@ export const PluginPanelContributionSchema = z.object({
   kind: PluginPanelKindSchema,
 });
 
+const ThemeKeySchema = z
+  .string()
+  .min(1)
+  .max(48)
+  .regex(/^[A-Za-z0-9_.-]+$/);
+const ThemeValueSchema = z
+  .string()
+  .max(400)
+  .regex(/^[^;{}<]*$/);
+
+/**
+ * Theme for the Rust client (apps/client/ui/styles/THEMING.md): colour tokens, shape/type/depth
+ * tokens and optional CSS scoped to `:root[data-theme="<pluginId>.<id>"]`. Unset tokens come
+ * from `extends` (a built-in theme id). Purely declarative; requires "ui.contribute".
+ */
+export const PluginThemeContributionSchema = z.object({
+  id: ContributionIdSchema,
+  label: TitleSchema,
+  description: z.string().max(200).optional(),
+  scheme: z.enum(["dark", "light"]).optional(),
+  extends: z.string().max(64).optional(),
+  colors: z.record(ThemeKeySchema, ThemeValueSchema).optional(),
+  tokens: z.record(ThemeKeySchema, ThemeValueSchema).optional(),
+  syntax: z.record(ThemeKeySchema, ThemeValueSchema).optional(),
+  terminal: z.record(ThemeKeySchema, ThemeValueSchema).optional(),
+  css: z.string().max(65536).optional(),
+});
+export type PluginThemeContribution = z.infer<typeof PluginThemeContributionSchema>;
+
 export const PLUGIN_SETTING_TYPES = ["string", "secret", "number", "boolean", "select"] as const;
 export const PluginSettingTypeSchema = z.enum(PLUGIN_SETTING_TYPES);
 
@@ -206,6 +235,7 @@ export const PluginContributesSchema = z.object({
   agentTools: z.array(PluginAgentToolContributionSchema).max(20).optional(),
   settings: z.array(PluginSettingFieldSchema).max(100).optional(),
   features: z.array(PluginBuiltinFeatureSchema).max(PLUGIN_BUILTIN_FEATURES.length).optional(),
+  themes: z.array(PluginThemeContributionSchema).max(10).optional(),
 });
 export type PluginContributes = z.infer<typeof PluginContributesSchema>;
 
@@ -267,6 +297,12 @@ function surfaceIssues(
   c: PluginContributes,
 ): ManifestIssue[] {
   const issues: ManifestIssue[] = [];
+  if (c.themes?.length && !capabilities.includes("ui.contribute")) {
+    issues.push({
+      path: ["capabilities"],
+      message: 'themes contributions require the "ui.contribute" capability',
+    });
+  }
   if (c.views?.length) {
     if (!capabilities.includes("ui.view")) {
       issues.push({
@@ -338,6 +374,7 @@ function contributionIssues(
     agentTools: (c.agentTools ?? []).map((x) => x.id),
     settings: (c.settings ?? []).map((x) => x.key),
     features: [...(c.features ?? [])],
+    themes: (c.themes ?? []).map((x) => x.id),
   };
   for (const [key, ids] of Object.entries(idLists)) {
     if (new Set(ids).size !== ids.length)

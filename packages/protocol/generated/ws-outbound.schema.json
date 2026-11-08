@@ -2269,6 +2269,104 @@
                               "additionalProperties": false
                             }
                           },
+                          "themes": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "maxLength": 64,
+                                  "pattern": "^[a-z0-9][a-z0-9_.-]*$"
+                                },
+                                "label": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 120
+                                },
+                                "description": {
+                                  "type": "string",
+                                  "maxLength": 200
+                                },
+                                "scheme": {
+                                  "type": "string",
+                                  "enum": [
+                                    "dark",
+                                    "light"
+                                  ]
+                                },
+                                "extends": {
+                                  "type": "string",
+                                  "maxLength": 64
+                                },
+                                "colors": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 48,
+                                    "pattern": "^[A-Za-z0-9_.-]+$"
+                                  },
+                                  "additionalProperties": {
+                                    "type": "string",
+                                    "maxLength": 400,
+                                    "pattern": "^[^;{}<]*$"
+                                  }
+                                },
+                                "tokens": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 48,
+                                    "pattern": "^[A-Za-z0-9_.-]+$"
+                                  },
+                                  "additionalProperties": {
+                                    "type": "string",
+                                    "maxLength": 400,
+                                    "pattern": "^[^;{}<]*$"
+                                  }
+                                },
+                                "syntax": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 48,
+                                    "pattern": "^[A-Za-z0-9_.-]+$"
+                                  },
+                                  "additionalProperties": {
+                                    "type": "string",
+                                    "maxLength": 400,
+                                    "pattern": "^[^;{}<]*$"
+                                  }
+                                },
+                                "terminal": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 48,
+                                    "pattern": "^[A-Za-z0-9_.-]+$"
+                                  },
+                                  "additionalProperties": {
+                                    "type": "string",
+                                    "maxLength": 400,
+                                    "pattern": "^[^;{}<]*$"
+                                  }
+                                },
+                                "css": {
+                                  "type": "string",
+                                  "maxLength": 65536
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "label"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
                           "badges": {
                             "type": "object",
                             "propertyNames": {
