@@ -56,7 +56,8 @@
   margin: 0 8px;
   padding: 10px;
   cursor: pointer;
-  transition: background-color calc(120ms * var(--motion)) ease-out;
+  transition: background-color calc(var(--dur-short, 120ms) * var(--motion))
+    var(--ease-std, ease-out);
   animation: pn-enter calc(220ms * var(--motion)) var(--ease) both;
 }
 .pn-row:hover {
@@ -95,7 +96,7 @@
 }
 .pn-hover {
   opacity: 0;
-  transition: opacity calc(120ms * var(--motion)) ease-out;
+  transition: opacity calc(var(--dur-short, 120ms) * var(--motion)) var(--ease-std, ease-out);
 }
 .pn-row:hover .pn-hover,
 .pn-row.on .pn-hover,
@@ -167,8 +168,8 @@
   padding: 6px;
   color: var(--faint);
   transition:
-    background-color calc(120ms * var(--motion)) var(--ease),
-    color calc(120ms * var(--motion)) var(--ease);
+    background-color calc(var(--dur-short, 120ms) * var(--motion)) var(--ease),
+    color calc(var(--dur-short, 120ms) * var(--motion)) var(--ease);
 }
 .pn-term-toggle:hover {
   background: var(--wash);
@@ -200,8 +201,8 @@
   pointer-events: none;
   border: var(--bw) solid transparent;
   transition:
-    border-color calc(140ms * var(--motion)) var(--ease),
-    background-color calc(140ms * var(--motion)) var(--ease);
+    border-color calc(var(--dur-short, 140ms) * var(--motion)) var(--ease),
+    background-color calc(var(--dur-short, 140ms) * var(--motion)) var(--ease);
 }
 .pn-drop-ring.on {
   border-color: var(--cyan2);
@@ -260,7 +261,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: color calc(120ms * var(--motion)) ease-out;
+  transition: color calc(var(--dur-short, 120ms) * var(--motion)) var(--ease-std, ease-out);
 }
 .pn-root-name.t-mono {
   font-size: calc(12px * var(--text-scale));
@@ -297,7 +298,8 @@
   margin: 0 8px;
   padding: 5px 8px 5px 6px;
   cursor: pointer;
-  transition: background-color calc(120ms * var(--motion)) ease-out;
+  transition: background-color calc(var(--dur-short, 120ms) * var(--motion))
+    var(--ease-std, ease-out);
 }
 .pn-node:hover {
   background: var(--wash);
@@ -314,8 +316,8 @@
   height: 12px;
   color: var(--faint);
   transition:
-    transform calc(180ms * var(--motion)) var(--ease),
-    color calc(120ms * var(--motion)) ease-out;
+    transform calc(var(--dur-medium, 180ms) * var(--motion)) var(--ease),
+    color calc(var(--dur-short, 120ms) * var(--motion)) var(--ease-std, ease-out);
 }
 .pn-node:hover .pn-chev {
   color: var(--muted);
@@ -480,7 +482,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: color calc(120ms * var(--motion)) ease-out;
+  transition: color calc(var(--dur-short, 120ms) * var(--motion)) var(--ease-std, ease-out);
 }
 .pn-branch-head:hover .pn-branch-name {
   color: var(--cyan2);
@@ -520,7 +522,7 @@
   font-size: calc(12.5px * var(--text-scale));
   resize: vertical;
   outline: none;
-  transition: border-color calc(120ms * var(--motion)) ease-out;
+  transition: border-color calc(var(--dur-short, 120ms) * var(--motion)) var(--ease-std, ease-out);
 }
 .pn-msg:focus {
   border-color: var(--line2);
@@ -564,7 +566,8 @@
   gap: 10px;
   margin: 0 8px;
   padding: 6px 8px;
-  transition: background-color calc(120ms * var(--motion)) ease-out;
+  transition: background-color calc(var(--dur-short, 120ms) * var(--motion))
+    var(--ease-std, ease-out);
 }
 .pn-line-btn {
   cursor: pointer;
@@ -678,7 +681,7 @@
   padding: 12px;
   background: var(--panel);
   cursor: pointer;
-  transition: background-color calc(140ms * var(--motion)) var(--ease);
+  transition: background-color calc(var(--dur-short, 140ms) * var(--motion)) var(--ease);
 }
 .pn-card:hover {
   background: var(--raise);
@@ -748,7 +751,7 @@
   display: flex;
   background: var(--raise);
   opacity: 0;
-  transition: opacity calc(140ms * var(--motion)) var(--ease);
+  transition: opacity calc(var(--dur-short, 140ms) * var(--motion)) var(--ease);
 }
 .pn-card:hover .pn-moves {
   opacity: 1;
@@ -852,7 +855,8 @@
   padding: 9px 8px;
   border-bottom: var(--bw) solid var(--line);
   cursor: pointer;
-  transition: background-color calc(120ms * var(--motion)) ease-out;
+  transition: background-color calc(var(--dur-short, 120ms) * var(--motion))
+    var(--ease-std, ease-out);
   animation: pn-enter calc(220ms * var(--motion)) var(--ease) both;
 }
 .pn-hit:hover {
@@ -962,7 +966,7 @@
 .pn-cell {
   flex: 1;
   background: color-mix(in srgb, var(--ink) 7%, transparent);
-  transition: background-color calc(160ms * var(--motion)) var(--ease);
+  transition: background-color calc(var(--dur-short, 160ms) * var(--motion)) var(--ease);
 }
 .pn-cell.on {
   background: var(--tint);
@@ -1096,7 +1100,7 @@
   display: block;
   height: 100%;
   background: var(--cyan2);
-  transition: width calc(400ms * var(--motion)) var(--ease);
+  transition: width calc(var(--dur-long, 400ms) * var(--motion)) var(--ease);
 }
 .pn-run-meta {
   display: flex;
@@ -1155,7 +1159,7 @@
   height: 16px;
   flex: none;
   background: var(--wash3);
-  transition: background-color calc(160ms * var(--motion)) var(--ease);
+  transition: background-color calc(var(--dur-short, 160ms) * var(--motion)) var(--ease);
 }
 .pn-toggle span {
   position: absolute;
@@ -1165,8 +1169,8 @@
   height: 10px;
   background: var(--muted);
   transition:
-    transform calc(160ms * var(--motion)) var(--ease),
-    background-color calc(160ms * var(--motion)) var(--ease);
+    transform calc(var(--dur-short, 160ms) * var(--motion)) var(--ease),
+    background-color calc(var(--dur-short, 160ms) * var(--motion)) var(--ease);
 }
 .pn-toggle.on {
   background: var(--cyan-wash3);

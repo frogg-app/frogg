@@ -1,7 +1,7 @@
 //! One shared selection indicator that slides and resizes between items (ui-next `Glide.tsx`).
 //!
 //! Items carry `data-glide="<key>"` inside a positioned container; the indicator reads the
-//! active item's offset box and moves there on the `--ease` curve over `GLIDE_MS`. The first
+//! active item's offset box and moves there on the `--ease` curve over `--glide-ms` (the theme's `dur-glide`). The first
 //! placement jumps.
 
 use leptos::html;
@@ -77,7 +77,7 @@ pub fn glide_style(rect: Option<GlideBox>, animate: bool) -> String {
             r.width,
             r.height,
             if animate {
-                "transition:transform 200ms var(--ease),width 200ms var(--ease),height 200ms var(--ease)"
+                "transition:transform var(--glide-ms) var(--ease),width var(--glide-ms) var(--ease),height var(--glide-ms) var(--ease)"
             } else {
                 ""
             }

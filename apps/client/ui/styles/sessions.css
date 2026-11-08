@@ -67,7 +67,7 @@
   min-width: 0;
   height: 3px;
   overflow: hidden;
-  transition: flex-grow calc(240ms * var(--motion)) var(--ease);
+  transition: flex-grow calc(var(--dur-medium, 240ms) * var(--motion)) var(--ease);
 }
 .seg-bar.empty {
   margin-left: -2px;
@@ -290,7 +290,7 @@
   cursor: pointer;
   user-select: none;
   -webkit-touch-callout: none;
-  transition: background calc(120ms * var(--motion)) ease-out;
+  transition: background calc(var(--dur-short, 120ms) * var(--motion)) var(--ease-std, ease-out);
 }
 .srow2:hover {
   background: var(--wash);
@@ -612,7 +612,7 @@
   border: var(--bw) solid var(--line2);
   font-size: calc(12px * var(--text-scale));
   color: var(--faint);
-  transition: all calc(120ms * var(--motion)) ease-out;
+  transition: all calc(var(--dur-short, 120ms) * var(--motion)) var(--ease-std, ease-out);
 }
 .show-chip.on {
   border-color: color-mix(in srgb, var(--cyan) 45%, transparent);
@@ -627,8 +627,8 @@
   background: var(--wash3);
   border: var(--bw) solid var(--line2);
   transition:
-    background calc(160ms * var(--motion)) var(--ease),
-    border-color calc(160ms * var(--motion)) var(--ease);
+    background calc(var(--dur-short, 160ms) * var(--motion)) var(--ease),
+    border-color calc(var(--dur-short, 160ms) * var(--motion)) var(--ease);
 }
 .toggle-knob {
   position: absolute;
@@ -638,8 +638,8 @@
   height: 10px;
   background: var(--muted);
   transition:
-    transform calc(160ms * var(--motion)) var(--ease),
-    background calc(160ms * var(--motion)) var(--ease);
+    transform calc(var(--dur-short, 160ms) * var(--motion)) var(--ease),
+    background calc(var(--dur-short, 160ms) * var(--motion)) var(--ease);
 }
 .toggle.on {
   background: color-mix(in srgb, var(--cyan) 22%, transparent);
@@ -1134,7 +1134,7 @@
   padding: 12px;
   background: var(--raise);
   border: var(--bw) solid var(--line);
-  transition: border-color calc(120ms * var(--motion)) ease-out;
+  transition: border-color calc(var(--dur-short, 120ms) * var(--motion)) var(--ease-std, ease-out);
 }
 .ns-prompt:focus-within {
   border-color: color-mix(in srgb, var(--cyan) 45%, transparent);

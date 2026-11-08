@@ -40,33 +40,45 @@ Derived unless the theme pins them: `line`, `line2`, `wash`, `wash2`, `wash3`, `
 
 Token names are CSS variables without the `--`.
 
-| Token                                                             | Bracket default                               | Meaning                                                                             |
-| ----------------------------------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `corners`                                                         | `cut`                                         | `round` turns every chamfered `.cut` shape into a rounded one (sets `data-corners`) |
-| `ornaments`                                                       | `on`                                          | `off` hides decoration: corner brackets, scanline textures, `.ornament`             |
-| `cut-k`                                                           | `1`                                           | chamfer multiplier (`0` under `corners: round`)                                     |
-| `r-card`                                                          | `0px`                                         | cards, tool rows, composer, settings groups, panels                                 |
-| `r-menu`                                                          | `0px`                                         | menus, popovers, sheets, palette, toasts                                            |
-| `r-button`                                                        | `0px`                                         | buttons, chip buttons, send                                                         |
-| `r-field`                                                         | `0px`                                         | inputs, search boxes, segmented controls                                            |
-| `r-chip`                                                          | `0px`                                         | chips, badges, pills, avatars                                                       |
-| `r-row`                                                           | `0px`                                         | list rows, rail items, menu items, options                                          |
-| `r-cut`                                                           | `0px`                                         | any other cut shape under `corners: round`                                          |
-| `r-sm`, `r-md`                                                    | `4px`, `8px`                                  | small fixed radii                                                                   |
-| `bw`                                                              | `1px`                                         | every 1px border                                                                    |
-| `elev-1..3`                                                       | none / deep                                   | `box-shadow` elevation scale                                                        |
-| `elev-drop-1..3`                                                  | deep                                          | `filter: drop-shadow` for shaped overlays                                           |
-| `glow`                                                            | `1`                                           | glow intensity: text-shadows, pulse rings, glow keyframes (`0` disables)            |
-| `accent-fill`                                                     | gradient                                      | primary fills (gradient buttons, active markers)                                    |
-| `accent-bar`                                                      | gradient                                      | thin accent bars (rail glide, progress)                                             |
-| `accent-soft`                                                     | gradient                                      | selected rail item                                                                  |
-| `banner-wash`                                                     | gradient                                      | banner background wash                                                              |
-| `font-body`, `font-display`, `font-mono`, `font-label`            | Inter / Space Grotesk / JetBrains Mono / mono | families                                                                            |
-| `fw-display`, `fw-strong`                                         | `600`                                         | weights                                                                             |
-| `text-scale`                                                      | `1`                                           | multiplies every font size                                                          |
-| `label-transform`, `label-tracking`, `label-size`, `label-weight` | uppercase, 1.6px, 10.5px, 400                 | small caps labels (`.t-label`, section titles)                                      |
-| `motion`                                                          | `1`                                           | multiplies every transition and animation duration (`0` = instant)                  |
-| `ease`, `ease-out`                                                | curves                                        | easing                                                                              |
+| Token                                                             | Bracket default                               | Meaning                                                                                     |
+| ----------------------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `corners`                                                         | `cut`                                         | `round` turns every chamfered `.cut` shape into a rounded one (sets `data-corners`)         |
+| `ornaments`                                                       | `on`                                          | `off` hides decoration: corner brackets, scanline textures, `.ornament`                     |
+| `cut-k`                                                           | `1`                                           | chamfer multiplier (`0` under `corners: round`)                                             |
+| `r-card`                                                          | `0px`                                         | cards, tool rows, composer, settings groups, panels                                         |
+| `r-menu`                                                          | `0px`                                         | menus, popovers, sheets, palette, toasts                                                    |
+| `r-button`                                                        | `0px`                                         | buttons, chip buttons, send                                                                 |
+| `r-field`                                                         | `0px`                                         | inputs, search boxes, segmented controls                                                    |
+| `r-chip`                                                          | `0px`                                         | chips, badges, pills, avatars                                                               |
+| `r-row`                                                           | `0px`                                         | list rows, rail items, menu items, options                                                  |
+| `r-cut`                                                           | `0px`                                         | any other cut shape under `corners: round`                                                  |
+| `r-sm`, `r-md`                                                    | `4px`, `8px`                                  | small fixed radii                                                                           |
+| `bw`                                                              | `1px`                                         | every 1px border                                                                            |
+| `elev-1..3`                                                       | none / deep                                   | `box-shadow` elevation scale                                                                |
+| `elev-drop-1..3`                                                  | deep                                          | `filter: drop-shadow` for shaped overlays                                                   |
+| `glow`                                                            | `1`                                           | glow intensity: text-shadows, pulse rings, glow keyframes (`0` disables)                    |
+| `accent-fill`                                                     | gradient                                      | primary fills (gradient buttons, active markers)                                            |
+| `accent-bar`                                                      | gradient                                      | thin accent bars (rail glide, progress)                                                     |
+| `accent-soft`                                                     | gradient                                      | selected rail item                                                                          |
+| `banner-wash`                                                     | gradient                                      | banner background wash                                                                      |
+| `font-body`, `font-display`, `font-mono`, `font-label`            | Inter / Space Grotesk / JetBrains Mono / mono | families                                                                                    |
+| `fw-display`, `fw-strong`                                         | `600`                                         | weights                                                                                     |
+| `text-scale`                                                      | `1`                                           | multiplies every font size                                                                  |
+| `label-transform`, `label-tracking`, `label-size`, `label-weight` | uppercase, 1.6px, 10.5px, 400                 | small caps labels (`.t-label`, section titles)                                              |
+| `motion`                                                          | `1`                                           | multiplies every transition and animation duration (`0` = instant)                          |
+| `ease`, `ease-out`                                                | Bracket curves                                | the standard curve and the accelerate (exit) curve                                          |
+| `ease-std`                                                        | `ease-out`                                    | curve for colour and state-layer transitions                                                |
+| `ease-enter`, `ease-exit`                                         | `ease`, `ease-out`                            | overlay, toast and sheet enter and exit curves                                              |
+| `dur-short`, `dur-medium`, `dur-long`                             | per site                                      | state layers and colour; toggles and indicators; large moves                                |
+| `dur-enter`, `dur-exit`                                           | 160ms, 110ms                                  | menus, popovers, palette, toasts, sheets (exits: keep at or under 150ms, the unmount delay) |
+| `dur-sheet-in`                                                    | 200ms                                         | bottom sheet enter                                                                          |
+| `dur-glide`                                                       | 200ms (rail 450ms)                            | sliding indicators: rail, tabs, segments                                                    |
+| `dur-flash`                                                       | per site                                      | success / failure tint fades                                                                |
+| `dur-ripple`                                                      | unset                                         | press ripple (theme CSS)                                                                    |
+
+Motion tokens left unset keep each site's own Bracket duration (`var(--dur-x, <original>)`), so
+Graphite and Blue Tech are unchanged. Reduced motion (the OS setting or Settings → Appearance →
+Motion off) still settles everything instantly under any theme.
 
 Spacing density is a user preference (`data-density`), not a theme token.
 

@@ -470,8 +470,8 @@
   align-items: center;
   background: var(--bg);
   transition:
-    border-color calc(120ms * var(--motion)) var(--ease),
-    box-shadow calc(120ms * var(--motion)) var(--ease);
+    border-color calc(var(--dur-short, 120ms) * var(--motion)) var(--ease),
+    box-shadow calc(var(--dur-short, 120ms) * var(--motion)) var(--ease);
 }
 .shp-input input {
   flex: 1;

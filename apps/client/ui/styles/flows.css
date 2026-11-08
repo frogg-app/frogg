@@ -53,7 +53,7 @@
   color: var(--text);
   font: calc(13px * var(--text-scale)) var(--font-body);
   outline: none;
-  transition: border-color calc(120ms * var(--motion)) ease-out;
+  transition: border-color calc(var(--dur-short, 120ms) * var(--motion)) var(--ease-std, ease-out);
 }
 .set-search:focus {
   border-color: color-mix(in srgb, var(--cyan) 45%, transparent);
@@ -84,7 +84,8 @@
   padding: 8px 10px;
   color: var(--faint);
   text-align: left;
-  transition: background-color calc(120ms * var(--motion)) ease-out;
+  transition: background-color calc(var(--dur-short, 120ms) * var(--motion))
+    var(--ease-std, ease-out);
 }
 .set-nav-item:hover {
   background: var(--wash2);
@@ -265,7 +266,7 @@
   color: var(--text);
   font: calc(13px * var(--text-scale)) var(--font-body);
   outline: none;
-  transition: border-color calc(120ms * var(--motion)) ease-out;
+  transition: border-color calc(var(--dur-short, 120ms) * var(--motion)) var(--ease-std, ease-out);
 }
 .set-input.t-mono {
   font: calc(12.5px * var(--text-scale)) var(--font-mono);
@@ -465,9 +466,9 @@
   color: var(--muted);
   font-size: calc(12.5px * var(--text-scale));
   transition:
-    border-color calc(160ms * var(--motion)),
-    background-color calc(160ms * var(--motion)),
-    color calc(160ms * var(--motion));
+    border-color calc(var(--dur-short, 160ms) * var(--motion)),
+    background-color calc(var(--dur-short, 160ms) * var(--motion)),
+    color calc(var(--dur-short, 160ms) * var(--motion));
 }
 .choice:hover {
   border-color: var(--line2);
@@ -533,8 +534,8 @@
   height: 100%;
   background: var(--cyan);
   transition:
-    width calc(600ms * var(--motion)) var(--ease),
-    background-color calc(300ms * var(--motion));
+    width calc(var(--dur-long, 600ms) * var(--motion)) var(--ease),
+    background-color calc(var(--dur-long, 300ms) * var(--motion));
 }
 .meter.warn .meter-fill {
   background: var(--amber);
@@ -574,8 +575,8 @@
   border: var(--bw) solid var(--line);
   background: var(--wash);
   transition:
-    border-color calc(160ms * var(--motion)),
-    background-color calc(160ms * var(--motion));
+    border-color calc(var(--dur-short, 160ms) * var(--motion)),
+    background-color calc(var(--dur-short, 160ms) * var(--motion));
 }
 .theme-card:hover {
   border-color: var(--line2);
@@ -699,7 +700,8 @@
   gap: 10px;
   padding: 12px 8px 12px 12px;
   text-align: left;
-  transition: background-color calc(120ms * var(--motion)) ease-out;
+  transition: background-color calc(var(--dur-short, 120ms) * var(--motion))
+    var(--ease-std, ease-out);
 }
 .prov-row:hover {
   background: var(--wash);
@@ -717,7 +719,7 @@
 .chev {
   display: inline-flex;
   color: var(--faint);
-  transition: transform calc(200ms * var(--motion)) var(--ease);
+  transition: transform calc(var(--dur-medium, 200ms) * var(--motion)) var(--ease);
 }
 .chev.open {
   transform: rotate(90deg);
@@ -877,7 +879,8 @@
   margin: 0 8px;
   padding: 9px 12px;
   text-align: left;
-  transition: background-color calc(120ms * var(--motion)) ease-out;
+  transition: background-color calc(var(--dur-short, 120ms) * var(--motion))
+    var(--ease-std, ease-out);
 }
 .hrow:hover,
 .host-item:hover .hrow {
@@ -940,7 +943,7 @@
   display: flex;
   gap: 2px;
   opacity: 0;
-  transition: opacity calc(120ms * var(--motion)) ease-out;
+  transition: opacity calc(var(--dur-short, 120ms) * var(--motion)) var(--ease-std, ease-out);
 }
 .host-item:hover .hrow-tools,
 .hrow-tools:focus-within,
@@ -1191,8 +1194,8 @@
   text-align: left;
   color: var(--muted);
   transition:
-    background-color calc(120ms * var(--motion)) ease-out,
-    color calc(120ms * var(--motion)) ease-out;
+    background-color calc(var(--dur-short, 120ms) * var(--motion)) var(--ease-std, ease-out),
+    color calc(var(--dur-short, 120ms) * var(--motion)) var(--ease-std, ease-out);
 }
 .ob-item:hover {
   background: var(--wash2);
@@ -1341,7 +1344,7 @@
   gap: 12px;
   padding: 12px 14px;
   text-align: left;
-  transition: color calc(120ms * var(--motion));
+  transition: color calc(var(--dur-short, 120ms) * var(--motion));
 }
 .ob-choice:hover {
   --cut-bg: var(--wash2);
@@ -1361,8 +1364,8 @@
   border-radius: 8px;
   color: var(--on-accent);
   transition:
-    background-color calc(140ms * var(--motion)),
-    border-color calc(140ms * var(--motion));
+    background-color calc(var(--dur-short, 140ms) * var(--motion)),
+    border-color calc(var(--dur-short, 140ms) * var(--motion));
 }
 .ob-choice-mark.multi {
   border-radius: 0;
@@ -1489,7 +1492,7 @@
   display: block;
   height: 100%;
   background: var(--accent-bar);
-  transition: width calc(600ms * var(--motion)) var(--ease);
+  transition: width calc(var(--dur-long, 600ms) * var(--motion)) var(--ease);
 }
 .ob-count {
   font-size: calc(11px * var(--text-scale));

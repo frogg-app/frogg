@@ -116,8 +116,8 @@
   margin-bottom: 6px;
   background: var(--wash);
   transition:
-    color calc(140ms * var(--motion)) var(--ease),
-    background-color calc(140ms * var(--motion)) var(--ease);
+    color calc(var(--dur-short, 140ms) * var(--motion)) var(--ease),
+    background-color calc(var(--dur-short, 140ms) * var(--motion)) var(--ease);
 }
 .tl-earlier:hover {
   color: var(--text);
@@ -344,7 +344,7 @@
   gap: 8px;
   width: 100%;
   padding: 8px 12px;
-  transition: background-color calc(140ms * var(--motion)) var(--ease);
+  transition: background-color calc(var(--dur-short, 140ms) * var(--motion)) var(--ease);
 }
 .tool-row:hover {
   background: var(--wash);
@@ -397,7 +397,7 @@
 }
 .tool-chev {
   color: var(--faint);
-  transition: transform calc(200ms * var(--motion)) var(--ease);
+  transition: transform calc(var(--dur-medium, 200ms) * var(--motion)) var(--ease);
   flex-shrink: 0;
 }
 .tool.open .tool-chev {
@@ -465,7 +465,7 @@
   height: 56px;
   pointer-events: none;
   background: linear-gradient(180deg, transparent 0%, var(--bg) 100%);
-  transition: opacity calc(260ms * var(--motion)) var(--ease);
+  transition: opacity calc(var(--dur-medium, 260ms) * var(--motion)) var(--ease);
 }
 .clamp.open .clamp-veil {
   opacity: 0;
@@ -481,15 +481,15 @@
   border-top: var(--bw) solid var(--line);
   background: var(--bg);
   transition:
-    background-color calc(150ms * var(--motion)) ease-out,
-    color calc(150ms * var(--motion)) ease-out;
+    background-color calc(var(--dur-short, 150ms) * var(--motion)) var(--ease-std, ease-out),
+    color calc(var(--dur-short, 150ms) * var(--motion)) var(--ease-std, ease-out);
 }
 .clamp-more:hover {
   color: var(--text);
   background: var(--wash2);
 }
 .clamp-chev {
-  transition: transform calc(200ms * var(--motion)) var(--ease);
+  transition: transform calc(var(--dur-medium, 200ms) * var(--motion)) var(--ease);
 }
 .clamp.open .clamp-chev {
   transform: rotate(180deg);
@@ -531,7 +531,7 @@
   font-size: calc(10.5px * var(--text-scale));
   color: var(--faint);
   opacity: 0;
-  transition: opacity calc(140ms * var(--motion)) var(--ease);
+  transition: opacity calc(var(--dur-short, 140ms) * var(--motion)) var(--ease);
 }
 .perm:focus .perm-keys,
 .perm:hover .perm-keys {
@@ -585,8 +585,8 @@
   background: var(--wash);
   border-left: 2px solid transparent;
   transition:
-    background-color calc(140ms * var(--motion)) var(--ease),
-    border-color calc(140ms * var(--motion)) var(--ease);
+    background-color calc(var(--dur-short, 140ms) * var(--motion)) var(--ease),
+    border-color calc(var(--dur-short, 140ms) * var(--motion)) var(--ease);
 }
 .q-opt:hover {
   background: var(--wash2);
@@ -604,7 +604,7 @@
 .subwork-collapse {
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows calc(240ms * var(--motion)) var(--ease);
+  transition: grid-template-rows calc(var(--dur-medium, 240ms) * var(--motion)) var(--ease);
 }
 .subwork-collapse.open {
   grid-template-rows: 1fr;
@@ -654,11 +654,13 @@
 }
 .subwork-bar.settle-done .subwork-flash {
   background: var(--mint);
-  animation: sw-flash-done calc(640ms * var(--motion)) ease-out both;
+  animation: sw-flash-done calc(var(--dur-flash, 640ms) * var(--motion)) var(--ease-std, ease-out)
+    both;
 }
 .subwork-bar.settle-fail .subwork-flash {
   background: var(--coral);
-  animation: sw-flash-fail calc(600ms * var(--motion)) ease-out both;
+  animation: sw-flash-fail calc(var(--dur-flash, 600ms) * var(--motion)) var(--ease-std, ease-out)
+    both;
 }
 @keyframes sw-flash-done {
   0% {
@@ -719,7 +721,7 @@
 }
 .subwork-chev {
   color: var(--faint);
-  transition: transform calc(240ms * var(--motion)) var(--ease);
+  transition: transform calc(var(--dur-medium, 240ms) * var(--motion)) var(--ease);
 }
 .subwork-bar[aria-expanded="true"] .subwork-chev {
   transform: rotate(180deg);
@@ -753,11 +755,13 @@
 }
 .sw-item.settle-done .sw-flash {
   background: var(--mint);
-  animation: sw-flash-done calc(640ms * var(--motion)) ease-out both;
+  animation: sw-flash-done calc(var(--dur-flash, 640ms) * var(--motion)) var(--ease-std, ease-out)
+    both;
 }
 .sw-item.settle-fail .sw-flash {
   background: var(--coral);
-  animation: sw-flash-fail calc(600ms * var(--motion)) ease-out both;
+  animation: sw-flash-fail calc(var(--dur-flash, 600ms) * var(--motion)) var(--ease-std, ease-out)
+    both;
 }
 .sw-gutter {
   position: relative;
@@ -1008,7 +1012,7 @@
   --cut-bg: var(--raise);
   --cut-line: var(--line);
   padding: 10px 12px 8px;
-  transition: --cut-line calc(140ms * var(--motion)) var(--ease);
+  transition: --cut-line calc(var(--dur-short, 140ms) * var(--motion)) var(--ease);
 }
 .composer-box:focus-within {
   --cut-line: var(--line2);
@@ -1085,7 +1089,7 @@
   justify-content: center;
   color: var(--on-accent);
   --cut-bg: var(--accent-fill);
-  transition: opacity calc(140ms * var(--motion)) var(--ease);
+  transition: opacity calc(var(--dur-short, 140ms) * var(--motion)) var(--ease);
 }
 .send::before {
   background: var(--accent-fill);
@@ -1128,7 +1132,7 @@
   bottom: 0;
   height: 2px;
   background: var(--cyan);
-  transition: width calc(0.2s * var(--motion)) ease-out;
+  transition: width calc(0.2s * var(--motion)) var(--ease-std, ease-out);
 }
 .att-up {
   font-variant-numeric: tabular-nums;

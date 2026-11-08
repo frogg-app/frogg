@@ -28,7 +28,7 @@
   flex-direction: column;
   border-right: var(--bw) solid var(--line);
   background: var(--bg2);
-  transition: width calc(200ms * var(--motion)) var(--ease);
+  transition: width calc(var(--dur-medium, 200ms) * var(--motion)) var(--ease);
 }
 .side.tablet {
   width: 300px;
@@ -94,8 +94,8 @@
   background: var(--bg);
   border-right: var(--bw) solid var(--line);
   transition:
-    width calc(200ms * var(--motion)) var(--ease),
-    box-shadow calc(200ms * var(--motion)) ease-out;
+    width calc(var(--dur-medium, 200ms) * var(--motion)) var(--ease),
+    box-shadow calc(var(--dur-medium, 200ms) * var(--motion)) var(--ease-std, ease-out);
 }
 .rail.open {
   width: 212px;
@@ -124,7 +124,7 @@
   font-size: calc(16px * var(--text-scale));
   opacity: 0;
   white-space: nowrap;
-  transition: opacity calc(180ms * var(--motion)) ease-out;
+  transition: opacity calc(var(--dur-medium, 180ms) * var(--motion)) var(--ease-std, ease-out);
 }
 .rail-sep {
   flex: none;
@@ -186,7 +186,7 @@
   color: var(--muted);
   white-space: nowrap;
   opacity: 0;
-  transition: opacity calc(160ms * var(--motion)) ease-out;
+  transition: opacity calc(var(--dur-short, 160ms) * var(--motion)) var(--ease-std, ease-out);
 }
 .ri.on .ri-label {
   color: var(--cyan2);
@@ -195,7 +195,8 @@
 .ri-label.shown,
 .rail-pin-t.shown {
   opacity: 1;
-  transition: opacity calc(200ms * var(--motion)) ease-out calc(60ms * var(--motion));
+  transition: opacity calc(var(--dur-medium, 200ms) * var(--motion)) var(--ease-std, ease-out)
+    calc(var(--dur-short, 60ms) * var(--motion));
 }
 .rail-glide {
   position: absolute;
@@ -204,7 +205,7 @@
   width: 2px;
   height: 28px;
   background: var(--accent-bar);
-  transition: transform calc(450ms * var(--motion)) var(--ease);
+  transition: transform calc(var(--dur-glide, 450ms) * var(--motion)) var(--ease);
   z-index: 1;
 }
 .rail-pin {
@@ -227,7 +228,7 @@
   color: var(--faint);
   white-space: nowrap;
   opacity: 0;
-  transition: opacity calc(160ms * var(--motion)) ease-out;
+  transition: opacity calc(var(--dur-short, 160ms) * var(--motion)) var(--ease-std, ease-out);
 }
 
 /* ---- Status bar (StatusBar.tsx) ---- */
@@ -320,7 +321,7 @@ button.sb-seg:hover {
 .tab-l {
   font-size: calc(10.5px * var(--text-scale));
   color: var(--faint);
-  transition: color calc(200ms * var(--motion)) ease-out;
+  transition: color calc(var(--dur-medium, 200ms) * var(--motion)) var(--ease-std, ease-out);
 }
 .tab.on .tab-l {
   color: var(--cyan2);
@@ -526,8 +527,8 @@ button.sb-seg:hover {
   display: grid;
   grid-template-rows: 1fr;
   transition:
-    grid-template-rows calc(180ms * var(--motion)) var(--ease),
-    padding calc(180ms * var(--motion)) var(--ease);
+    grid-template-rows calc(var(--dur-medium, 180ms) * var(--motion)) var(--ease),
+    padding calc(var(--dur-medium, 180ms) * var(--motion)) var(--ease);
 }
 .toast-slot.leaving {
   grid-template-rows: 0fr;
@@ -543,16 +544,20 @@ button.sb-seg:hover {
   overflow: hidden;
 }
 .toast-in-side {
-  animation: toast-in-side calc(200ms * var(--motion)) var(--ease) both;
+  animation: toast-in-side calc(var(--dur-enter, 200ms) * var(--motion))
+    var(--ease-enter, var(--ease)) both;
 }
 .toast-in-up {
-  animation: toast-in-up calc(200ms * var(--motion)) var(--ease) both;
+  animation: toast-in-up calc(var(--dur-enter, 200ms) * var(--motion))
+    var(--ease-enter, var(--ease)) both;
 }
 .toast-out-side {
-  animation: toast-out-side calc(140ms * var(--motion)) var(--ease-out) both;
+  animation: toast-out-side calc(var(--dur-exit, 140ms) * var(--motion))
+    var(--ease-exit, var(--ease-out)) both;
 }
 .toast-out-down {
-  animation: toast-out-down calc(140ms * var(--motion)) var(--ease-out) both;
+  animation: toast-out-down calc(var(--dur-exit, 140ms) * var(--motion))
+    var(--ease-exit, var(--ease-out)) both;
 }
 .toast.k-ok {
   --k: var(--mint);
@@ -719,7 +724,7 @@ button.sb-seg:hover {
   width: calc(100% - 16px);
   margin: 0 8px;
   padding: 8px 10px;
-  transition: background calc(120ms * var(--motion)) ease-out;
+  transition: background calc(var(--dur-short, 120ms) * var(--motion)) var(--ease-std, ease-out);
 }
 .srow:hover {
   background: var(--wash2);

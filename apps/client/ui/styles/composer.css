@@ -16,10 +16,10 @@
   justify-content: center;
   color: var(--cyan2);
   transition:
-    --cut-line calc(140ms * var(--motion)) var(--ease),
-    --cut-bg calc(140ms * var(--motion)) var(--ease),
-    color calc(140ms * var(--motion)) var(--ease),
-    opacity calc(140ms * var(--motion)) var(--ease);
+    --cut-line calc(var(--dur-short, 140ms) * var(--motion)) var(--ease),
+    --cut-bg calc(var(--dur-short, 140ms) * var(--motion)) var(--ease),
+    color calc(var(--dur-short, 140ms) * var(--motion)) var(--ease),
+    opacity calc(var(--dur-short, 140ms) * var(--motion)) var(--ease);
 }
 .cut-send:not(.idle):hover {
   --cut-bg: var(--wash2);
@@ -44,8 +44,8 @@
   opacity: 0;
   transform: translateY(2px);
   transition:
-    opacity calc(120ms * var(--motion)) var(--ease),
-    transform calc(120ms * var(--motion)) var(--ease);
+    opacity calc(var(--dur-short, 120ms) * var(--motion)) var(--ease),
+    transform calc(var(--dur-short, 120ms) * var(--motion)) var(--ease);
   z-index: 5;
 }
 .cut-send-wrap:hover .cut-send-tip {
@@ -64,8 +64,8 @@
 }
 .ctx-arc {
   transition:
-    stroke-dashoffset calc(420ms * var(--motion)) var(--ease),
-    stroke calc(200ms * var(--motion)) var(--ease);
+    stroke-dashoffset calc(var(--dur-long, 420ms) * var(--motion)) var(--ease),
+    stroke calc(var(--dur-medium, 200ms) * var(--motion)) var(--ease);
 }
 .ctx-pct {
   font-size: calc(11px * var(--text-scale));
@@ -126,8 +126,8 @@
   height: 3px;
   background: var(--line2);
   transition:
-    background-color calc(160ms * var(--motion)) var(--ease),
-    width calc(200ms * var(--motion)) var(--ease);
+    background-color calc(var(--dur-short, 160ms) * var(--motion)) var(--ease),
+    width calc(var(--dur-medium, 200ms) * var(--motion)) var(--ease);
 }
 .composer-grip:hover .composer-grip-bar {
   background: var(--muted);
@@ -227,7 +227,7 @@
   text-align: left;
   border-left: 0;
   background: transparent;
-  transition: background calc(140ms * var(--motion)) var(--ease);
+  transition: background calc(var(--dur-short, 140ms) * var(--motion)) var(--ease);
 }
 .perm.question .q-opt:hover {
   background: var(--wash);
@@ -247,8 +247,8 @@
   border: var(--bw) solid var(--muted);
   transform: rotate(45deg);
   transition:
-    background-color calc(140ms * var(--motion)) var(--ease),
-    border-color calc(140ms * var(--motion)) var(--ease);
+    background-color calc(var(--dur-short, 140ms) * var(--motion)) var(--ease),
+    border-color calc(var(--dur-short, 140ms) * var(--motion)) var(--ease);
 }
 .q-mark.multi {
   transform: none;

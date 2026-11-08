@@ -85,7 +85,7 @@
   --motion: 1;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-out: cubic-bezier(0.4, 0, 1, 1);
-  --glide-ms: calc(200ms * var(--motion));
+  --glide-ms: calc(var(--dur-glide, 200ms) * var(--motion));
   color-scheme: dark;
 }
 
@@ -482,40 +482,48 @@
   animation: breathe calc(1.6s * var(--motion)) ease-in-out infinite both;
 }
 .m-snap {
-  animation: snap calc(220ms * var(--motion)) cubic-bezier(0.23, 1, 0.32, 1) both;
+  animation: snap calc(var(--dur-medium, 220ms) * var(--motion))
+    var(--ease-enter, cubic-bezier(0.23, 1, 0.32, 1)) both;
 }
 .m-enter {
-  animation: enter calc(200ms * var(--motion)) cubic-bezier(0.23, 1, 0.32, 1) both;
+  animation: enter calc(var(--dur-medium, 200ms) * var(--motion))
+    var(--ease-enter, cubic-bezier(0.23, 1, 0.32, 1)) both;
 }
 .m-fade {
-  animation: fade calc(150ms * var(--motion)) ease-out both;
+  animation: fade calc(var(--dur-short, 150ms) * var(--motion)) var(--ease-std, ease-out) both;
 }
 .m-afterglow {
-  animation: afterglow calc(1.2s * var(--motion)) ease-out both;
+  animation: afterglow calc(var(--dur-flash, 1.2s) * var(--motion)) var(--ease-std, ease-out) both;
 }
 .m-pop-down {
-  animation: pop-down calc(160ms * var(--motion)) var(--ease) both;
+  animation: pop-down calc(var(--dur-enter, 160ms) * var(--motion)) var(--ease-enter, var(--ease))
+    both;
 }
 .m-pop-up {
-  animation: pop-up calc(160ms * var(--motion)) var(--ease) both;
+  animation: pop-up calc(var(--dur-enter, 160ms) * var(--motion)) var(--ease-enter, var(--ease))
+    both;
 }
 .m-pop-out {
-  animation: pop-out calc(110ms * var(--motion)) var(--ease-out) both;
+  animation: pop-out calc(var(--dur-exit, 110ms) * var(--motion)) var(--ease-exit, var(--ease-out))
+    both;
 }
 .m-rise {
-  animation: rise calc(170ms * var(--motion)) var(--ease) both;
+  animation: rise calc(var(--dur-enter, 170ms) * var(--motion)) var(--ease-enter, var(--ease)) both;
 }
 .m-fade-in {
-  animation: fade calc(160ms * var(--motion)) var(--ease) both;
+  animation: fade calc(var(--dur-enter, 160ms) * var(--motion)) var(--ease-enter, var(--ease)) both;
 }
 .m-fade-out {
-  animation: fade-out calc(110ms * var(--motion)) var(--ease-out) both;
+  animation: fade-out calc(var(--dur-exit, 110ms) * var(--motion)) var(--ease-exit, var(--ease-out))
+    both;
 }
 .m-sheet-in {
-  animation: sheet-in calc(200ms * var(--motion)) var(--ease) both;
+  animation: sheet-in calc(var(--dur-sheet-in, 200ms) * var(--motion))
+    var(--ease-enter, var(--ease)) both;
 }
 .m-sheet-out {
-  animation: sheet-out calc(140ms * var(--motion)) var(--ease-out) both;
+  animation: sheet-out calc(var(--dur-exit, 140ms) * var(--motion))
+    var(--ease-exit, var(--ease-out)) both;
 }
 .m-shimmer-text {
   background-image: linear-gradient(

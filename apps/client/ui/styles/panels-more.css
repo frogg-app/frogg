@@ -69,7 +69,7 @@
 }
 .pn-tab-more {
   opacity: 0;
-  transition: opacity calc(120ms * var(--motion)) ease;
+  transition: opacity calc(var(--dur-short, 120ms) * var(--motion)) ease;
 }
 .pn-tab:hover .pn-tab-more,
 .pn-tab.on .pn-tab-more {
@@ -389,7 +389,8 @@
   gap: 10px;
   padding: 7px 12px;
   text-align: left;
-  transition: background-color calc(120ms * var(--motion)) ease-out;
+  transition: background-color calc(var(--dur-short, 120ms) * var(--motion))
+    var(--ease-std, ease-out);
 }
 .pn-branch-row:not(.static):hover,
 .pn-branch-row.picked {
@@ -596,8 +597,8 @@
   inset: 0 auto 0 0;
   background: var(--cyan2);
   transition:
-    width calc(600ms * var(--motion)) var(--ease),
-    background-color calc(300ms * var(--motion)) ease;
+    width calc(var(--dur-long, 600ms) * var(--motion)) var(--ease),
+    background-color calc(var(--dur-long, 300ms) * var(--motion)) ease;
 }
 .pn-ci-track.fail .pn-ci-fill {
   background: var(--coral);
@@ -687,7 +688,8 @@
 }
 .pn-job.press {
   cursor: pointer;
-  transition: background-color calc(120ms * var(--motion)) ease-out;
+  transition: background-color calc(var(--dur-short, 120ms) * var(--motion))
+    var(--ease-std, ease-out);
 }
 .pn-job.press:hover {
   background: var(--wash);
@@ -783,7 +785,8 @@
   padding: 10px;
   border-bottom: var(--bw) solid var(--line);
   cursor: pointer;
-  transition: background-color calc(120ms * var(--motion)) ease-out;
+  transition: background-color calc(var(--dur-short, 120ms) * var(--motion))
+    var(--ease-std, ease-out);
 }
 .pn-stream-row:hover {
   background: var(--wash);
@@ -831,7 +834,7 @@
 .pn-stream-track span {
   display: block;
   height: 100%;
-  transition: width calc(420ms * var(--motion)) var(--ease);
+  transition: width calc(var(--dur-long, 420ms) * var(--motion)) var(--ease);
 }
 .pn-stream-count {
   display: flex;

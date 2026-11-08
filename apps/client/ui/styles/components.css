@@ -24,7 +24,7 @@
     0 100%,
     0 var(--cc)
   );
-  transition: background calc(120ms * var(--motion)) ease-out;
+  transition: background calc(var(--dur-short, 120ms) * var(--motion)) var(--ease-std, ease-out);
 }
 .cut.flip::before {
   clip-path: polygon(
@@ -63,7 +63,7 @@
     1px var(--n),
     var(--n) 1px
   );
-  transition: background calc(120ms * var(--motion)) ease-out;
+  transition: background calc(var(--dur-short, 120ms) * var(--motion)) var(--ease-std, ease-out);
 }
 .cut-stroke.flip::after {
   clip-path: polygon(
@@ -184,7 +184,7 @@
   justify-content: center;
   padding: 4px;
   color: var(--muted);
-  transition: color calc(120ms * var(--motion)) ease-out;
+  transition: color calc(var(--dur-short, 120ms) * var(--motion)) var(--ease-std, ease-out);
 }
 .icon-btn:hover {
   color: var(--text);
@@ -337,7 +337,7 @@
   color: var(--faint);
   text-align: center;
   white-space: nowrap;
-  transition: color calc(200ms * var(--motion)) ease-out;
+  transition: color calc(var(--dur-medium, 200ms) * var(--motion)) var(--ease-std, ease-out);
 }
 .seg-opt:hover {
   color: var(--text);
@@ -369,7 +369,7 @@
   color: var(--text);
   font-size: calc(13.5px * var(--text-scale));
   outline: none;
-  transition: border-color calc(120ms * var(--motion)) ease-out;
+  transition: border-color calc(var(--dur-short, 120ms) * var(--motion)) var(--ease-std, ease-out);
 }
 .input.t-mono {
   font-size: calc(12.5px * var(--text-scale));
@@ -428,7 +428,7 @@
   inset: 0;
   pointer-events: none;
   opacity: 0;
-  transition: opacity calc(120ms * var(--motion)) ease-in;
+  transition: opacity calc(var(--dur-short, 120ms) * var(--motion)) ease-in;
 }
 .brackets .bk {
   position: absolute;
@@ -437,7 +437,7 @@
   border-color: var(--cyan2);
   border-style: solid;
   border-width: 0;
-  transition: transform calc(120ms * var(--motion)) ease-in;
+  transition: transform calc(var(--dur-short, 120ms) * var(--motion)) ease-in;
 }
 .brackets .tl {
   left: 0;
@@ -469,11 +469,12 @@
 }
 .brackets.on {
   opacity: 1;
-  transition: opacity calc(140ms * var(--motion)) var(--ease);
+  transition: opacity calc(var(--dur-short, 140ms) * var(--motion)) var(--ease);
 }
 .brackets.on .bk {
   transform: none;
-  transition: transform calc(140ms * var(--motion)) cubic-bezier(0.34, 1.8, 0.64, 1);
+  transition: transform calc(var(--dur-short, 140ms) * var(--motion))
+    cubic-bezier(0.34, 1.8, 0.64, 1);
 }
 
 /* ---- Overlays: layer, scrim, sheet, floating, menu, select ---- */

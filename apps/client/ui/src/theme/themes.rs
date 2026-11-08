@@ -191,101 +191,149 @@ pub const GRAPHITE_LIGHT: ThemeDef = ThemeDef {
 };
 
 /// Shape, type and depth of the Material themes: rounded, flat, no glow or gradients.
-const MATERIAL_TOKENS: Pairs = &[
-    ("corners", "round"),
-    ("ornaments", "off"),
-    ("r-sm", "6px"),
-    ("r-md", "8px"),
-    ("r-card", "12px"),
-    ("r-menu", "12px"),
-    ("r-button", "20px"),
-    ("r-field", "8px"),
-    ("r-chip", "8px"),
-    ("r-row", "8px"),
-    ("r-cut", "10px"),
-    ("glow", "0"),
-    ("accent-fill", "var(--cyan)"),
-    ("accent-bar", "var(--cyan)"),
-    ("accent-soft", "var(--cyan-wash2)"),
-    ("banner-wash", "linear-gradient(transparent, transparent)"),
-    (
-        "elev-1",
-        "0 1px 2px color-mix(in srgb, var(--shadow) 30%, transparent), 0 1px 3px 1px color-mix(in srgb, var(--shadow) 15%, transparent)",
-    ),
-    (
-        "elev-2",
-        "0 1px 2px color-mix(in srgb, var(--shadow) 30%, transparent), 0 2px 6px 2px color-mix(in srgb, var(--shadow) 15%, transparent)",
-    ),
-    (
-        "elev-3",
-        "0 4px 8px 3px color-mix(in srgb, var(--shadow) 15%, transparent), 0 1px 3px color-mix(in srgb, var(--shadow) 30%, transparent)",
-    ),
-    (
-        "elev-drop-1",
-        "drop-shadow(0 1px 3px color-mix(in srgb, var(--shadow) 28%, transparent))",
-    ),
-    (
-        "elev-drop-2",
-        "drop-shadow(0 2px 6px color-mix(in srgb, var(--shadow) 28%, transparent))",
-    ),
-    (
-        "elev-drop-3",
-        "drop-shadow(0 4px 12px color-mix(in srgb, var(--shadow) 30%, transparent))",
-    ),
-    (
-        "font-body",
-        "\"Roboto\", \"Inter\", system-ui, -apple-system, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
-    ),
-    ("font-display", "var(--font-body)"),
-    ("font-label", "var(--font-body)"),
-    ("fw-display", "500"),
-    ("label-transform", "none"),
-    ("label-tracking", "0.1px"),
-    ("label-size", "11.5px"),
-    ("label-weight", "500"),
-];
+macro_rules! material_tokens {
+    ($container:expr, $on_container:expr) => {
+        &[
+            ("corners", "round"),
+            ("ornaments", "off"),
+            ("r-sm", "6px"),
+            ("r-md", "8px"),
+            ("r-card", "12px"),
+            ("r-menu", "8px"),
+            ("r-button", "999px"),
+            ("r-field", "8px"),
+            ("r-chip", "6px"),
+            ("r-row", "8px"),
+            ("r-cut", "12px"),
+            ("glow", "0"),
+            ("accent-container", $container),
+            ("on-accent-container", $on_container),
+            ("accent-fill", "var(--cyan)"),
+            ("accent-bar", "var(--cyan)"),
+            ("accent-soft", "var(--accent-container)"),
+            ("banner-wash", "linear-gradient(transparent, transparent)"),
+            ("elev-1", "0 1px 2px color-mix(in srgb, var(--shadow) 30%, transparent)"),
+            (
+                "elev-2",
+                "0 1px 2px color-mix(in srgb, var(--shadow) 30%, transparent), 0 2px 6px 2px color-mix(in srgb, var(--shadow) 15%, transparent)",
+            ),
+            (
+                "elev-3",
+                "0 4px 8px 3px color-mix(in srgb, var(--shadow) 15%, transparent), 0 1px 3px color-mix(in srgb, var(--shadow) 30%, transparent)",
+            ),
+            ("elev-drop-1", "drop-shadow(0 1px 2px color-mix(in srgb, var(--shadow) 30%, transparent))"),
+            ("elev-drop-2", "drop-shadow(0 2px 6px color-mix(in srgb, var(--shadow) 25%, transparent))"),
+            ("elev-drop-3", "drop-shadow(0 4px 10px color-mix(in srgb, var(--shadow) 28%, transparent))"),
+            (
+                "font-body",
+                "\"Inter\", Roboto, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+            ),
+            ("font-display", "var(--font-body)"),
+            ("font-label", "var(--font-body)"),
+            ("fw-display", "500"),
+            ("label-transform", "none"),
+            ("label-tracking", "0.1px"),
+            ("label-size", "11.5px"),
+            ("label-weight", "500"),
+            // Motion (M3): standard and emphasized curves; short, calm durations.
+            ("ease", "cubic-bezier(0.2, 0, 0, 1)"),
+            ("ease-out", "cubic-bezier(0.3, 0, 1, 1)"),
+            ("ease-std", "cubic-bezier(0.2, 0, 0, 1)"),
+            ("ease-enter", "cubic-bezier(0.05, 0.7, 0.1, 1)"),
+            ("ease-exit", "cubic-bezier(0.3, 0, 0.8, 0.15)"),
+            ("dur-short", "120ms"),
+            ("dur-medium", "220ms"),
+            ("dur-long", "320ms"),
+            ("dur-enter", "220ms"),
+            ("dur-exit", "150ms"),
+            ("dur-sheet-in", "320ms"),
+            ("dur-glide", "250ms"),
+            ("dur-ripple", "450ms"),
+            ("dur-flash", "900ms"),
+        ]
+    };
+}
+
+const MATERIAL_TOKENS: Pairs = material_tokens!("#1d3270", "#d6e2ff");
+const MATERIAL_LIGHT_TOKENS: Pairs = material_tokens!("#dbe6ff", "#0b2a6b");
 
 /// Material details the tokens alone don't cover: solid selection markers and no accent
 /// stripes on buttons.
-const MATERIAL_CSS: &str = r#":root[data-theme^="material"] .btn-bar .btn-stripe { display: none; }
+const MATERIAL_CSS: &str = r#"
+/* Selection reads as a tonal accent container, not a stripe or glow. */
+:root[data-theme^="material"] .btn-bar .btn-stripe { display: none; }
 :root[data-theme^="material"] .btn-outline { box-shadow: inset 0 0 0 var(--bw) var(--line2); }
-:root[data-theme^="material"] .seg-pill { box-shadow: none; border-radius: var(--r-chip); }
+:root[data-theme^="material"] .btn-tint { --cut-bg: var(--accent-container); color: var(--on-accent-container); }
+:root[data-theme^="material"] .seg-pill { box-shadow: none; border-radius: var(--r-chip); background: var(--accent-container); }
+:root[data-theme^="material"] .seg-opt.on { color: var(--on-accent-container); }
+:root[data-theme^="material"] .ri.on, :root[data-theme^="material"] .ri-press:hover .ri.on { color: var(--on-accent-container); }
+:root[data-theme^="material"] .ri.on .ri-label { color: var(--on-accent-container); }
+:root[data-theme^="material"] .rail-glide { width: 3px; border-radius: 0 3px 3px 0; }
 :root[data-theme^="material"] .sheet.phone { box-shadow: var(--elev-3); }
+/* State layers: hover 8%, press 12% of the content colour, over whatever fill a control has. */
+:root[data-theme^="material"] .btn { overflow: hidden; }
+:root[data-theme^="material"] .btn:not(.cut-stroke)::after {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+  background: currentColor; opacity: 0; pointer-events: none;
+  transition: opacity calc(var(--dur-short) * var(--motion)) var(--ease);
+}
+:root[data-theme^="material"] .btn:not(.cut-stroke):hover::after { opacity: 0.08; }
+:root[data-theme^="material"] .btn:not(.cut-stroke):active::after {
+  opacity: 0.12;
+  animation: m3-press calc(var(--dur-ripple) * var(--motion)) var(--ease-enter) both;
+}
+:root[data-theme^="material"] .btn:active { transform: scale(0.98); }
+:root[data-theme^="material"] .btn {
+  transition: transform calc(var(--dur-short) * var(--motion)) var(--ease);
+}
+@keyframes m3-press {
+  from { clip-path: circle(0% at 50% 50%); }
+  to { clip-path: circle(75% at 50% 50%); }
+}
+/* Focus: a 2px accent ring with a gap, never a glow. */
+:root[data-theme^="material"] button:focus-visible,
+:root[data-theme^="material"] .btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--cyan);
+}
 "#;
 
 /// Material 3–style, restrained: neutral greys, one muted blue accent, calm status colours.
 pub const MATERIAL: ThemeDef = ThemeDef {
     id: "material",
     label: "Material",
-    description: "Rounded, flat and quiet: neutral greys with a muted blue accent.",
+    description: "Rounded, flat and quiet: neutral greys with one clear blue accent.",
     scheme: "dark",
     palette: &[
-        ("bg", "#131416"),
-        ("bg2", "#17181b"),
-        ("panel", "#1c1d21"),
-        ("raise", "#25272b"),
-        ("text", "#e4e5e8"),
-        ("muted", "#aaadb3"),
-        ("faint", "#7c8088"),
-        ("cyan", "#94b4e8"),
-        ("cyan2", "#b5cbf0"),
-        ("deep", "#3d5a8c"),
-        ("mint", "#86c59a"),
-        ("violet", "#b9a9e0"),
-        ("amber", "#dfb866"),
-        ("coral", "#e8918c"),
-        ("onAccent", "#0e1c33"),
-        ("onWarn", "#241a00"),
+        ("bg", "#111317"),
+        ("bg2", "#15171b"),
+        ("panel", "#1a1c21"),
+        ("raise", "#212329"),
+        ("text", "#e3e4e8"),
+        ("muted", "#a8acb4"),
+        ("faint", "#7a7f88"),
+        ("cyan", "#4c7dff"),
+        ("cyan2", "#8eadff"),
+        ("deep", "#1d3270"),
+        ("mint", "#86c09c"),
+        ("violet", "#b4abd6"),
+        ("amber", "#d9b36e"),
+        ("coral", "#eb9a93"),
+        ("onAccent", "#03102e"),
+        ("onWarn", "#2e2000"),
         ("addText", "#bfe0c8"),
         ("delText", "#f3c6c3"),
         ("ink", "#ffffff"),
         ("shadow", "#000000"),
-        ("line", "rgba(255,255,255,0.08)"),
-        ("line2", "rgba(255,255,255,0.14)"),
-        ("wash", "rgba(255,255,255,0.03)"),
-        ("wash2", "rgba(255,255,255,0.055)"),
-        ("wash3", "rgba(255,255,255,0.09)"),
+        ("line", "#2c2f35"),
+        ("line2", "#42464e"),
+        ("wash", "rgba(227,228,232,0.04)"),
+        ("wash2", "rgba(227,228,232,0.08)"),
+        ("wash3", "rgba(227,228,232,0.12)"),
         ("scrim", "rgba(0,0,0,0.5)"),
+        ("cyanWash", "rgba(76,125,255,0.08)"),
+        ("cyanWash2", "rgba(76,125,255,0.12)"),
+        ("cyanWash3", "rgba(76,125,255,0.2)"),
     ],
     label_tint: None,
     syntax: &[
@@ -328,40 +376,43 @@ pub const MATERIAL: ThemeDef = ThemeDef {
 pub const MATERIAL_LIGHT: ThemeDef = ThemeDef {
     id: "material-light",
     label: "Material Light",
-    description: "Material on light surfaces: the same shapes and muted blue accent.",
+    description: "Material on light surfaces: the same shapes and blue accent.",
     scheme: "light",
     palette: &[
-        ("bg", "#f7f8fa"),
-        ("bg2", "#eff1f4"),
+        ("bg", "#f3f4f6"),
+        ("bg2", "#f8f9fa"),
         ("panel", "#ffffff"),
-        ("raise", "#eceef2"),
-        ("text", "#1b1c1f"),
-        ("muted", "#474b52"),
-        ("faint", "#666b73"),
-        ("cyan", "#3a5f9e"),
-        ("cyan2", "#2f5190"),
-        ("deep", "#22406f"),
-        ("mint", "#2d7048"),
-        ("violet", "#634f9c"),
-        ("amber", "#80590c"),
-        ("coral", "#a8352d"),
+        ("raise", "#eef0f3"),
+        ("text", "#1b1d21"),
+        ("muted", "#4f545c"),
+        ("faint", "#6f747d"),
+        ("cyan", "#1f5ae6"),
+        ("cyan2", "#1749c0"),
+        ("deep", "#0b2a6b"),
+        ("mint", "#2f7a4f"),
+        ("violet", "#5d5296"),
+        ("amber", "#8a5d00"),
+        ("coral", "#b3352d"),
         ("onAccent", "#ffffff"),
         ("onWarn", "#ffffff"),
         ("addText", "#1f6037"),
         ("delText", "#952c25"),
         ("ink", "#111317"),
-        ("shadow", "#1d232c"),
-        ("line", "rgba(17,19,23,0.1)"),
-        ("line2", "rgba(17,19,23,0.18)"),
-        ("wash", "rgba(17,19,23,0.03)"),
-        ("wash2", "rgba(17,19,23,0.05)"),
-        ("wash3", "rgba(17,19,23,0.08)"),
-        ("scrim", "rgba(17,19,23,0.32)"),
+        ("shadow", "#1b1d21"),
+        ("line", "#dde0e5"),
+        ("line2", "#b8bdc5"),
+        ("wash", "rgba(27,29,33,0.04)"),
+        ("wash2", "rgba(27,29,33,0.08)"),
+        ("wash3", "rgba(27,29,33,0.12)"),
+        ("scrim", "rgba(20,22,26,0.32)"),
+        ("cyanWash", "rgba(31,90,230,0.08)"),
+        ("cyanWash2", "rgba(31,90,230,0.12)"),
+        ("cyanWash3", "rgba(31,90,230,0.2)"),
     ],
     label_tint: GRAPHITE_LIGHT.label_tint,
     syntax: GRAPHITE_LIGHT.syntax,
     terminal: GRAPHITE_LIGHT.terminal,
-    tokens: MATERIAL_TOKENS,
+    tokens: MATERIAL_LIGHT_TOKENS,
     css: MATERIAL_CSS,
 };
 
@@ -819,7 +870,7 @@ mod tests {
             ..Default::default()
         });
         assert_eq!(r.get("cyan"), "#ff0000");
-        assert_eq!(r.get("bg"), "#f7f8fa");
+        assert_eq!(r.get("bg"), "#f3f4f6");
         assert_eq!(all().len(), THEMES.len() + 1);
         spec.label = "Paper 2".into();
         register("acme", &spec);

@@ -19,10 +19,11 @@ const SHELL_KEY: &str = "frogg.next.chrome";
 pub const GLIDE_MS: u32 = 200;
 /// Overlay motion durations (menus, popovers, palette, sheets).
 pub const OVERLAY_IN_MS: u32 = 160;
-pub const OVERLAY_OUT_MS: u32 = 110;
+/// Covers the longest overlay exit any theme runs (Material: 150ms).
+pub const OVERLAY_OUT_MS: u32 = 150;
 /// Toast timings (tokens.ts `toastMs`).
 pub const TOAST_IN_MS: u32 = 200;
-pub const TOAST_OUT_MS: u32 = 140;
+pub const TOAST_OUT_MS: u32 = 150;
 pub const TOAST_LIFE_MS: u32 = 4200;
 
 pub fn read_stored() -> ThemeChoice {

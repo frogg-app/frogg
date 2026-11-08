@@ -190,8 +190,8 @@
   border: 2px solid transparent;
   cursor: pointer;
   transition:
-    border-color calc(120ms * var(--motion)) ease,
-    transform calc(120ms * var(--motion)) ease;
+    border-color calc(var(--dur-short, 120ms) * var(--motion)) ease,
+    transform calc(var(--dur-short, 120ms) * var(--motion)) ease;
 }
 .set-swatch:hover {
   transform: scale(1.1);
