@@ -214,19 +214,18 @@ pub fn create_window<R: Runtime>(
         #[cfg(target_os = "macos")]
         let builder = builder
             .title_bar_style(tauri::TitleBarStyle::Overlay)
-            .hidden_title(true)
-            // tao sizes the title-bar container to (button height + y) and keeps each button's
-            // default offset inside it, so `y` is not a top margin: measured, the lights' centre
-            // sits y + 1.75pt from the window top. 14 centres them on the 32px strip
-            // (TITLE_BAR_HEIGHT), level with the host chip and the search pill.
-            .traffic_light_position(tauri::LogicalPosition::new(12.0, 14.0));
+            // Lights are laid out by traffic_lights.rs (centred on the strip, whatever the SDK).
+            .hidden_title(true);
         #[cfg(not(target_os = "macos"))]
         let builder = builder.decorations(false);
         builder
     };
     #[cfg(mobile)]
     let _ = popout;
-    builder.build()
+    let window = builder.build()?;
+    #[cfg(target_os = "macos")]
+    crate::traffic_lights::register(&window);
+    Ok(window)
 }
 
 pub fn create_main_window<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<WebviewWindow<R>> {

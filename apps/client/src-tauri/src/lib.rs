@@ -35,6 +35,8 @@ mod android_updates;
 #[cfg(any(target_os = "android", test))]
 mod apk;
 #[cfg(desktop)]
+#[cfg(target_os = "macos")]
+mod traffic_lights;
 mod updates;
 mod windows;
 
@@ -432,6 +434,14 @@ pub fn run() {
             update_state,
             update_download,
         ])
+        // macOS puts the traffic lights back on these; centre them on the title strip again.
+        // macOS puts the traffic lights back on some events; centre them on the strip again.
+        .on_window_event(|window, event| {
+            #[cfg(target_os = "macos")]
+            traffic_lights::on_event(window, event);
+            #[cfg(not(target_os = "macos"))]
+            let _ = (window, event);
+        })
         .setup(|app| {
             let handle = app.handle().clone();
             // The link that launched the app (argv on Windows/Linux, the intent on Android).

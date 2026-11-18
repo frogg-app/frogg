@@ -42,6 +42,11 @@ rustls = { version = "0.23", default-features = false, features = ["ring"] }
 # Periodic update checks (tauri's runtime is tokio already).
 tokio = { version = "1", features = ["time"] }
 
+# Traffic lights centred on the title strip (traffic_lights.rs); same versions tao links.
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSResponder", "NSView", "NSWindow", "NSControl", "NSButton"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSGeometry"] }
+
 # Android APK updater (android_updates.rs): GitHub releases and the APK over rustls + Mozilla roots.
 [target.'cfg(target_os = "android")'.dependencies]
 reqwest = { version = "0.13", default-features = false, features = ["json", "rustls-no-provider"] }
