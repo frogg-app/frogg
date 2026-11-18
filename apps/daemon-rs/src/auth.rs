@@ -202,6 +202,27 @@ fn split_authority(value: &str, default_port: &str) -> (String, String) {
     }
 }
 
+/// Origins every daemon accepts on top of `daemon.cors.allowedOrigins`, as the Node daemon's
+/// `createFixedAllowedOrigins`: the brand's Electron scheme, stock and Frogg Next renderers, the
+/// Tauri shells (WebKit `tauri://localhost`, WebView2 `http(s)://tauri.localhost`) and the
+/// listener's own http origins.
+pub fn fixed_allowed_origins(scheme: &str, listen: &std::net::SocketAddr) -> Vec<String> {
+    let port = listen.port();
+    let mut origins = vec![
+        format!("{scheme}://app"),
+        "frogg://app".to_string(),
+        "frogg-next://app".to_string(),
+        "tauri://localhost".to_string(),
+        "http://tauri.localhost".to_string(),
+        "https://tauri.localhost".to_string(),
+        format!("http://{listen}"),
+        format!("http://localhost:{port}"),
+        format!("http://127.0.0.1:{port}"),
+    ];
+    origins.dedup();
+    origins
+}
+
 /// The origin half of `verifyWsUpgrade`: no Origin at all is allowed (non-browser
 /// clients), otherwise it must be allow-listed or same-origin.
 pub fn origin_allowed(
@@ -339,6 +360,32 @@ mod tests {
             None,
             &["*".to_string()]
         ));
+    }
+
+    #[test]
+    fn fixed_origins_admit_every_shipped_client() {
+        let listen: std::net::SocketAddr = "127.0.0.1:9999".parse().unwrap();
+        let allowed = fixed_allowed_origins("frogg", &listen);
+        for origin in [
+            "frogg://app",
+            "frogg-next://app",
+            "tauri://localhost",
+            "http://tauri.localhost",
+            "https://tauri.localhost",
+            "http://localhost:9999",
+        ] {
+            assert!(
+                origin_allowed(Some(origin), Some("127.0.0.1:9999"), &allowed),
+                "{origin} should be allowed"
+            );
+        }
+        assert!(!origin_allowed(
+            Some("http://evil.com"),
+            Some("127.0.0.1:9999"),
+            &allowed
+        ));
+        let branded = fixed_allowed_origins("acme", &listen);
+        assert!(branded.contains(&"acme://app".to_string()));
     }
 
     fn device(secret: &[u8], role: Role) -> Device {

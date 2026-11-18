@@ -123,7 +123,11 @@ async fn main() -> anyhow::Result<()> {
         upstream,
         expects_upstream,
         auth: daemon_config::AuthStore::new(home.clone(), persisted.auth),
-        allowed_origins: persisted.allowed_origins,
+        allowed_origins: {
+            let mut origins = auth::fixed_allowed_origins(branding::SCHEME, &config.listen);
+            origins.extend(persisted.allowed_origins);
+            origins
+        },
         hostnames: persisted.hostnames,
         allow_pairing_hostname: persisted.allow_pairing_hostname,
         hostname: hostname(),
