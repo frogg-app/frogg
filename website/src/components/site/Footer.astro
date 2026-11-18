@@ -1,49 +1,65 @@
 ---
 import { Image } from "astro:assets";
 import logo from "../../assets/brand/frogg-logo.png";
+import { githubPath, repo } from "./site-data";
 
-const repo = "https://github.com/frogg-app/frogg";
 const columns = [
   {
     title: "Product",
     links: [
-      { href: "/#features", label: "Features" },
       { href: "/#download", label: "Download" },
-      { href: "/#companion", label: "Companion" },
+      { href: "/docs/getting-started/", label: "Getting started" },
+      { href: "/docs/self-hosting/", label: "Self-hosting" },
+      { href: "/docs/", label: "Docs" },
       { href: `${repo}/blob/main/CHANGELOG.md`, label: "Changelog" },
     ],
   },
   {
-    title: "Docs",
+    title: "Community",
     links: [
-      { href: "/docs/getting-started/", label: "Getting started" },
-      { href: "/docs/self-hosting/", label: "Self-hosting" },
+      { href: repo, label: "GitHub" },
+      { href: `${repo}/issues`, label: "Issues" },
+      { href: "/docs/contributing/", label: "Guide for contribution" },
       { href: "/docs/fork-and-rebrand/", label: "Fork & rebrand" },
     ],
   },
   {
     title: "Project",
     links: [
-      { href: repo, label: "GitHub" },
       { href: `${repo}/releases`, label: "Releases" },
-      { href: `${repo}/issues`, label: "Issues" },
-      { href: "/docs/contributing/", label: "Contributing" },
+      { href: `${repo}/blob/main/LICENSE`, label: "Apache-2.0 License" },
+      { href: `${repo}/blob/main/SECURITY.md`, label: "Security" },
+      { href: "/llms.txt", label: "llms.txt" },
     ],
   },
 ];
 ---
 
 <footer class="site-footer">
+  <div class="backdrop" aria-hidden="true">
+  </div>
   <div class="inner">
     <div class="about">
       <a class="brand" href="/">
-        <Image src={logo} alt="" width={32} height={25} densities={[1, 2]} />
-        <span>Frogg</span>
+        <Image src={logo} alt="" width={40} height={31} densities={[1, 2]} />
+        <span>FROGG</span>
       </a>
-      <p>Frogg. Run and monitor coding agents on hardware you control.</p>
-      <p class="fine">
-        Apache-2.0. Frogg is a fork of <a href="https://github.com/getpaseo/paseo">Paseo</a>.
-      </p>
+      <p>The open-source home for your coding agents.</p>
+      <div class="socials">
+        <a href={repo} aria-label="Frogg on GitHub">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d={githubPath}></path></svg>
+        </a>
+        <a href={`${repo}/releases`} aria-label="Frogg releases">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"
+            ><path d="M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5M4 19h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg
+          >
+        </a>
+        <a href="/docs/" aria-label="Frogg docs">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"
+            ><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5v-13ZM13 4h5.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H13V4Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path></svg
+          >
+        </a>
+      </div>
     </div>
     {
       columns.map((col) => (
@@ -59,30 +75,45 @@ const columns = [
         </nav>
       ))
     }
+    <div class="legal">
+      <p>© {new Date().getFullYear()} Frogg · Open source under the Apache-2.0 License</p>
+      <p class="fine">
+        Frogg is a fork of <a href="https://github.com/getpaseo/paseo">Paseo</a>. Claude, Codex, GitHub Copilot and
+        other names are trademarks of their owners; Frogg is not affiliated with them.
+      </p>
+    </div>
   </div>
 </footer>
 
 <style>
   .site-footer {
-    border-top: 1px solid var(--frogg-border);
-    background: var(--frogg-bg-elevated);
-    margin-top: 4rem;
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    margin-top: 6rem;
+    padding-top: 6rem;
+    background: #000;
+  }
+  .backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
   }
   .inner {
     display: grid;
-    gap: 2rem;
+    gap: 2.5rem 2rem;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    max-width: var(--site-width);
+    max-width: 82rem;
     margin: 0 auto;
-    padding: 3rem var(--site-pad) 3.5rem;
+    padding: 0 clamp(1.25rem, 5vw, 4.5rem) 3rem;
   }
   .about {
     grid-column: 1 / -1;
-    max-width: 22rem;
   }
-  @media (min-width: 48rem) {
+  @media (min-width: 52rem) {
     .inner {
-      grid-template-columns: 2fr repeat(3, minmax(0, 1fr));
+      grid-template-columns: 1.6fr repeat(3, minmax(0, 1fr));
     }
     .about {
       grid-column: auto;
@@ -91,51 +122,80 @@ const columns = [
   .brand {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    font-weight: 750;
-    color: var(--frogg-text);
+    gap: 0.7rem;
+    font: 300 2rem/1 var(--lp-display);
+    letter-spacing: 0.08em;
+    color: #f5f5f5;
     text-decoration: none;
   }
   .brand img {
-    width: 32px;
+    width: 40px;
     height: auto;
   }
-  p {
-    margin: 0.75rem 0 0;
-    color: var(--frogg-text-muted);
-    font-size: 0.9rem;
+  .about p {
+    margin: 1.1rem 0 0;
+    font-size: 1.05rem;
+    letter-spacing: -0.02em;
+    color: #e5e5e5;
   }
-  .fine {
-    font-size: 0.8rem;
-    color: var(--frogg-text-faint);
+  .socials {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1.75rem;
   }
-  .fine a {
-    color: inherit;
+  .socials a {
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 8px;
+    background: rgb(255 255 255 / 0.14);
+    color: #fff;
+    transition: background-color var(--frogg-fast) var(--frogg-ease);
+  }
+  .socials a:hover {
+    background: rgb(255 255 255 / 0.24);
   }
   h2 {
-    margin: 0 0 0.75rem;
-    font-size: 0.78rem;
-    font-weight: 650;
+    margin: 0.4rem 0 1.1rem;
+    font: 400 0.75rem/1 var(--lp-mono);
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--frogg-text-faint);
+    letter-spacing: 0.04em;
+    color: #a3a3a3;
   }
   ul {
     list-style: none;
     margin: 0;
     padding: 0;
     display: grid;
-    gap: 0.15rem;
+    gap: 0.45rem;
   }
   ul a {
-    display: inline-block;
-    padding: 0.3rem 0;
-    color: var(--frogg-text-muted);
+    font-size: 1.02rem;
+    letter-spacing: -0.02em;
+    color: #f5f5f5;
     text-decoration: none;
-    font-size: 0.92rem;
     transition: color var(--frogg-fast) var(--frogg-ease);
   }
   ul a:hover {
     color: var(--frogg-accent-bright);
+  }
+  .legal {
+    grid-column: 1 / -1;
+    margin-top: clamp(4rem, 14vw, 12rem);
+  }
+  .legal p {
+    margin: 0;
+    font: 400 0.78rem/1.5 var(--lp-mono);
+    color: #e5e5e5;
+  }
+  .legal .fine {
+    margin-top: 0.4rem;
+    max-width: 44rem;
+    font-size: 0.66rem;
+    color: #8a8a8a;
+  }
+  .legal a {
+    color: inherit;
   }
 </style>

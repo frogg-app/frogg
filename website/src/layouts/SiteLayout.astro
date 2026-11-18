@@ -1,7 +1,8 @@
 ---
+import "@fontsource-variable/zalando-sans";
+import "@fontsource-variable/geist-mono";
 import "../styles/tokens.css";
 import "../styles/site.css";
-import ThemeScript from "../components/theme/ThemeScript.astro";
 import Header from "../components/site/Header.astro";
 import Footer from "../components/site/Footer.astro";
 
@@ -28,7 +29,7 @@ const ogImage = new URL("/og.png", Astro.site);
     <link rel="icon" href="/favicon.png" type="image/png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="sitemap" href="/sitemap-index.xml" />
-    <meta name="theme-color" content="#0e1211" />
+    <meta name="theme-color" content="#000000" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Frogg" />
     <meta property="og:title" content={title} />
@@ -36,7 +37,6 @@ const ogImage = new URL("/og.png", Astro.site);
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={ogImage} />
     <meta name="twitter:card" content="summary_large_image" />
-    <ThemeScript />
     <script is:inline>
       document.documentElement.classList.add("js");
     </script>
