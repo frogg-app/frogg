@@ -26,6 +26,7 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
+import { createHash } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { createServer, type Server } from "node:http";
 import net from "node:net";
@@ -92,13 +93,50 @@ const MIME: Record<string, string> = {
   ".ttf": "font/ttf",
 };
 
+/**
+ * The CSP the Tauri shell sends with index.html: the configured policy plus, as Tauri does, the
+ * hash of every inline `<script>`/`<style>` added to its directive unless the config opts that
+ * directive out (`dangerousDisableAssetCspModification`). A hash disables `'unsafe-inline'`, so a
+ * shell that hashes `style-src` blocks every `style=""` the UI sets; serving the same policy here
+ * turns that into console errors the smoke fails on.
+ */
+function shellCsp(html: string): string {
+  const conf = JSON.parse(
+    readFileSync(path.join(root, "apps/client/src-tauri/tauri.conf.json"), "utf8"),
+  ) as {
+    app: { security: { csp: string; dangerousDisableAssetCspModification?: boolean | string[] } };
+  };
+  const { csp, dangerousDisableAssetCspModification: off = false } = conf.app.security;
+  const untouched = (d: string) => off === true || (Array.isArray(off) && off.includes(d));
+  const hashes = (tag: string) =>
+    [...html.matchAll(new RegExp(`<${tag}(?![^>]*\\bsrc=)[^>]*>([\\s\\S]*?)</${tag}>`, "g"))]
+      .map((m) => m[1])
+      .filter((body) => body.trim() !== "")
+      .map((body) => `'sha256-${createHash("sha256").update(body).digest("base64")}'`);
+  return csp
+    .split(";")
+    .map((d) => d.trim())
+    .map((d) => {
+      const name = d.split(/\s+/)[0];
+      const tag = name === "script-src" ? "script" : name === "style-src" ? "style" : null;
+      if (!tag || untouched(name)) return d;
+      return [d, ...hashes(tag)].join(" ");
+    })
+    .join("; ");
+}
+
 function serveDist(): Promise<Server> {
+  const csp = shellCsp(readFileSync(path.join(dist, "index.html"), "utf8"));
   const server = createServer((req, res) => {
     const url = new URL(req.url ?? "/", "http://x");
     let file = path.join(dist, decodeURIComponent(url.pathname));
     if (!file.startsWith(dist)) file = dist;
     if (!existsSync(file) || statSync(file).isDirectory()) file = path.join(dist, "index.html");
-    res.writeHead(200, { "content-type": MIME[path.extname(file)] ?? "application/octet-stream" });
+    const type = MIME[path.extname(file)] ?? "application/octet-stream";
+    res.writeHead(200, {
+      "content-type": type,
+      ...(type.startsWith("text/html") ? { "content-security-policy": csp } : {}),
+    });
     createReadStream(file).pipe(res);
   });
   return new Promise((resolve, reject) => {
