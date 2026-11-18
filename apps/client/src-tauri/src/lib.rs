@@ -34,9 +34,9 @@ mod android_updates;
 // Pure APK-update logic: built on Android and for host tests.
 #[cfg(any(target_os = "android", test))]
 mod apk;
-#[cfg(desktop)]
 #[cfg(target_os = "macos")]
 mod traffic_lights;
+#[cfg(desktop)]
 mod updates;
 mod windows;
 
