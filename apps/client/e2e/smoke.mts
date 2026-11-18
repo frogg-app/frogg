@@ -118,7 +118,9 @@ function shellCsp(html: string): string {
     .map((d) => d.trim())
     .map((d) => {
       const name = d.split(/\s+/)[0];
-      const tag = name === "script-src" ? "script" : name === "style-src" ? "style" : null;
+      const tag = ({ "script-src": "script", "style-src": "style" } as Record<string, string>)[
+        name
+      ];
       if (!tag || untouched(name)) return d;
       return [d, ...hashes(tag)].join(" ");
     })
