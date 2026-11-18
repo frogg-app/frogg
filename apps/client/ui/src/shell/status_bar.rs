@@ -30,8 +30,11 @@ pub fn StatusBar() -> impl IntoView {
     let link = Memo::new(move |_| app.conn.active_link());
     let host_label = move || {
         let l = link.get();
-        l.server_name
-            .or_else(|| app.hosts.active().map(|h| h.name))
+        // The saved name (what the session list shows), else the daemon's own.
+        app.hosts
+            .active()
+            .map(|h| h.name)
+            .or(l.server_name)
             .unwrap_or_else(|| l.conn.id().to_owned())
     };
     let buckets = Memo::new(move |_| app.agents.buckets(app.active_host().as_deref()));

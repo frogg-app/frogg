@@ -90,11 +90,44 @@
   display: block;
   flex: none;
 }
+/* Gradient stops as classes, not style attributes (CSP-proof). */
+.logo-stop-a {
+  stop-color: var(--cyan2);
+}
+.logo-stop-b {
+  stop-color: var(--deep);
+}
 .logo-face {
-  fill: var(--cyan2);
+  fill: #ffffff;
   opacity: 0;
   pointer-events: none;
 }
+.logo-face.lf1 {
+  animation-delay: 140ms;
+}
+.logo-face.lf2 {
+  animation-delay: 280ms;
+}
+.logo-face.lf3 {
+  animation-delay: 420ms;
+}
+.logo-seam {
+  stroke: var(--bg);
+  stroke-width: 0;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+.logo-band {
+  fill: #ffffff;
+  opacity: 0;
+  pointer-events: none;
+}
+.logo-shade {
+  transform-box: view-box;
+  transform-origin: 12px 12px;
+}
+
+/* Ripple: a white wave face to face (it read as nothing when it faded to the gem's own cyan). */
 .logo-ripple:hover .logo-face,
 :hover > .logo-ripple .logo-face {
   animation: logo-ripple calc(1.12s * var(--motion)) ease-in-out infinite;
@@ -105,19 +138,77 @@
 @keyframes logo-ripple {
   0% {
     opacity: 0;
-    fill: var(--deep);
   }
   20% {
-    opacity: 0.55;
-    fill: var(--cyan2);
+    opacity: 0.45;
   }
   45% {
-    opacity: 0.25;
-    fill: var(--mint);
+    opacity: 0.18;
   }
   70%,
   100% {
     opacity: 0;
+  }
+}
+
+/* Split: seams open between the faces on hover, wider on press. */
+.logo-split .logo-seam {
+  transition: stroke-width calc(0.24s * var(--motion)) var(--ease, ease-out);
+}
+.logo-split:hover .logo-seam,
+:hover > .logo-split .logo-seam {
+  stroke-width: 0.7;
+}
+.logo-split:active .logo-seam {
+  stroke-width: 1.4;
+}
+
+/* Sweep: a light band crosses the gem. */
+.logo-sweep:hover .logo-band,
+:hover > .logo-sweep .logo-band {
+  animation: logo-sweep calc(1.3s * var(--motion)) ease-in-out infinite;
+}
+.logo-sweep:active .logo-band {
+  animation: logo-sweep calc(0.45s * var(--motion)) ease-out 1;
+}
+@keyframes logo-sweep {
+  0% {
+    opacity: 0;
+    transform: translateX(0) skewX(-20deg);
+  }
+  15% {
+    opacity: 0.35;
+  }
+  70% {
+    opacity: 0.35;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(36px) skewX(-20deg);
+  }
+}
+
+/* Turn: the light moves round the gem; hover one face, press a full turn. */
+.logo-turn .logo-shade {
+  transition: transform calc(0.4s * var(--motion)) var(--ease, ease-out);
+}
+.logo-turn:hover .logo-shade,
+:hover > .logo-turn .logo-shade {
+  transform: rotate(60deg);
+}
+.logo-turn:active .logo-shade {
+  transform: rotate(360deg);
+  transition-duration: calc(0.6s * var(--motion));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo .logo-face,
+  .logo .logo-band {
+    animation: none !important;
+  }
+  .logo .logo-shade,
+  .logo .logo-seam {
+    transition: none !important;
   }
 }
 
@@ -554,6 +645,7 @@
   position: absolute;
   z-index: 80;
   min-width: 180px;
+  max-width: calc(100vw - 16px);
   max-height: 300px;
   overflow: auto;
   padding: 4px 0;

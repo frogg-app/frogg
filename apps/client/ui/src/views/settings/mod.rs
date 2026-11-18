@@ -230,12 +230,13 @@ pub fn find(id: &str) -> &'static Page {
         .unwrap_or(&PAGES[0])
 }
 
-/// The host label: the daemon's own name once known, else the saved name.
+/// The host label: the name the host is saved under, else the daemon's own.
 fn host_label() -> Option<String> {
     let app = crate::state::get();
-    let link = app.conn.active_link();
-    link.server_name
-        .or_else(|| app.hosts.active().map(|h| h.name))
+    app.hosts
+        .active()
+        .map(|h| h.name)
+        .or_else(|| app.conn.active_link().server_name)
 }
 
 #[component]

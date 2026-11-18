@@ -354,6 +354,7 @@
 /* SCM: branch switcher */
 .pn-branch-menu {
   width: 320px;
+  max-width: calc(100vw - 16px);
   max-height: none;
   top: 100%;
   padding: 0;

@@ -576,11 +576,12 @@ fn Row(
     let hidden = move || l.hidden.with(|h| h.contains(&id.get_value()));
     let open = move || open_on_its_host(host.get_value(), id.get_value());
     let menu_at = move |at: At| {
+        // The menu acts on the active host's stores, so a row from another host makes its host
+        // active first (as a click would), then gets its menu like any other row.
         if elsewhere {
             open();
-        } else {
-            on_menu.run((id.get_value(), at));
         }
+        on_menu.run((id.get_value(), at));
     };
     // Long press (touch) opens the menu.
     let press_timer = StoredValue::new(None::<TimeoutHandle>);

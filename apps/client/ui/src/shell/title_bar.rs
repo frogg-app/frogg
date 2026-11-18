@@ -20,11 +20,16 @@ pub fn TitleBar() -> impl IntoView {
         .and_then(|d| d.body())
     {
         let _ = body.class_list().add_1("has-title-bar");
+        // One height for the strip, the shell below it and full-window layers (`--title-h`).
+        let _ = body
+            .style()
+            .set_property("--title-h", &format!("{}px", native::TITLE_BAR_HEIGHT));
     }
     let maximized = RwSignal::new(false);
     spawn_local(async move { maximized.set(native::is_maximized().await) });
     let toggle = move || spawn_local(async move { maximized.set(native::toggle_maximize().await) });
     let mac = chrome == Chrome::Mac;
+    let armed = RwSignal::new(false);
     let class = match chrome {
         Chrome::Mac => "title-bar mac",
         Chrome::Linux => "title-bar linux",
@@ -33,19 +38,29 @@ pub fn TitleBar() -> impl IntoView {
     view! {
         <div
             class=class
-            style=format!("height:{}px", native::TITLE_BAR_HEIGHT)
             on:mousedown=move |ev| {
-                // Drag only from the strip itself, not its buttons.
+                // Drag only from the strip itself, not its buttons. The drag starts on the first
+                // move, so a still double-click reaches `dblclick` and zooms (macOS) / maximises.
                 let on_strip = ev
                     .target()
                     .and_then(|t| wasm_bindgen::JsCast::dyn_into::<web_sys::Element>(t).ok())
                     .is_some_and(|el| el.closest(".title-controls").ok().flatten().is_none());
-                if ev.button() == 0 && on_strip {
-                    if ev.detail() == 2 {
-                        toggle();
-                    } else {
-                        native::start_drag();
-                    }
+                armed.set(ev.button() == 0 && on_strip && ev.detail() < 2);
+            }
+            on:mousemove=move |ev| {
+                if armed.get_untracked() && ev.buttons() & 1 == 1 {
+                    armed.set(false);
+                    native::start_drag();
+                }
+            }
+            on:mouseup=move |_| armed.set(false)
+            on:dblclick=move |ev| {
+                let on_strip = ev
+                    .target()
+                    .and_then(|t| wasm_bindgen::JsCast::dyn_into::<web_sys::Element>(t).ok())
+                    .is_some_and(|el| el.closest(".title-controls").ok().flatten().is_none());
+                if on_strip {
+                    toggle();
                 }
             }
         >

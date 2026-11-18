@@ -13,10 +13,11 @@ use crate::views::chat::Composer;
 pub fn Home() -> impl IntoView {
     let app = crate::state::get();
     let host = move || {
-        app.conn
-            .active_link()
-            .server_name
-            .or_else(|| app.hosts.active().map(|h| h.name))
+        // The name you saved the host under (as in the session list), else the daemon's own.
+        app.hosts
+            .active()
+            .map(|h| h.name)
+            .or_else(|| app.conn.active_link().server_name)
             .unwrap_or_else(|| "host".into())
     };
     let ui = app.ui;

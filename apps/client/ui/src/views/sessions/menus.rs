@@ -131,6 +131,18 @@ pub fn Pop(
     on_cleanup(move || handle.remove());
     let children = StoredValue::new(children);
     let class = StoredValue::new(class);
+    // `clamp` only knows the width; once laid out, pull the whole box back inside the window
+    // (a long context menu opened near the bottom would otherwise run off it).
+    let node = NodeRef::<leptos::html::Div>::new();
+    Effect::new(move |_| {
+        if at.get().is_some() {
+            request_animation_frame(move || {
+                if let Some(el) = node.get_untracked() {
+                    crate::components::fit::keep_in_view(&el);
+                }
+            });
+        }
+    });
     view! {
         <leptos::portal::Portal>
         <Show when=move || at.get().is_some()>
@@ -139,6 +151,7 @@ pub fn Pop(
                 at.set(None);
             }></div>
             <div
+                node_ref=node
                 class=move || format!("pop m-pop-down {}", class.get_value())
                 style=move || {
                     let (x, y) = clamp(at.get().unwrap_or(At { x: 0.0, y: 0.0 }), width);
@@ -228,10 +241,12 @@ pub fn ScopeMenu(at: RwSignal<Option<At>>) -> impl IntoView {
     let d = projects::get();
     let l = list::get();
     let entries = Signal::derive(move || {
+        // Projects live on one daemon: name the active host as the session list does.
         let host = app
-            .conn
-            .active_link()
-            .server_name
+            .hosts
+            .active()
+            .map(|h| h.name)
+            .or_else(|| app.conn.active_link().server_name)
             .unwrap_or_else(|| "this host".into());
         let sessions = app.sessions();
         let scope = l.scope.get();

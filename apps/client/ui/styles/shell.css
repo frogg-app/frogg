@@ -3,6 +3,9 @@
 .root {
   position: fixed;
   inset: 0;
+  /* Above the title strip (50): popovers inside the shell paint over it, and their
+     click-catcher covers it, so a press on the strip closes a menu instead of dragging. */
+  z-index: 51;
   display: flex;
   flex-direction: column;
   background: var(--bg);
@@ -86,7 +89,11 @@
   top: 0;
   bottom: 0;
   width: 58px;
-  overflow: hidden;
+  /* Scrolls (bar hidden) when the window is too short for every item, so the bottom group
+     (notifications, settings, pin) stays reachable at the 800x600 minimum. */
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -96,6 +103,12 @@
   transition:
     width calc(var(--dur-medium, 200ms) * var(--motion)) var(--ease),
     box-shadow calc(var(--dur-medium, 200ms) * var(--motion)) var(--ease-std, ease-out);
+}
+.rail::-webkit-scrollbar {
+  display: none;
+}
+.rail > * {
+  flex-shrink: 0;
 }
 .rail.open {
   width: 212px;
@@ -510,6 +523,7 @@ button.sb-seg:hover {
   right: 16px;
   bottom: 36px;
   width: 380px;
+  max-width: calc(100vw - 32px);
   display: flex;
   flex-direction: column;
 }
@@ -1010,6 +1024,7 @@ button.sb-seg:hover {
   top: 0;
   left: 0;
   right: 0;
+  height: var(--title-h, 32px);
   z-index: 50;
   display: flex;
   align-items: center;
@@ -1061,7 +1076,7 @@ button.sb-seg:hover {
   color: #ffffff;
 }
 body.has-title-bar .root {
-  top: 32px;
+  top: var(--title-h, 32px);
 }
 
 /* Phone: the tab list stays mounted under a pushed detail. */
@@ -1269,4 +1284,12 @@ body.has-title-bar .root {
 }
 .toast-facet-x {
   margin-top: 8px;
+}
+
+/* Full-window layers stop at the title strip so the window stays draggable under them. */
+body.has-title-bar .layer,
+body.has-title-bar .lightbox,
+body.has-title-bar .ns-phone,
+body.has-title-bar .crash {
+  top: var(--title-h, 32px);
 }

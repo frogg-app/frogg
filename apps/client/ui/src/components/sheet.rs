@@ -73,7 +73,9 @@ pub fn Sheet(
     }
 }
 
-/// A popover anchored inside a positioned parent: below it (`up = false`) or above it.
+/// A popover anchored inside a positioned parent: below it (`up = false`) or above it. Once laid
+/// out it flips to the side with more room when the preferred one can't fit it, then shifts and
+/// caps its height so no edge leaves the window (ui-next `Floating.web.tsx`).
 #[component]
 pub fn Floating(
     #[prop(into)] open: Signal<bool>,
@@ -88,22 +90,69 @@ pub fn Floating(
     crate::shell::modal_stack::use_modal_layer(open, on_close);
     let children = StoredValue::new(children);
     let class = StoredValue::new(class);
+    let node = NodeRef::<leptos::html::Div>::new();
+    // The side actually used: `up` until a measurement says the other side has more room.
+    let side_up = RwSignal::new(up);
+    Effect::new(move |_| {
+        if !p.mounted.get() {
+            side_up.set(up);
+            return;
+        }
+        request_animation_frame(move || place(node, up, side_up));
+    });
     view! {
         <Show when=move || p.mounted.get()>
             <div class="floating-catch" on:click=move |_| on_close.run(())></div>
-            <div class=move || {
-                let motion = match (up, p.closing.get()) {
-                    (_, true) => "m-pop-out",
-                    (true, false) => "m-pop-up",
-                    (false, false) => "m-pop-down",
-                };
-                format!(
-                    "floating {} {} {motion} {}",
-                    if up { "up" } else { "down" },
-                    if align_right { "right" } else { "left" },
-                    class.get_value(),
-                )
-            }>{move || children.with_value(|c| c())}</div>
+            <div
+                node_ref=node
+                class=move || {
+                    let up = side_up.get();
+                    let motion = match (up, p.closing.get()) {
+                        (_, true) => "m-pop-out",
+                        (true, false) => "m-pop-up",
+                        (false, false) => "m-pop-down",
+                    };
+                    format!(
+                        "floating {} {} {motion} {}",
+                        if up { "up" } else { "down" },
+                        if align_right { "right" } else { "left" },
+                        class.get_value(),
+                    )
+                }
+            >
+                {move || children.with_value(|c| c())}
+            </div>
         </Show>
     }
+}
+
+/// Picks the side for a `Floating`, caps its height to that side's room, then keeps it in view.
+fn place(node: NodeRef<leptos::html::Div>, prefer_up: bool, side_up: RwSignal<bool>) {
+    use super::fit;
+    let Some(el) = node.get_untracked() else {
+        return;
+    };
+    let Some(anchor) = el.parent_element() else {
+        return;
+    };
+    let a = anchor.get_bounding_client_rect();
+    let need = el.scroll_height() as f64 + 2.0;
+    let (above, below) = fit::room_around(a.top(), a.bottom(), 4.0);
+    let up = fit::flip_up(prefer_up, need, above, below);
+    let style = web_sys::HtmlElement::style(&el);
+    let room = if up { above } else { below }.max(80.0);
+    if need > room {
+        let _ = style.set_property("max-height", &format!("{room}px"));
+    } else {
+        let _ = style.remove_property("max-height");
+    }
+    if up != side_up.get_untracked() {
+        side_up.set(up);
+    }
+    // After the class swap lands, clamp what's left (sideways overflow, tiny windows).
+    request_animation_frame(move || {
+        if let Some(el) = node.get_untracked() {
+            fit::keep_in_view(&el);
+        }
+    });
 }

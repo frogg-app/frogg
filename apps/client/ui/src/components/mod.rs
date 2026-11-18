@@ -4,6 +4,7 @@ pub mod brackets;
 pub mod button;
 pub mod count_up;
 pub mod field;
+pub mod fit;
 pub mod glide;
 pub mod icon;
 pub mod icon_data;

@@ -82,7 +82,7 @@
   background: var(--mint);
 }
 .seg-working {
-  background: color-mix(in srgb, var(--cyan) 55%, transparent);
+  background: var(--cyan);
 }
 .seg-working::after {
   content: "";
@@ -101,8 +101,9 @@
     left: 100%;
   }
 }
+/* ui-next bucketColor: idle is --faint, so it reads against the --line track. */
 .seg-idle {
-  background: var(--line2);
+  background: var(--faint);
 }
 .seg-flash {
   position: absolute;
@@ -540,6 +541,7 @@
 .pop {
   position: fixed;
   z-index: 80;
+  max-width: calc(100vw - 16px);
   max-height: min(70vh, 560px);
   overflow: auto;
   padding: 4px 0;

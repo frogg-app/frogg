@@ -89,7 +89,7 @@ fn native_info<R: Runtime>(app: AppHandle<R>) -> NativeInfo {
         version: app.package_info().version.to_string(),
         mobile: cfg!(mobile),
         title_bar_height: windows::TITLE_BAR_HEIGHT,
-        default_daemon: windows::DEFAULT_DAEMON,
+        default_daemon: windows::local_daemon(),
     }
 }
 

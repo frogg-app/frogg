@@ -10,6 +10,27 @@ use tauri::{AppHandle, Manager, Runtime, WebviewUrl, WebviewWindow, WebviewWindo
 pub const TITLE_BAR_HEIGHT: f64 = 32.0;
 /// The daemon a fresh install looks for: Frogg Next's own daemon on this machine.
 pub const DEFAULT_DAEMON: &str = "127.0.0.1:9969";
+/// The stable daemon's port: the fallback when Frogg Next's own daemon isn't running here.
+pub const STABLE_DAEMON: &str = "127.0.0.1:9999";
+
+/// The local daemon to suggest: Frogg Next's (9969) when it listens, else the stable one (9999)
+/// when that does, else 9969. Probed once per launch with a short connect timeout.
+pub fn local_daemon() -> &'static str {
+    static PICK: std::sync::OnceLock<&'static str> = std::sync::OnceLock::new();
+    PICK.get_or_init(|| {
+        let listens = |addr: &str| {
+            addr.parse::<std::net::SocketAddr>().is_ok_and(|a| {
+                std::net::TcpStream::connect_timeout(&a, std::time::Duration::from_millis(150))
+                    .is_ok()
+            })
+        };
+        if cfg!(desktop) && !listens(DEFAULT_DAEMON) && listens(STABLE_DAEMON) {
+            STABLE_DAEMON
+        } else {
+            DEFAULT_DAEMON
+        }
+    })
+}
 const THEME_FILE: &str = "window-theme.json";
 
 /// Shell colours for what paints before the UI: window background and the title strip.
@@ -156,7 +177,7 @@ pub fn create_window<R: Runtime>(
     route: &[(&str, &str)],
     popout: bool,
 ) -> tauri::Result<WebviewWindow<R>> {
-    let mut query = vec![("daemon", DEFAULT_DAEMON), ("chrome", chrome_mode())];
+    let mut query = vec![("daemon", local_daemon()), ("chrome", chrome_mode())];
     query.extend_from_slice(route);
     let url = WebviewUrl::App(format!("index.html?{}", encode_query(&query)).into());
     let builder = WebviewWindowBuilder::new(app, label, url)
@@ -194,7 +215,8 @@ pub fn create_window<R: Runtime>(
         let builder = builder
             .title_bar_style(tauri::TitleBarStyle::Overlay)
             .hidden_title(true)
-            .traffic_light_position(tauri::LogicalPosition::new(12.0, 16.0));
+            // Centred on the 32px strip, as Electron's trafficLightPosition {x: 12, y: 10}.
+            .traffic_light_position(tauri::LogicalPosition::new(12.0, 10.0));
         #[cfg(not(target_os = "macos"))]
         let builder = builder.decorations(false);
         builder
