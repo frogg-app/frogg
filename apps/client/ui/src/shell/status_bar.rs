@@ -56,13 +56,14 @@ pub fn StatusBar() -> impl IntoView {
                 (n > 0)
                     .then(|| {
                         view! {
-                            <button class="sb-seg sb-needs" on:click=move |_| app.ui.set_tool(Tool::Inbox)>
+                            <button class="sb-seg sb-needs sb-dup" on:click=move |_| app.ui.set_tool(Tool::Inbox)>
                                 <span class="sb-t">{format!("◆ {n} need you")}</span>
                             </button>
                         }
                     })
             }}
-            <div class="sb-seg">
+            // Needs/running/⌘K live in the desktop title strip; `.sb-dup` hides them there.
+            <div class="sb-seg sb-dup">
                 <span class="sb-t">{move || format!("▸ {} running", buckets.get().working)}</span>
             </div>
             {move || {
@@ -79,7 +80,7 @@ pub fn StatusBar() -> impl IntoView {
                     })
             }}
             <crate::views::flows::onboarding::ResumeChip docked=true />
-            <button class="sb-seg" on:click=move |_| app.ui.palette_open.set(true)>
+            <button class="sb-seg sb-dup" on:click=move |_| app.ui.palette_open.set(true)>
                 <span class="sb-t t-mono">{kbd("⌘K")}</span>
             </button>
         </div>

@@ -1018,7 +1018,8 @@ button.sb-seg:hover {
   font-size: calc(12px * var(--text-scale));
 }
 
-/* Desktop title strip (shell/title_bar.rs, ui-next TitleBar.tsx). */
+/* Desktop title strip (shell/title_bar.rs): a working bar. Three columns so the search pill
+   stays centred on the window whatever the sides hold; bare strip drags the window. */
 .title-bar {
   position: fixed;
   top: 0;
@@ -1026,26 +1027,151 @@ button.sb-seg:hover {
   right: 0;
   height: var(--title-h, 32px);
   z-index: 50;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(160px, 420px) minmax(0, 1fr);
   align-items: center;
-  background: var(--bg);
+  column-gap: 12px;
+  background: var(--bg2);
   border-bottom: var(--bw) solid var(--line);
   user-select: none;
   -webkit-user-select: none;
-  padding-left: 14px;
+  padding-left: 12px;
+  font-size: calc(12px * var(--text-scale));
 }
+/* Clear of the traffic lights (x 12, three 12px lights 8px apart). */
 .title-bar.mac {
-  padding-left: 80px;
+  padding-left: 78px;
 }
-.title-text {
-  flex: 1;
+.tb-side {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 100%;
+}
+.tb-right {
+  justify-content: flex-end;
+}
+.title-bar.mac .tb-right {
+  padding-right: 8px;
+}
+
+/* Where: the active host, as a switcher. */
+.tb-host {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 8px;
+  min-width: 0;
+  max-width: 100%;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  cursor: default;
+}
+.tb-host:hover {
+  background: var(--wash2);
+}
+.tb-host-t {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tb-host svg {
+  flex: none;
   color: var(--faint);
-  font-size: calc(10px * var(--text-scale));
-  pointer-events: none;
 }
+
+/* Search: the palette's entry point, in the brand's chamfered cut. */
+.tb-search {
+  --c: 6px;
+  --cut-bg: var(--bg);
+  --cut-line: var(--line2);
+  height: 22px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  color: var(--faint);
+  border: 0;
+  background: transparent;
+  cursor: default;
+  justify-self: center;
+}
+.tb-search:hover {
+  --cut-bg: var(--raise);
+  --cut-line: color-mix(in srgb, var(--cyan) 45%, var(--line2));
+  color: var(--muted);
+}
+.tb-search:focus-visible {
+  outline: none;
+  --cut-line: var(--cyan);
+}
+.tb-search-t {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tb-kbd {
+  flex: none;
+  font-size: calc(10.5px * var(--text-scale));
+  color: var(--faint);
+}
+
+/* Live work: running and waiting counts. */
+.tb-live {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 8px;
+  flex: none;
+  color: var(--faint);
+  background: transparent;
+  border: 0;
+  cursor: default;
+}
+.tb-live:hover {
+  background: var(--wash2);
+  color: var(--muted);
+}
+.tb-live.busy {
+  color: var(--cyan);
+}
+.tb-live:not(.busy) * {
+  animation: none !important;
+}
+.tb-live.tb-needs {
+  color: var(--amber);
+}
+.tb-live-t {
+  white-space: nowrap;
+}
+
+/* Narrow windows: keep the counts and the shortcut, drop the words. */
+@media (max-width: 980px) {
+  .tb-search-t,
+  .tb-live-t {
+    display: none;
+  }
+  .tb-search {
+    justify-content: center;
+  }
+  .title-bar {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+}
+
+/* Windows / Linux window controls: flush right, full strip height. */
 .title-controls {
   display: flex;
   align-self: stretch;
+  margin-left: 4px;
 }
 .title-btn {
   width: 46px;
@@ -1072,8 +1198,12 @@ button.sb-seg:hover {
   color: var(--text);
 }
 .title-btn.close:hover {
-  background: #c42b1c;
-  color: #ffffff;
+  background: var(--coral);
+  color: var(--bg);
+}
+/* Shown in the title strip instead. */
+body.has-title-bar .sb-dup {
+  display: none;
 }
 body.has-title-bar .root {
   top: var(--title-h, 32px);
