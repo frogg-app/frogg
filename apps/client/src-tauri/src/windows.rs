@@ -215,8 +215,11 @@ pub fn create_window<R: Runtime>(
         let builder = builder
             .title_bar_style(tauri::TitleBarStyle::Overlay)
             .hidden_title(true)
-            // Centred on the 32px strip, as Electron's trafficLightPosition {x: 12, y: 10}.
-            .traffic_light_position(tauri::LogicalPosition::new(12.0, 10.0));
+            // tao sizes the title-bar container to (button height + y) and keeps each button's
+            // default offset inside it, so `y` is not a top margin: measured, the lights' centre
+            // sits y + 1.75pt from the window top. 14 centres them on the 32px strip
+            // (TITLE_BAR_HEIGHT), level with the host chip and the search pill.
+            .traffic_light_position(tauri::LogicalPosition::new(12.0, 14.0));
         #[cfg(not(target_os = "macos"))]
         let builder = builder.decorations(false);
         builder
