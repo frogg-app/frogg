@@ -60,6 +60,22 @@ export function resolveProviderAccountEnvById(
   env: ProviderAccountEnvOverlay;
   loginCommand: { command: string; args: string[] };
 } | null {
+  // The implicit default account is the provider's own primary config dir, so
+  // signing it in needs no overlay and no opt-in: it is the same login the user
+  // would run by hand. Only extra accounts depend on the capability being enabled.
+  const defaultProvider = parseProviderAccountDefaultId(accountId);
+  if (defaultProvider && !store.findAccount(accountId)) {
+    const capability = store.getCapability(defaultProvider);
+    if (!capability) return null;
+    return {
+      env: {},
+      loginCommand: {
+        command: capability.loginCommand.command,
+        args: [...capability.loginCommand.args],
+      },
+    };
+  }
+
   const account = store.findAccount(accountId);
   if (!account) return null;
   const capability = store.getCapability(account.provider);
@@ -140,7 +156,10 @@ export function resolveAgentProviderAccountEnv(
   const account = store.findAccount(accountId);
   if (!account || account.provider !== provider) {
     // Deleted (or foreign-provider) account: fall back to default resolution.
-    return { env: resolveProviderAccountEnv(store, provider), unknownAccountId: accountId };
+    return {
+      env: resolveProviderAccountEnv(store, provider),
+      unknownAccountId: accountId,
+    };
   }
 
   return {
