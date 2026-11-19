@@ -1057,6 +1057,29 @@ button.sb-seg:hover {
 }
 
 /* Where: the active host, as a switcher. */
+.title-bar.menu-open {
+  z-index: 82;
+}
+.tb-host-wrap {
+  position: relative;
+  min-width: 0;
+  max-width: 100%;
+  display: flex;
+}
+.tb-host-menu {
+  min-width: 220px;
+}
+.tb-host-opt .dot {
+  flex: none;
+}
+.tb-host-opt svg {
+  color: var(--cyan);
+}
+.tb-host-sep {
+  height: var(--bw);
+  margin: 4px 0;
+  background: var(--line);
+}
 .tb-host {
   display: flex;
   align-items: center;
@@ -1070,7 +1093,8 @@ button.sb-seg:hover {
   border: 0;
   cursor: default;
 }
-.tb-host:hover {
+.tb-host:hover,
+.tb-host.on {
   background: var(--wash2);
 }
 .tb-host-t {

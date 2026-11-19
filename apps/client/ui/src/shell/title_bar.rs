@@ -1,6 +1,6 @@
 //! The frameless desktop window's title strip (ui-next `shell/TitleBar.tsx`,
 //! `desktop/window-chrome.cjs`). It is a working bar, not a caption:
-//! - left: the active host (status dot, saved name), which switches hosts;
+//! - left: the active host (status dot, saved name), dropping a menu to switch hosts in place;
 //! - centre: the command search pill (opens the palette, ⌘K);
 //! - right: live work, as the sessions running now and the ones that need you.
 //!
@@ -11,7 +11,8 @@
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
-use crate::components::{Ico, Icon, StatusGlyph};
+use crate::components::{Floating, Ico, Icon, StatusGlyph};
+use crate::state::hosts::Host;
 use crate::native::{self, Chrome};
 use crate::state::kbd::kbd;
 use crate::state::{Bucket, Tool};
@@ -21,7 +22,7 @@ fn on_bare_strip(target: Option<web_sys::EventTarget>) -> bool {
     target
         .and_then(|t| wasm_bindgen::JsCast::dyn_into::<web_sys::Element>(t).ok())
         .is_some_and(|el| {
-            el.closest("button, a, .title-controls")
+            el.closest("button, a, .title-controls, .floating, .floating-catch")
                 .ok()
                 .flatten()
                 .is_none()
@@ -50,6 +51,8 @@ pub fn TitleBar() -> impl IntoView {
     let toggle = move || spawn_local(async move { maximized.set(native::toggle_maximize().await) });
     let mac = chrome == Chrome::Mac;
     let armed = RwSignal::new(false);
+    // The host menu drops below the strip, so the strip rises over the shell while it's open.
+    let menu = RwSignal::new(false);
     let class = match chrome {
         Chrome::Mac => "title-bar mac",
         Chrome::Linux => "title-bar linux",
@@ -58,6 +61,7 @@ pub fn TitleBar() -> impl IntoView {
     view! {
         <div
             class=class
+            class:menu-open=move || menu.get()
             on:mousedown=move |ev| {
                 // The drag starts on the first move, so a still double-click reaches `dblclick`.
                 armed.set(ev.button() == 0 && ev.detail() < 2 && on_bare_strip(ev.target()));
@@ -76,7 +80,7 @@ pub fn TitleBar() -> impl IntoView {
             }
         >
             <div class="tb-side tb-left">
-                <Where />
+                <Where open=menu />
             </div>
             <SearchPill />
             <div class="tb-side tb-right">
@@ -108,10 +112,11 @@ pub fn TitleBar() -> impl IntoView {
     .into_any()
 }
 
-/// The active host: status dot and saved name; opens Hosts to switch. The open session's name
-/// is the chat header's job, so the strip doesn't repeat it.
+/// The active host: status dot and saved name. It drops a menu of the saved hosts to switch in
+/// place, without leaving the current view. The open session's name is the chat header's job,
+/// so the strip doesn't repeat it.
 #[component]
-fn Where() -> impl IntoView {
+fn Where(open: RwSignal<bool>) -> impl IntoView {
     let app = crate::state::get();
     let link = Memo::new(move |_| app.conn.active_link());
     let host = move || {
@@ -121,11 +126,70 @@ fn Where() -> impl IntoView {
             .or_else(|| link.get().server_name)
             .unwrap_or_else(|| "No host".into())
     };
+    let close = Callback::new(move |_| open.set(false));
     view! {
-        <button class="tb-host" title="Switch host" on:click=move |_| app.ui.set_tool(Tool::Hosts)>
+        <div class="tb-host-wrap">
+            <button
+                class="tb-host"
+                class:on=move || open.get()
+                title="Switch host"
+                aria-haspopup="menu"
+                aria-expanded=move || open.get().to_string()
+                on:click=move |_| open.update(|o| *o = !*o)
+            >
+                <span class=move || format!("dot {}", link.get().conn.id())></span>
+                <span class="tb-host-t">{host}</span>
+                <Icon ico=Ico::ChevronDown size=12.0 />
+            </button>
+            <Floating open=open on_close=close class="menu tb-host-menu">
+                <For
+                    each=move || app.hosts.hosts.get()
+                    key=|h| (h.id.clone(), h.name.clone())
+                    children=move |h: Host| view! { <HostOption host=h close=close /> }
+                />
+                <div class="tb-host-sep"></div>
+                <button class="menu-item" on:click=move |_| {
+                    close.run(());
+                    app.ui.host_sheet_open.set(true);
+                }>
+                    <Icon ico=Ico::Plus size=14.0 />
+                    <span class="menu-label">"Add host"</span>
+                </button>
+                <button class="menu-item" on:click=move |_| {
+                    close.run(());
+                    app.ui.set_tool(Tool::Hosts);
+                }>
+                    <Icon ico=Ico::Server size=14.0 />
+                    <span class="menu-label">"Manage hosts"</span>
+                </button>
+            </Floating>
+        </div>
+    }
+}
+
+/// One saved host in the switcher: its link dot and name, ticked when active.
+#[component]
+fn HostOption(host: Host, close: Callback<()>) -> impl IntoView {
+    let app = crate::state::get();
+    let id = StoredValue::new(host.id.clone());
+    let link = Memo::new(move |_| app.conn.link(&id.get_value()));
+    let active = Memo::new(move |_| app.hosts.active_id.get() == Some(id.get_value()));
+    view! {
+        <button
+            class="menu-item tb-host-opt"
+            class:on=move || active.get()
+            role="menuitemradio"
+            aria-checked=move || active.get().to_string()
+            on:click=move |_| {
+                close.run(());
+                if !active.get_untracked() {
+                    app.conn.activate(&id.get_value());
+                }
+            }
+        >
             <span class=move || format!("dot {}", link.get().conn.id())></span>
-            <span class="tb-host-t">{host}</span>
-            <Icon ico=Ico::ChevronDown size=12.0 />
+            <span class="menu-label">{host.name.clone()}</span>
+            {move || active.get().then(|| view! { <Icon ico=Ico::Check size=14.0 /> })}
         </button>
     }
 }
