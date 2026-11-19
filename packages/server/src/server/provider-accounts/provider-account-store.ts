@@ -293,6 +293,20 @@ export class ProviderAccountStore {
     ]);
   }
 
+  /**
+   * Switches a provider's extra-account support on or off. Written to
+   * `providerAccounts.<provider>.enabled`, the same key a hand edit would set;
+   * existing accounts and their directories are untouched either way.
+   */
+  setEnabled(provider: string, enabled: boolean): ProviderAccountMutationResult {
+    if (!this.getCapability(provider)) {
+      throw new ProviderAccountError(`Provider "${provider}" does not support accounts.`);
+    }
+    const config = this.readConfig();
+    this.writeConfig({ ...config, [provider]: { ...config[provider], enabled } });
+    return this.buildResult([]);
+  }
+
   setActive(provider: string, accountId: string | null): ProviderAccountMutationResult {
     this.requireEnabledCapability(provider);
     const config = this.readConfig();
@@ -726,7 +740,7 @@ export class ProviderAccountStore {
     }
     if (!capability.enabled) {
       throw new ProviderAccountError(
-        `Provider accounts are disabled for "${provider}". Enable them with providerAccounts.${provider}.enabled in config.json.` +
+        `Provider accounts are disabled for "${provider}". Turn on accounts for this provider in its provider settings.` +
           (isProviderAccountCapabilityUnverified(capability)
             ? ` Note that this provider's account manifest is unverified: ${
                 capability.verificationNote ??

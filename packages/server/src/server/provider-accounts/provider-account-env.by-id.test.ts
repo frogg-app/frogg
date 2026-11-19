@@ -15,6 +15,10 @@ function storeWith(
       return capability ? { ...capability, enabled } : undefined;
     },
     findAccount: (id: string) => accounts[id] as never,
+    primaryConfigDir: (provider: string) => {
+      const capability = findProviderAccountCapability(provider);
+      return capability ? `/home/u/${capability.primaryDirName}` : undefined;
+    },
   };
 }
 

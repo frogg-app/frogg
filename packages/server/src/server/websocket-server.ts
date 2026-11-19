@@ -2135,6 +2135,8 @@ export class VoiceAssistantWebSocketServer {
         ...(this.providerAccountsEnabled ? { providerAccountManagement: true } : {}),
         // COMPAT(providerAccountAllowedModels): added in v1.4.2, remove after 2027-09-17.
         ...(this.providerAccountsEnabled ? { providerAccountAllowedModels: true } : {}),
+        // COMPAT(providerAccountSetEnabled): added in v1.6.14, remove after 2027-11-19.
+        ...(this.providerAccountsEnabled ? { providerAccountSetEnabled: true } : {}),
         // COMPAT(providerAccountPreferences): added in v1.5.6, remove after 2027-09-19.
         ...(this.providerAccountsEnabled ? { providerAccountPreferences: true } : {}),
         providerUpdates: true,

@@ -51,6 +51,45 @@ describe("ProviderAccountSession", () => {
     return account;
   }
 
+  it("lets an owner switch a provider's accounts on, then create one", async () => {
+    await session.handleProviderAccountSetEnabledRequest({
+      type: "provider.account.set_enabled.request",
+      provider: "gemini",
+      enabled: true,
+      requestId: "r-enable",
+    });
+    const response = emitted.at(-1);
+    expect(response?.type).toBe("provider.account.set_enabled.response");
+    if (response?.type !== "provider.account.set_enabled.response") return;
+    expect(response.payload.error ?? null).toBeNull();
+    expect(response.payload.capabilities.find((c) => c.provider === "gemini")?.enabled).toBe(true);
+    expect(
+      store
+        .create({ provider: "gemini", name: "second", linkedFolders: [] })
+        .accounts.some((account) => account.provider === "gemini" && account.name === "second"),
+    ).toBe(true);
+
+    await session.handleProviderAccountSetEnabledRequest({
+      type: "provider.account.set_enabled.request",
+      provider: "gemini",
+      enabled: false,
+      requestId: "r-disable",
+    });
+    expect(store.getCapability("gemini")?.enabled).toBe(false);
+  });
+
+  it("refuses to enable accounts for a provider with no account support", async () => {
+    await session.handleProviderAccountSetEnabledRequest({
+      type: "provider.account.set_enabled.request",
+      provider: "nope",
+      enabled: true,
+      requestId: "r-bad",
+    });
+    const response = emitted.at(-1);
+    if (response?.type !== "provider.account.set_enabled.response") throw new Error("no response");
+    expect(response.payload.error).toMatch(/does not support accounts/);
+  });
+
   it("renames an account without moving its config directory", async () => {
     const account = createSignedInAccount("peter");
 

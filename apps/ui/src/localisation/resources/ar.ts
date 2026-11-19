@@ -4214,6 +4214,11 @@ export const ar: TranslationResources = {
           delete: "حذف",
         },
         accounts: {
+          title: "الحسابات",
+          enable: "حسابات متعددة",
+          enableDescription: "سجّل الدخول بأكثر من حساب لهذا المزوّد واختر حسابًا لكل وكيل.",
+          enableDescriptionUnverified:
+            "سجّل الدخول بأكثر من حساب لهذا المزوّد واختر حسابًا لكل وكيل. ميزة تجريبية لهذا المزوّد: لكل حساب إضافي مجلد رئيسي خاص به.",
           signOut: "تسجيل الخروج",
           signOutConfirmTitle: "تسجيل خروج {{name}}؟",
           signOutConfirmMessage:

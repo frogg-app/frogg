@@ -4243,6 +4243,11 @@ export const ko: TranslationResources = {
           delete: "삭제",
         },
         accounts: {
+          title: "계정",
+          enable: "여러 계정",
+          enableDescription: "이 제공자에 여러 계정으로 로그인하고 에이전트마다 하나를 선택하세요.",
+          enableDescriptionUnverified:
+            "이 제공자에 여러 계정으로 로그인하고 에이전트마다 하나를 선택하세요. 이 제공자에서는 실험적 기능입니다: 추가 계정마다 별도의 홈 폴더가 생깁니다.",
           signOut: "로그아웃",
           signOutConfirmTitle: "{{name}}을(를) 로그아웃할까요?",
           signOutConfirmMessage:

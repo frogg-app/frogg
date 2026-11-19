@@ -4314,6 +4314,12 @@ export const es: TranslationResources = {
           delete: "Eliminar",
         },
         accounts: {
+          title: "Cuentas",
+          enable: "Varias cuentas",
+          enableDescription:
+            "Inicia sesión con más de una cuenta de este proveedor y elige una por agente.",
+          enableDescriptionUnverified:
+            "Inicia sesión con más de una cuenta de este proveedor y elige una por agente. Experimental en este proveedor: cada cuenta adicional tiene su propia carpeta personal.",
           signOut: "Cerrar sesión",
           signOutConfirmTitle: "¿Cerrar la sesión de {{name}}?",
           signOutConfirmMessage:

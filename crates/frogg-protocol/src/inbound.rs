@@ -359,6 +359,8 @@ pub enum SessionMessage {
     ProviderAccountSetActiveRequest(ProviderAccountSetActiveRequest),
     #[serde(rename = "provider.account.rename.request")]
     ProviderAccountRenameRequest(ProviderAccountRenameRequest),
+    #[serde(rename = "provider.account.set_enabled.request")]
+    ProviderAccountSetEnabledRequest(ProviderAccountSetEnabledRequest),
     #[serde(rename = "provider.account.sign_out.request")]
     ProviderAccountSignOutRequest(ProviderAccountSignOutRequest),
     #[serde(rename = "provider.account.export.request")]
@@ -2715,6 +2717,14 @@ pub struct ProviderAccountRenameRequest {
     #[serde(rename = "accountId")]
     pub account_id: String,
     pub name: String,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountSetEnabledRequest {
+    pub provider: String,
+    pub enabled: bool,
     #[serde(rename = "requestId")]
     pub request_id: String,
 }

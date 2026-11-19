@@ -138,7 +138,10 @@ function HostAccounts({ host, named }: { host: Host | null; named: boolean }) {
     const rest = (rpc.data?.list.capabilities ?? [])
       .map((c) => c.provider)
       .filter((p) => !out.has(p));
-    return { used: [...out.entries()], rest };
+    const enabled = new Set(
+      (rpc.data?.list.capabilities ?? []).filter((c) => c.enabled).map((c) => c.provider),
+    );
+    return { used: [...out.entries()], rest, enabled };
   }, [rpc.data]);
   const all = useMemo(() => [...groups.used.map(([p]) => p), ...groups.rest], [groups]);
   const head = named ? (
@@ -169,13 +172,19 @@ function HostAccounts({ host, named }: { host: Host | null; named: boolean }) {
             accounts={accts}
             usage={rpc.data?.usage ?? NO_USAGE}
             tint={SWATCH[gi % SWATCH.length]}
+            enabled={groups.enabled.has(prov)}
             reload={rpc.reload}
           />
         ))}
         {groups.rest.length > 0 ? (
           <Section title="Other providers">
             {groups.rest.map((p) => (
-              <AddAccount key={p} provider={p} reload={rpc.reload} />
+              <AddAccount
+                key={p}
+                provider={p}
+                enabled={groups.enabled.has(p)}
+                reload={rpc.reload}
+              />
             ))}
           </Section>
         ) : null}
@@ -190,12 +199,14 @@ function ProviderGroup({
   accounts,
   usage,
   tint,
+  enabled,
   reload,
 }: {
   provider: Provider;
   accounts: Account[];
   usage: Record<string, Usage | undefined>;
   tint: string;
+  enabled: boolean;
   reload: () => void;
 }) {
   return (
@@ -203,7 +214,7 @@ function ProviderGroup({
       {accounts.map((a) => (
         <AccountRow key={a.id} account={a} usage={usage[a.id]} tint={tint} reload={reload} />
       ))}
-      <AddAccount provider={provider} reload={reload} />
+      <AddAccount provider={provider} enabled={enabled} reload={reload} />
     </Section>
   );
 }
@@ -403,7 +414,19 @@ function WindowMeter({ label, pct }: { label: string; pct: number | null }) {
   );
 }
 
-function AddAccount({ provider, reload }: { provider: Provider; reload: () => void }) {
+/**
+ * Extra accounts are off for some providers until an owner turns them on; the
+ * daemon refuses the switch for anyone else and the error line says so.
+ */
+function AddAccount({
+  provider,
+  enabled,
+  reload,
+}: {
+  provider: Provider;
+  enabled: boolean;
+  reload: () => void;
+}) {
   const hostId = useContext(HostCtx);
   const [name, setName] = useState<string | null>(null);
   const act = useAction();
@@ -420,6 +443,28 @@ function AddAccount({ provider, reload }: { provider: Provider; reload: () => vo
       reload();
     }
   }, [act, name, provider, reload, hostId]);
+  const turnOn = useCallback(async () => {
+    const ok = await act.run("enable", () =>
+      clientOrThrow(hostId).setProviderAccountsEnabled({ provider, enabled: true }),
+    );
+    if (ok) {
+      reload();
+      setName("");
+    }
+  }, [act, provider, reload, hostId]);
+  if (!enabled)
+    return (
+      <Block last>
+        <ErrorLine text={act.error} />
+        <View style={s.addRow}>
+          <Button
+            label={act.pending ? "Turning on…" : `Turn on ${provName(provider)} accounts`}
+            onPress={turnOn}
+            disabled={act.pending !== null}
+          />
+        </View>
+      </Block>
+    );
   if (name === null)
     return (
       <View style={s.addRow}>

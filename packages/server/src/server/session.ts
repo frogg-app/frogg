@@ -3034,6 +3034,8 @@ export class Session {
         return this.providerAccountSession.handleProviderAccountDeleteRequest(msg);
       case "provider.account.set_active.request":
         return this.providerAccountSession.handleProviderAccountSetActiveRequest(msg);
+      case "provider.account.set_enabled.request":
+        return this.providerAccountSession.handleProviderAccountSetEnabledRequest(msg);
       case "provider.account.rename.request":
         return this.providerAccountSession.handleProviderAccountRenameRequest(msg);
       case "provider.account.sign_out.request":

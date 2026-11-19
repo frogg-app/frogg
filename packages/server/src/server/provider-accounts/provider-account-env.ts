@@ -54,21 +54,28 @@ export function resolveProviderAccountEnv(
  * the client names the account explicitly.
  */
 export function resolveProviderAccountEnvById(
-  store: Pick<ProviderAccountStore, "getCapability" | "findAccount">,
+  store: Pick<ProviderAccountStore, "getCapability" | "findAccount" | "primaryConfigDir">,
   accountId: string,
 ): {
   env: ProviderAccountEnvOverlay;
   loginCommand: { command: string; args: string[] };
 } | null {
-  // The implicit default account is the provider's own primary config dir, so
-  // signing it in needs no overlay and no opt-in: it is the same login the user
-  // would run by hand. Only extra accounts depend on the capability being enabled.
+  // A provider's default account (`default:<provider>`) is its primary config
+  // directory: listed like any other account but never stored. Signing it in is
+  // the login a user would run by hand, so it needs no opt-in; only extra
+  // accounts depend on the capability being enabled. Env mode pins the primary
+  // dir explicitly; home mode leaves HOME alone, since the primary dir sits
+  // inside the real home rather than being one.
   const defaultProvider = parseProviderAccountDefaultId(accountId);
   if (defaultProvider && !store.findAccount(accountId)) {
     const capability = store.getCapability(defaultProvider);
-    if (!capability) return null;
+    const primaryDir = store.primaryConfigDir(defaultProvider);
+    if (!capability || !primaryDir) return null;
     return {
-      env: {},
+      env:
+        providerAccountConfigDirMode(capability) === "home"
+          ? {}
+          : { [capability.configDirEnv]: primaryDir },
       loginCommand: {
         command: capability.loginCommand.command,
         args: [...capability.loginCommand.args],

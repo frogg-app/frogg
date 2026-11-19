@@ -5780,6 +5780,30 @@
               "properties": {
                 "type": {
                   "type": "string",
+                  "const": "provider.account.set_enabled.request"
+                },
+                "provider": {
+                  "type": "string"
+                },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "provider",
+                "enabled",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
                   "const": "provider.account.sign_out.request"
                 },
                 "accountId": {

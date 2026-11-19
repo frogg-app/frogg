@@ -14,6 +14,7 @@ type ProviderAccountResponseType =
   | "provider.account.delete.response"
   | "provider.account.set_active.response"
   | "provider.account.rename.response"
+  | "provider.account.set_enabled.response"
   | "provider.account.sign_out.response"
   | "provider.account.import.response"
   | "provider.account.set_allowed_models.response"
@@ -107,6 +108,14 @@ export class ProviderAccountSession {
   ): Promise<void> {
     this.run("provider.account.set_active.response", msg.requestId, () =>
       this.store.setActive(msg.provider, msg.accountId),
+    );
+  }
+
+  async handleProviderAccountSetEnabledRequest(
+    msg: Extract<SessionInboundMessage, { type: "provider.account.set_enabled.request" }>,
+  ): Promise<void> {
+    this.run("provider.account.set_enabled.response", msg.requestId, () =>
+      this.store.setEnabled(msg.provider, msg.enabled),
     );
   }
 

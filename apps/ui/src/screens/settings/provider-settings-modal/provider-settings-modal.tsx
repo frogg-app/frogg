@@ -28,6 +28,7 @@ import type { Theme } from "@/styles/theme";
 import { AccountPane } from "./account-pane";
 import { AccountTabs, isSynthesizedAccount, withDefaultAccount } from "./account-tabs";
 import { ProviderModelsSection } from "./provider-models-section";
+import { ProviderAccountsToggleSection } from "./provider-accounts-toggle-section";
 import { ProviderVersionSection } from "./provider-version-section";
 
 const ThemedLoadingSpinner = withUnistyles(LoadingSpinner);
@@ -374,6 +375,7 @@ export function ProviderSettingsModal({
             a provider's version is not an account-scoped setting, so burying it
             on the provider tab put it where nobody looks. */}
         <ProviderVersionSection serverId={serverId} providerId={providerId} />
+        <ProviderAccountsToggleSection serverId={serverId} providerId={providerId} />
 
         {accounts.supported && accounts.isLoading ? (
           <View testID="provider-settings-accounts-loading">

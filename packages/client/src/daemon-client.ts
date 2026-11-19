@@ -150,6 +150,7 @@ import type {
   ProviderAccountDeleteResponseMessage,
   ProviderAccountSetActiveResponseMessage,
   ProviderAccountRenameResponseMessage,
+  ProviderAccountSetEnabledResponseMessage,
   ProviderAccountSignOutResponseMessage,
   ProviderAccountExportResponseMessage,
   ProviderAccountImportResponseMessage,
@@ -643,6 +644,7 @@ type ProviderAccountCreatePayload = ProviderAccountCreateResponseMessage["payloa
 type ProviderAccountDeletePayload = ProviderAccountDeleteResponseMessage["payload"];
 type ProviderAccountSetActivePayload = ProviderAccountSetActiveResponseMessage["payload"];
 type ProviderAccountRenamePayload = ProviderAccountRenameResponseMessage["payload"];
+type ProviderAccountSetEnabledPayload = ProviderAccountSetEnabledResponseMessage["payload"];
 type ProviderAccountSignOutPayload = ProviderAccountSignOutResponseMessage["payload"];
 type ProviderAccountExportPayload = ProviderAccountExportResponseMessage["payload"];
 type ProviderAccountImportPayload = ProviderAccountImportResponseMessage["payload"];
@@ -6379,6 +6381,22 @@ export class DaemonClient {
         type: "provider.account.set_active.request",
         provider: input.provider,
         accountId: input.accountId,
+      },
+    });
+  }
+
+  /** Owner-only: switches extra-account support for a provider on or off. */
+  async setProviderAccountsEnabled(input: {
+    provider: string;
+    enabled: boolean;
+    requestId?: string;
+  }): Promise<ProviderAccountSetEnabledPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest({
+      requestId: input.requestId,
+      message: {
+        type: "provider.account.set_enabled.request",
+        provider: input.provider,
+        enabled: input.enabled,
       },
     });
   }

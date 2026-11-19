@@ -4254,6 +4254,12 @@ export const en = {
           delete: "Delete",
         },
         accounts: {
+          title: "Accounts",
+          enable: "Multiple accounts",
+          enableDescription:
+            "Sign in more than one account for this provider and pick one per agent.",
+          enableDescriptionUnverified:
+            "Sign in more than one account for this provider and pick one per agent. Experimental for this provider: extra accounts get their own home folder.",
           signOut: "Sign out",
           signOutConfirmTitle: "Sign {{name}} out?",
           signOutConfirmMessage:
