@@ -69,6 +69,14 @@ export const PROVIDER_UPDATE_DESCRIPTORS: ProviderUpdateDescriptor[] = [
     manualInstallUrl: "https://opencode.ai/docs",
   },
   {
+    provider: "gemini",
+    binaryNames: ["gemini"],
+    versionArgs: NPM_VERSION_ARGS,
+    kind: "npm",
+    npmPackage: "@google/gemini-cli",
+    manualInstallUrl: "https://github.com/google-gemini/gemini-cli",
+  },
+  {
     provider: "pi",
     binaryNames: ["pi"],
     versionArgs: NPM_VERSION_ARGS,

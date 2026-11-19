@@ -54,23 +54,34 @@ export function resolveProviderAccountEnv(
  * the client names the account explicitly.
  */
 export function resolveProviderAccountEnvById(
-  store: Pick<ProviderAccountStore, "getCapability" | "findAccount" | "primaryConfigDir">,
+  store: Pick<ProviderAccountStore, "getCapability" | "findAccount">,
   accountId: string,
 ): {
   env: ProviderAccountEnvOverlay;
   loginCommand: { command: string; args: string[] };
 } | null {
-  // A provider's default account (`default:<provider>`) is its primary config directory; it is
-  // listed like any other account but never stored, so signing it in resolves it here.
-  const defaultOf = parseProviderAccountDefaultId(accountId);
-  const account = defaultOf ? null : store.findAccount(accountId);
-  const provider = defaultOf ?? account?.provider;
-  if (!provider) return null;
-  const configDir = account?.configDir ?? store.primaryConfigDir(provider);
-  const capability = store.getCapability(provider);
-  if (!capability || !capability.enabled || !configDir) return null;
+  // The implicit default account is the provider's own primary config dir, so
+  // signing it in needs no overlay and no opt-in: it is the same login the user
+  // would run by hand. Only extra accounts depend on the capability being enabled.
+  const defaultProvider = parseProviderAccountDefaultId(accountId);
+  if (defaultProvider && !store.findAccount(accountId)) {
+    const capability = store.getCapability(defaultProvider);
+    if (!capability) return null;
+    return {
+      env: {},
+      loginCommand: {
+        command: capability.loginCommand.command,
+        args: [...capability.loginCommand.args],
+      },
+    };
+  }
+
+  const account = store.findAccount(accountId);
+  if (!account) return null;
+  const capability = store.getCapability(account.provider);
+  if (!capability || !capability.enabled) return null;
   return {
-    env: { [capability.configDirEnv]: configDir },
+    env: { [capability.configDirEnv]: account.configDir },
     loginCommand: {
       command: capability.loginCommand.command,
       args: [...capability.loginCommand.args],
@@ -145,7 +156,10 @@ export function resolveAgentProviderAccountEnv(
   const account = store.findAccount(accountId);
   if (!account || account.provider !== provider) {
     // Deleted (or foreign-provider) account: fall back to default resolution.
-    return { env: resolveProviderAccountEnv(store, provider), unknownAccountId: accountId };
+    return {
+      env: resolveProviderAccountEnv(store, provider),
+      unknownAccountId: accountId,
+    };
   }
 
   return {
