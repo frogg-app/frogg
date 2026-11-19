@@ -2247,6 +2247,17 @@ export const ProviderAccountSetActiveRequestMessageSchema = z.object({
  * account (`providerAccountDefaultId(provider)`), which the daemon materialises
  * as a stored record carrying just the name override.
  */
+/**
+ * Switches extra-account support for one provider on or off; the owner-facing
+ * equivalent of editing `providerAccounts.<provider>.enabled` in config.json.
+ */
+export const ProviderAccountSetEnabledRequestMessageSchema = z.object({
+  type: z.literal("provider.account.set_enabled.request"),
+  provider: z.string(),
+  enabled: z.boolean(),
+  requestId: z.string(),
+});
+
 export const ProviderAccountRenameRequestMessageSchema = z.object({
   type: z.literal("provider.account.rename.request"),
   accountId: z.string(),
@@ -3910,6 +3921,7 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   ProviderAccountDeleteRequestMessageSchema,
   ProviderAccountSetActiveRequestMessageSchema,
   ProviderAccountRenameRequestMessageSchema,
+  ProviderAccountSetEnabledRequestMessageSchema,
   ProviderAccountSignOutRequestMessageSchema,
   ProviderAccountExportRequestMessageSchema,
   ProviderAccountImportRequestMessageSchema,
@@ -4428,6 +4440,9 @@ export const ServerInfoStatusPayloadSchema = z
         // COMPAT(providerAccountManagement): added in v1.4.2, remove after 2027-09-17.
         // provider.account.rename / sign_out / export / import are available.
         providerAccountManagement: z.boolean().optional(),
+        // COMPAT(providerAccountSetEnabled): added in v1.6.14, remove after 2027-11-19.
+        // provider.account.set_enabled is available to owner pairings.
+        providerAccountSetEnabled: z.boolean().optional(),
         // COMPAT(providerAccountAllowedModels): added in v1.4.2, remove after 2027-09-17.
         // provider.account.set_allowed_models is available and the daemon enforces
         // per-account model restrictions when an agent is created or resumed.
@@ -7881,6 +7896,11 @@ export const ProviderAccountSetActiveResponseMessageSchema = z.object({
   payload: ProviderAccountResponsePayloadSchema,
 });
 
+export const ProviderAccountSetEnabledResponseMessageSchema = z.object({
+  type: z.literal("provider.account.set_enabled.response"),
+  payload: ProviderAccountResponsePayloadSchema,
+});
+
 export const ProviderAccountRenameResponseMessageSchema = z.object({
   type: z.literal("provider.account.rename.response"),
   payload: ProviderAccountResponsePayloadSchema,
@@ -8441,6 +8461,7 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   ProviderAccountDeleteResponseMessageSchema,
   ProviderAccountSetActiveResponseMessageSchema,
   ProviderAccountRenameResponseMessageSchema,
+  ProviderAccountSetEnabledResponseMessageSchema,
   ProviderAccountSignOutResponseMessageSchema,
   ProviderAccountExportResponseMessageSchema,
   ProviderAccountImportResponseMessageSchema,
@@ -8738,6 +8759,12 @@ export type ProviderAccountDeleteResponseMessage = z.infer<
 >;
 export type ProviderAccountSetActiveResponseMessage = z.infer<
   typeof ProviderAccountSetActiveResponseMessageSchema
+>;
+export type ProviderAccountSetEnabledRequestMessage = z.infer<
+  typeof ProviderAccountSetEnabledRequestMessageSchema
+>;
+export type ProviderAccountSetEnabledResponseMessage = z.infer<
+  typeof ProviderAccountSetEnabledResponseMessageSchema
 >;
 export type ProviderAccountRenameRequestMessage = z.infer<
   typeof ProviderAccountRenameRequestMessageSchema

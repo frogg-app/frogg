@@ -96,6 +96,13 @@ export function useProviderAccounts(serverId: string) {
     onSuccess: applyPayload,
   });
 
+  const canSetEnabled = useHostFeature(serverId, "providerAccountSetEnabled");
+  const setEnabled = useMutation({
+    mutationFn: async (input: { provider: string; enabled: boolean }) =>
+      requireClient().setProviderAccountsEnabled(input),
+    onSuccess: applyPayload,
+  });
+
   const signOut = useMutation({
     mutationFn: async (accountId: string) => requireClient().signOutProviderAccount({ accountId }),
     onSuccess: applyPayload,
@@ -155,6 +162,8 @@ export function useProviderAccounts(serverId: string) {
     remove,
     setActive,
     rename,
+    canSetEnabled,
+    setEnabled,
     signOut,
     setAllowedModels,
     setPreferences,

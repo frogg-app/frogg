@@ -252,6 +252,7 @@ const INBOUND_ROLE = {
   "provider.account.rename.request": "owner",
   "provider.account.set_active.request": "owner",
   "provider.account.set_allowed_models.request": "owner",
+  "provider.account.set_enabled.request": "owner",
   "provider.account.set_preferences.request": "owner",
   "provider.account.sign_out.request": "owner",
   "provider.update.check.request": "viewer",

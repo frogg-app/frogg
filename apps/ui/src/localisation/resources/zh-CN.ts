@@ -4235,6 +4235,11 @@ export const zhCN: TranslationResources = {
           delete: "删除",
         },
         accounts: {
+          title: "账号",
+          enable: "多个账号",
+          enableDescription: "为此提供方登录多个账号，并为每个智能体选择一个。",
+          enableDescriptionUnverified:
+            "为此提供方登录多个账号，并为每个智能体选择一个。此提供方的该功能为实验性：每个额外账号都有自己的主目录。",
           signOut: "退出登录",
           signOutConfirmTitle: "要让 {{name}} 退出登录吗？",
           signOutConfirmMessage: "将删除服务器上保存的该账号凭据。账号及其目录会保留。",

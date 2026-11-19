@@ -4378,6 +4378,12 @@ export const ru: TranslationResources = {
           delete: "Удалить",
         },
         accounts: {
+          title: "Аккаунты",
+          enable: "Несколько аккаунтов",
+          enableDescription:
+            "Войдите в несколько аккаунтов этого провайдера и выбирайте один для каждого агента.",
+          enableDescriptionUnverified:
+            "Войдите в несколько аккаунтов этого провайдера и выбирайте один для каждого агента. Для этого провайдера функция экспериментальная: у каждого дополнительного аккаунта своя домашняя папка.",
           signOut: "Выйти",
           signOutConfirmTitle: "Выйти из {{name}}?",
           signOutConfirmMessage:

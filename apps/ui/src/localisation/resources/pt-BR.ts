@@ -4377,6 +4377,11 @@ export const ptBR: TranslationResources = {
           delete: "Excluir",
         },
         accounts: {
+          title: "Contas",
+          enable: "Várias contas",
+          enableDescription: "Entre com mais de uma conta deste provedor e escolha uma por agente.",
+          enableDescriptionUnverified:
+            "Entre com mais de uma conta deste provedor e escolha uma por agente. Experimental neste provedor: cada conta extra tem sua própria pasta pessoal.",
           signOut: "Sair",
           signOutConfirmTitle: "Encerrar a sessão de {{name}}?",
           signOutConfirmMessage:

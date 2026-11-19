@@ -4408,6 +4408,12 @@ export const fr: TranslationResources = {
           delete: "Supprimer",
         },
         accounts: {
+          title: "Comptes",
+          enable: "Plusieurs comptes",
+          enableDescription:
+            "Connectez plusieurs comptes pour ce fournisseur et choisissez-en un par agent.",
+          enableDescriptionUnverified:
+            "Connectez plusieurs comptes pour ce fournisseur et choisissez-en un par agent. Expérimental pour ce fournisseur : chaque compte supplémentaire a son propre dossier personnel.",
           signOut: "Se déconnecter",
           signOutConfirmTitle: "Déconnecter {{name}} ?",
           signOutConfirmMessage:

@@ -4363,6 +4363,12 @@ export const ja: TranslationResources = {
           delete: "削除",
         },
         accounts: {
+          title: "アカウント",
+          enable: "複数のアカウント",
+          enableDescription:
+            "このプロバイダーに複数のアカウントでサインインし、エージェントごとに1つを選べます。",
+          enableDescriptionUnverified:
+            "このプロバイダーに複数のアカウントでサインインし、エージェントごとに1つを選べます。このプロバイダーでは試験的な機能です：追加アカウントごとに専用のホームフォルダーが作られます。",
           signOut: "サインアウト",
           signOutConfirmTitle: "{{name}} をサインアウトしますか？",
           signOutConfirmMessage:

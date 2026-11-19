@@ -331,10 +331,11 @@ whenever an agent runs as it:
 Preferences need a daemon that reports the `providerAccountPreferences` feature; the sections
 are not rendered on an older one.
 
-Claude and Codex have accounts enabled. Other providers are declared but off; turn one on with
-`providerAccounts.<provider>.enabled` in
-[`config.json`](/docs/reference/configuration/#provideraccounts) once its layout is
-verified.
+Claude and Codex have accounts enabled. Other providers are declared but off. A device paired as
+owner turns one on with the **Multiple accounts** switch in that provider's settings, which
+writes `providerAccounts.<provider>.enabled` in
+[`config.json`](/docs/reference/configuration/#provideraccounts); editing the file directly
+works too. Every provider's default account can be signed in either way.
 
 ### Gemini: accounts through a per-account HOME
 
@@ -343,7 +344,7 @@ always reads `~/.gemini`, derived from the home directory. A second Gemini sign-
 works differently — each account directory becomes a synthetic **home** for Gemini's process
 only, with the real config directory nested inside it at `<home>/.gemini-<name>/.gemini`.
 
-Gemini accounts ship **off**. Enable them deliberately with
+Gemini accounts ship **off**. Enable them deliberately with the **Multiple accounts** switch or
 `providerAccounts.gemini.enabled` in
 [`config.json`](/docs/reference/configuration/#provideraccounts), knowing the trade:
 
