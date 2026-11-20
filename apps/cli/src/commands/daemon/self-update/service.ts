@@ -353,26 +353,30 @@ export function detectServiceManager(options: UnmanagedServiceOptions): ServiceM
   return createUnmanagedServiceManager(options);
 }
 
-const SUPERVISOR_ENV_KEYS = [
-  "FROGG_EXECUTION_SERVICE",
-  ...["HOME", "INSTALL_DIR", "RELEASE_BASE", "RELEASES_API", "GITHUB_TOKEN"].map(
-    (key) => `${brand.envPrefix}_${key}`,
-  ),
-  "PATH",
-  "HOME",
-  "USERPROFILE",
-  "LOCALAPPDATA",
-  "XDG_CONFIG_HOME",
-  "XDG_RUNTIME_DIR",
-  "DBUS_SESSION_BUS_ADDRESS",
-  "FROGG_HOME",
-  "FROGG_LISTEN",
-  "FROGG_WEB_UI_ENABLED",
-  "FROGG_INSTALL_DIR",
-  "FROGG_HOME",
-  "FROGG_RELEASE_BASE",
-  "FROGG_RELEASES_API",
-  "FROGG_GITHUB_TOKEN",
+// Deduplicated: for the default brand `${brand.envPrefix}_*` repeats the FROGG_* keys, and
+// systemd-run rejects a repeated --setenv ("Invalid environment block"), which failed every
+// self-update of a systemd install with FROGG_INSTALL_DIR or FROGG_HOME set.
+export const SUPERVISOR_ENV_KEYS = [
+  ...new Set([
+    "FROGG_EXECUTION_SERVICE",
+    ...["HOME", "INSTALL_DIR", "RELEASE_BASE", "RELEASES_API", "GITHUB_TOKEN"].map(
+      (key) => `${brand.envPrefix}_${key}`,
+    ),
+    "PATH",
+    "HOME",
+    "USERPROFILE",
+    "LOCALAPPDATA",
+    "XDG_CONFIG_HOME",
+    "XDG_RUNTIME_DIR",
+    "DBUS_SESSION_BUS_ADDRESS",
+    "FROGG_HOME",
+    "FROGG_LISTEN",
+    "FROGG_WEB_UI_ENABLED",
+    "FROGG_INSTALL_DIR",
+    "FROGG_RELEASE_BASE",
+    "FROGG_RELEASES_API",
+    "FROGG_GITHUB_TOKEN",
+  ]),
 ];
 
 /**

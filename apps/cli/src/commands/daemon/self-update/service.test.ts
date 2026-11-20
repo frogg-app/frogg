@@ -8,6 +8,7 @@ import {
   retireLegacyServices,
   type LegacyServiceDeps,
   serviceFileTargetsInstall,
+  SUPERVISOR_ENV_KEYS,
   type OwnershipDeps,
 } from "./service.js";
 
@@ -152,5 +153,12 @@ describe("legacy FDE service retirement", () => {
     const inactive = deps({ [unitFile]: fdeUnit }, false, "0.0.0.0:9999");
     await expect(retireLegacyServices(inactive.value)).resolves.toEqual([]);
     expect(inactive.commands.some((line) => line.includes("disable"))).toBe(false);
+  });
+});
+
+describe("SUPERVISOR_ENV_KEYS", () => {
+  test("names each key once, so systemd-run accepts the environment block", () => {
+    expect(new Set(SUPERVISOR_ENV_KEYS).size).toBe(SUPERVISOR_ENV_KEYS.length);
+    expect(SUPERVISOR_ENV_KEYS).toContain("FROGG_INSTALL_DIR");
   });
 });
