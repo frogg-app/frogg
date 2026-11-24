@@ -15,7 +15,7 @@ Everything else lives in [AGENTS.md](AGENTS.md).
   `28fff87e`.
 - `frogg-next`: Frogg Next and the Rust daemon, shipped as `-next.N`.
 - **Before you start Frogg Next or Rust work, check the base:** `git merge-base --is-ancestor
-  28fff87e HEAD` must succeed. If it fails, you are on `main`. Stop, and work from a branch off
+28fff87e HEAD` must succeed. If it fails, you are on `main`. Stop, and work from a branch off
   `origin/frogg-next`.
 - Port a fix between the lines change by change: cherry-pick daemon, protocol and CLI fixes;
   reimplement `apps/ui` changes in `apps/ui-next`. Never `release:sync-main` or merge one line
