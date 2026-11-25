@@ -1,5 +1,6 @@
 import * as DocumentPicker from "expo-document-picker";
 import { File } from "expo-file-system";
+import { imageName, SNIFF_BYTES, sniffImage, untyped } from "./sniff";
 import { INLINE_IMAGE_MAX_BYTES, tooLarge, type Picked } from "./upload";
 
 export const canPickFiles = true;
@@ -13,10 +14,18 @@ async function wrap(asset: DocumentPicker.DocumentPickerAsset): Promise<Picked> 
   const size = asset.size ?? file.size;
   const refused = tooLarge(asset.name, size);
   if (refused) throw new Error(refused);
-  const mimeType = asset.mimeType || file.type || "application/octet-stream";
+  let name = asset.name;
+  let mimeType = asset.mimeType || file.type || "application/octet-stream";
+  if (untyped(mimeType)) {
+    const sniffed = sniffImage(readHead(file, Math.min(size, SNIFF_BYTES)));
+    if (sniffed) {
+      mimeType = sniffed.mime;
+      name = imageName(name, sniffed.ext);
+    }
+  }
   const inline = mimeType.startsWith("image/") && size <= INLINE_IMAGE_MAX_BYTES;
   return {
-    name: asset.name,
+    name,
     mimeType,
     size,
     ...(inline ? { base64: await file.base64() } : {}),
@@ -30,6 +39,16 @@ async function wrap(asset: DocumentPicker.DocumentPickerAsset): Promise<Picked> 
       }
     },
   };
+}
+
+function readHead(file: File, n: number): Uint8Array {
+  if (n <= 0) return new Uint8Array();
+  const handle = file.open();
+  try {
+    return handle.readBytes(n);
+  } finally {
+    handle.close();
+  }
 }
 
 /** Opens the system document picker; files are copied to the app cache so they stay readable. */
