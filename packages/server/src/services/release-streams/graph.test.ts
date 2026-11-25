@@ -236,6 +236,7 @@ describe("release streams graph", () => {
     expect(resolveReleaseStreamsConfig({ raw: null, remotes: ["origin"] })).toEqual({
       development: "main",
       stable: "stable",
+      next: "frogg-next",
       upstream: null,
       declared: false,
     });
@@ -248,5 +249,32 @@ describe("release streams graph", () => {
         remotes: ["origin"],
       }).upstream,
     ).toBeNull();
+  });
+
+  test("lists the next line with only its -next releases", async () => {
+    const { work } = product();
+    commit(work, "p.txt", "chore(release): cut 1.6.0-beta.1", "1.6.0-beta.1");
+    tag(work, "v1.6.0-beta.1");
+    git(work, "switch", "-q", "-c", "frogg-next");
+    commit(work, "p.txt", "chore(release): cut 1.6.0-next.1", "1.6.0-next.1");
+    tag(work, "v1.6.0-next.1");
+    commit(work, "n.txt", "feat: next-only work");
+    git(work, "push", "-q", "origin", "main", "stable", "frogg-next", "--tags");
+
+    const config = resolveReleaseStreamsConfig({ raw: null, remotes: ["origin"] });
+    expect(config.next).toBe("frogg-next");
+    const graph = await buildReleaseStreamsGraph({ git: runner(work), config });
+    const streams = Object.fromEntries(graph.streams.map((s) => [s.id, s]));
+    expect(streams.next!.releases.map((r) => r.version)).toEqual(["1.6.0-next.1"]);
+    expect(streams.next!.unreleased).toBe(1);
+    expect(streams.development!.releases.map((r) => r.version)).toEqual(["1.6.0-beta.1"]);
+  });
+
+  test("omits the next line when its branch does not exist", async () => {
+    const { work } = product();
+    git(work, "push", "-q", "origin", "main", "stable", "--tags");
+    const config = resolveReleaseStreamsConfig({ raw: null, remotes: ["origin"] });
+    const graph = await buildReleaseStreamsGraph({ git: runner(work), config });
+    expect(graph.streams.some((s) => s.id === "next")).toBe(false);
   });
 });

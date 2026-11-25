@@ -40,6 +40,7 @@ const DOT: Record<string, string> = {
   development: color.cyan,
   stable: color.text,
   feature: color.violet,
+  next: color.amber,
 };
 
 /** Bars and their counts share one glide. */

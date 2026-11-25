@@ -106,6 +106,8 @@ export const FroggStreamsConfigSchema = z
   .object({
     development: z.string().optional(),
     stable: z.string().optional(),
+    /** Branch that ships Frogg Next prereleases (X.Y.Z-next.N); default "frogg-next". */
+    next: z.string().optional(),
     upstream: z
       .object({
         remote: z.string().optional(),

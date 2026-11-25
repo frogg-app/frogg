@@ -6886,6 +6886,8 @@ export const ReleaseStreamEventSchema = z.object({
 export const ReleaseStreamsConfigSchema = z.object({
   development: z.string(),
   stable: z.string(),
+  /** The next-line branch (X.Y.Z-next.N releases); absent from older daemons. */
+  next: z.string().optional(),
   upstream: z
     .object({
       remote: z.string(),

@@ -11,7 +11,7 @@ export type PresenceState = "shipped" | "landed" | "pending" | "absent";
 export type ChangeFilter = "all" | "features" | "fixes" | "waiting";
 
 /** Most stable at the top, as in a Perforce stream graph; upstream above the fork's own. */
-const STREAM_ORDER = ["upstream-stable", "upstream-development", "stable", "development"];
+const STREAM_ORDER = ["upstream-stable", "upstream-development", "stable", "development", "next"];
 
 export function orderStreams(streams: readonly ReleaseStream[]): ReleaseStream[] {
   const rank = (id: string) => {

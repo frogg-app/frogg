@@ -10,7 +10,7 @@ function branch(value: string | undefined, fallback: string): string {
 
 /**
  * frogg.json "streams", with the defaults scripts/release/streams-config.mjs applies. A checkout
- * that declares nothing still gets main/stable, and an "upstream" remote, when it has one, is
+ * that declares nothing still gets main/stable (and frogg-next when that branch exists), and an "upstream" remote, when it has one, is
  * read as the upstream a fork follows: that is the usual shape of a GitHub fork checkout.
  */
 export function resolveReleaseStreamsConfig(input: {
@@ -22,6 +22,8 @@ export function resolveReleaseStreamsConfig(input: {
   const development = branch(streams.development, "main");
   let stable = branch(streams.stable, "stable");
   if (stable === development) stable = development === "stable" ? "release" : "stable";
+  let next: string | undefined = branch(streams.next, "frogg-next");
+  if (next === development || next === stable) next = undefined;
   const declaredUpstream = streams.upstream;
   const remote = branch(declaredUpstream?.remote, "upstream");
   const upstream =
@@ -40,6 +42,7 @@ export function resolveReleaseStreamsConfig(input: {
   return {
     development,
     stable,
+    ...(next ? { next } : {}),
     upstream: upstream && input.remotes.includes(upstream.remote) ? upstream : null,
     declared: parsed.success && input.raw !== undefined && input.raw !== null,
   };

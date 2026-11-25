@@ -69,6 +69,8 @@ interface StreamRef {
   tagNamespace: string;
   /** Which tags count as this stream's releases. */
   tagChannel: TagChannel;
+  /** Only tags with this prerelease name count (`next` for X.Y.Z-next.N). */
+  prerelease?: string;
 }
 
 interface Commit {
@@ -158,6 +160,22 @@ function streamRefs(config: ReleaseStreamsConfig, refExists: Set<string>): Strea
       tagChannel: "beta",
     },
   );
+  const next = config.next;
+  if (
+    next &&
+    (refExists.has(`refs/remotes/origin/${next}`) || refExists.has(`refs/heads/${next}`))
+  ) {
+    refs.push({
+      id: "next",
+      kind: "next",
+      label: next,
+      ref: local(next),
+      channel: "beta",
+      tagNamespace: "refs/tags/",
+      tagChannel: "beta",
+      prerelease: "next",
+    });
+  }
   return refs;
 }
 
@@ -178,7 +196,9 @@ async function releasesOn(
   ref: string,
   namespace: string,
   channel: TagChannel,
+  prerelease?: string,
 ): Promise<ReleaseStreamRelease[]> {
+  const suffix = prerelease ? new RegExp(`^v[^-]+-${prerelease}(?:\\.|$)`) : null;
   const out = await tryGit(git, [
     "for-each-ref",
     "--merged",
@@ -191,6 +211,7 @@ async function releasesOn(
     const [refname = "", object = "", peeled = "", date = ""] = line.split(SEP);
     const tag = refname.slice(namespace.length);
     if (tag.includes("/") || tagChannel(tag) !== channel) continue;
+    if (suffix && !suffix.test(tag)) continue;
     releases.push({ tag, version: tag.slice(1), sha: peeled || object, date: date || null });
   }
   return releases.sort((a, b) => compareVersionStrings(b.version, a.version));
@@ -302,7 +323,7 @@ async function readStream(
   const fallback = stream.id === "stable" && hasDev ? ctx.dev.ref : null;
   const source = present ? stream.ref : fallback;
   const releases = source
-    ? await releasesOn(git, source, stream.tagNamespace, stream.tagChannel)
+    ? await releasesOn(git, source, stream.tagNamespace, stream.tagChannel, stream.prerelease)
     : [];
   const newest = releases[0];
   let head: string | null = null;

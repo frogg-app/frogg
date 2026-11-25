@@ -4783,6 +4783,9 @@
                         "stable": {
                           "type": "string"
                         },
+                        "next": {
+                          "type": "string"
+                        },
                         "upstream": {
                           "type": "object",
                           "properties": {
