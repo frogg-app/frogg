@@ -2,6 +2,11 @@ import { ChevronRight } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { loadConfig, patchConfig, useConfig } from "../../../daemon/config";
+import {
+  addableProviders,
+  type CatalogProvider,
+  catalogProviderPatch,
+} from "../../../daemon/provider-catalog";
 import { getClient } from "../../../daemon/store";
 import { color, ease, glide, motion, web } from "../../../theme/tokens";
 import { agoText, providerLabel } from "../../../util";
@@ -77,12 +82,56 @@ export function Providers() {
           />
         ))}
       </Section>
+      {owner && <AddProviders installed={providers.entries.map((e) => e.provider)} />}
       <Note>
         {owner
           ? "A provider that is off stays installed but can't start new agents on this host."
           : "Only the host's owner can turn providers on or off."}
       </Note>
     </>
+  );
+}
+
+/** Catalog providers (Gemini) the host can run over ACP once they're in its config. */
+function AddProviders({ installed }: { installed: string[] }) {
+  const addable = addableProviders(installed);
+  if (!addable.length) return null;
+  return (
+    <Section title="Add a provider">
+      {addable.map((p, i) => (
+        <AddRow key={p.id} entry={p} last={i === addable.length - 1} />
+      ))}
+    </Section>
+  );
+}
+
+/** Writes the provider into the host's config.json, switched on, then probes it. */
+async function addProvider(entry: CatalogProvider): Promise<void> {
+  await patchConfig(catalogProviderPatch(entry));
+  await getClient()
+    ?.refreshProvidersSnapshot({ providers: [entry.id as never] })
+    .catch(() => null);
+  await loadConfig();
+}
+
+function AddRow({ entry, last }: { entry: CatalogProvider; last: boolean }) {
+  const [busy, setBusy] = useState(false);
+  const add = useCallback(() => {
+    setBusy(true);
+    void addProvider(entry).finally(() => setBusy(false));
+  }, [entry]);
+  return (
+    <View style={[s.head, !last && s.line]}>
+      <View style={[s.row, s.grow]}>
+        <View style={s.text}>
+          <T style={s.label}>{entry.title}</T>
+          <T style={s.hint}>{entry.description}</T>
+        </View>
+      </View>
+      <View style={s.switch}>
+        <Toggle value={busy} onChange={add} disabled={busy} label={`Add ${entry.title}`} />
+      </View>
+    </View>
   );
 }
 
