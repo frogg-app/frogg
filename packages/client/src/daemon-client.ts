@@ -101,6 +101,8 @@ import type {
   CheckoutPrMergeMethod,
   CheckoutForgeSetAutoMergeResponse,
   CheckoutCiListRunsResponse,
+  CheckoutCiWatchRunsResponse,
+  CheckoutCiUnwatchRunsResponse,
   CheckoutStreamsGetGraphResponse,
   CheckoutCiDownloadJobLogResponse,
   CheckoutGithubSetAutoMergeResponse,
@@ -566,6 +568,8 @@ export type {
   PluginRepo,
 };
 export type CheckoutCiListRunsPayload = CheckoutCiListRunsResponse["payload"];
+export type CheckoutCiWatchRunsPayload = CheckoutCiWatchRunsResponse["payload"];
+export type CheckoutCiUnwatchRunsPayload = CheckoutCiUnwatchRunsResponse["payload"];
 export type CheckoutStreamsGetGraphPayload = CheckoutStreamsGetGraphResponse["payload"];
 type CheckoutGithubSetAutoMergePayload = CheckoutGithubSetAutoMergeResponse["payload"];
 type CheckoutForgeGetCheckDetailsPayload = CheckoutForgeGetCheckDetailsResponse["payload"];
@@ -4563,6 +4567,29 @@ export class DaemonClient {
         cwd,
       },
       timeout: 45000,
+    });
+  }
+
+  /**
+   * Watch the checkout's own CI runs; updates arrive as `checkout.ci.watched_runs.update`.
+   * Gate on `features.ciRunWatch`.
+   */
+  async checkoutCiWatchRuns(cwd: string, requestId?: string): Promise<CheckoutCiWatchRunsPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"checkout.ci.watch_runs.response">({
+      requestId,
+      message: { type: "checkout.ci.watch_runs.request", cwd },
+      timeout: 15000,
+    });
+  }
+
+  async checkoutCiUnwatchRuns(
+    cwd: string,
+    requestId?: string,
+  ): Promise<CheckoutCiUnwatchRunsPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"checkout.ci.unwatch_runs.response">({
+      requestId,
+      message: { type: "checkout.ci.unwatch_runs.request", cwd },
+      timeout: 15000,
     });
   }
 

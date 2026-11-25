@@ -34,6 +34,7 @@ const RunSchema = z.object({
   conclusion: z.string().nullable().optional(),
   html_url: z.string().nullable().optional(),
   head_branch: z.string().nullable().optional(),
+  head_sha: z.string().nullable().optional(),
   run_started_at: z.string().nullable().optional(),
   updated_at: z.string().nullable().optional(),
 });
@@ -139,10 +140,20 @@ async function mapWithConcurrency<T, R>(
   return results;
 }
 
-/** Every workflow run in the project, newest per workflow and branch. */
-export async function listGitHubActionsRuns(input: { api: GitHubApiGet }): Promise<CiRun[]> {
+/**
+ * Every workflow run in the project, newest per workflow and branch. `filter` narrows the listing
+ * with GitHub's own query parameters (`head_sha`, `branch`), which the CI run watcher uses to
+ * ask only for the checkout's runs.
+ */
+export async function listGitHubActionsRuns(input: {
+  api: GitHubApiGet;
+  filter?: { headSha?: string; branch?: string };
+}): Promise<CiRun[]> {
+  const params = new URLSearchParams({ per_page: input.filter ? "30" : "100" });
+  if (input.filter?.headSha) params.set("head_sha", input.filter.headSha);
+  if (input.filter?.branch) params.set("branch", input.filter.branch);
   const runsResponse = RunsResponseSchema.parse(
-    await input.api(`repos/{owner}/{repo}/actions/runs?per_page=100`),
+    await input.api(`repos/{owner}/{repo}/actions/runs?${params.toString()}`),
   );
   const latestPerWorkflow = new Map<string, z.infer<typeof RunSchema>>();
   for (const run of runsResponse.workflow_runs) {
@@ -181,6 +192,7 @@ export async function listGitHubActionsRuns(input: { api: GitHubApiGet }): Promi
       provider: "githubActions",
       pipeline: run.name ?? "Workflow",
       branch: run.head_branch ?? null,
+      headSha: run.head_sha ?? null,
       number: run.run_number,
       trigger: run.event ?? null,
       status,

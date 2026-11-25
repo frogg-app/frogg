@@ -82,6 +82,8 @@ import { WorkspaceLabelsSession } from "./session/workspace-labels/workspace-lab
 import { PluginsSession } from "./session/plugins/plugins-session.js";
 import type { PluginService } from "./plugins/plugin-service.js";
 import { ProjectTodosSession } from "./session/project-todos/project-todos-session.js";
+import { CiRunsSession } from "./session/ci-runs/ci-runs-session.js";
+import type { CiRunWatcher } from "../services/ci/ci-run-watcher.js";
 import type { ProjectTodoService } from "./project-todos/service.js";
 import { AgentLifecycleSession } from "./session/agent-lifecycle/agent-lifecycle-session.js";
 import { WorkspaceMetadataSession } from "./session/workspace-metadata/workspace-metadata-session.js";
@@ -477,6 +479,7 @@ export interface SessionOptions {
   workspaceLabelService?: WorkspaceLabelService;
   pluginService?: PluginService | null;
   projectTodoService?: ProjectTodoService | null;
+  ciRunWatcher?: CiRunWatcher | null;
   filesystem?: SessionFileSystem;
   checkoutDiffManager: CheckoutDiffManager;
   github?: ForgeService;
@@ -734,6 +737,7 @@ export class Session {
   private readonly workspaceLabels: WorkspaceLabelsSession;
   private readonly plugins: PluginsSession;
   private readonly projectTodos: ProjectTodosSession;
+  private readonly ciRuns: CiRunsSession;
   private readonly workspaceMetadata: WorkspaceMetadataSession;
   private projectSyncEnabled = false;
   private readonly workspaceUpdateTails = new Map<string, Promise<void>>();
@@ -808,6 +812,7 @@ export class Session {
       workspaceLabelService,
       pluginService,
       projectTodoService,
+      ciRunWatcher,
       filesystem,
       checkoutDiffManager,
       github,
@@ -907,6 +912,10 @@ export class Session {
     });
     this.projectTodos = new ProjectTodosSession({
       service: projectTodoService,
+      emit: (message) => this.emit(message),
+    });
+    this.ciRuns = new CiRunsSession({
+      watcher: ciRunWatcher,
       emit: (message) => this.emit(message),
     });
     this.filesystem = filesystem ?? nodeSessionFileSystem;
@@ -2378,7 +2387,8 @@ export class Session {
     return (
       this.workspaceLabels.dispatch(msg) ??
       this.plugins.dispatch(msg) ??
-      this.projectTodos.dispatch(msg)
+      this.projectTodos.dispatch(msg) ??
+      this.ciRuns.dispatch(msg)
     );
   }
 
@@ -7774,6 +7784,7 @@ export class Session {
     this.unsubscribeWorkspaceMutations = null;
     this.workspaceLabels.close();
     this.projectTodos.close();
+    this.ciRuns.close();
     this.agentUpdates.dispose();
     await this.hubExecutionController?.cleanup();
     if (this.unsubscribeTerminalWorkspaceContributionEvents) {

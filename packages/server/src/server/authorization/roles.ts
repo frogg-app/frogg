@@ -88,6 +88,8 @@ const INBOUND_ROLE = {
   "chat/wait": "viewer",
   "checkout.ci.download_job_log.request": "operator",
   "checkout.ci.list_runs.request": "viewer",
+  "checkout.ci.unwatch_runs.request": "viewer",
+  "checkout.ci.watch_runs.request": "viewer",
   "checkout.streams.get_graph.request": "viewer",
   "checkout.commits.file_diff.request": "viewer",
   "checkout.commits.list.request": "viewer",

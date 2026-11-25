@@ -451,6 +451,10 @@ pub enum SessionMessage {
     CheckoutStreamsGetGraphRequest(CheckoutStreamsGetGraphRequest),
     #[serde(rename = "checkout.ci.download_job_log.request")]
     CheckoutCiDownloadJobLogRequest(CheckoutCiDownloadJobLogRequest),
+    #[serde(rename = "checkout.ci.watch_runs.request")]
+    CheckoutCiWatchRunsRequest(CheckoutCiWatchRunsRequest),
+    #[serde(rename = "checkout.ci.unwatch_runs.request")]
+    CheckoutCiUnwatchRunsRequest(CheckoutCiUnwatchRunsRequest),
     #[serde(rename = "checkout.github.set_auto_merge.request")]
     CheckoutGithubSetAutoMergeRequest(CheckoutGithubSetAutoMergeRequest),
     #[serde(rename = "checkout.commits.list.request")]
@@ -3379,6 +3383,20 @@ pub struct CheckoutCiDownloadJobLogRequest {
     pub job_id: String,
     #[serde(rename = "jobName", skip_serializing_if = "Option::is_none")]
     pub job_name: Option<String>,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CheckoutCiWatchRunsRequest {
+    pub cwd: String,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CheckoutCiUnwatchRunsRequest {
+    pub cwd: String,
     #[serde(rename = "requestId")]
     pub request_id: String,
 }

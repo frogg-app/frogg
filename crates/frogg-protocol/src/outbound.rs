@@ -386,6 +386,12 @@ pub enum SessionMessage {
     CheckoutStreamsGetGraphResponse(CheckoutStreamsGetGraphResponse),
     #[serde(rename = "checkout.ci.download_job_log.response")]
     CheckoutCiDownloadJobLogResponse(CheckoutCiDownloadJobLogResponse),
+    #[serde(rename = "checkout.ci.watch_runs.response")]
+    CheckoutCiWatchRunsResponse(CheckoutCiWatchRunsResponse),
+    #[serde(rename = "checkout.ci.unwatch_runs.response")]
+    CheckoutCiUnwatchRunsResponse(CheckoutCiUnwatchRunsResponse),
+    #[serde(rename = "checkout.ci.watched_runs.update")]
+    CheckoutCiWatchedRunsUpdate(CheckoutCiWatchedRunsUpdate),
     #[serde(rename = "checkout.github.set_auto_merge.response")]
     CheckoutGithubSetAutoMergeResponse(CheckoutGithubSetAutoMergeResponse),
     #[serde(rename = "checkout.commits.list.response")]
@@ -9865,6 +9871,8 @@ pub struct CheckoutCiListRunsResponsePayloadRunsItem {
     pub pipeline: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub branch: Option<String>,
+    #[serde(rename = "headSha", skip_serializing_if = "Option::is_none")]
+    pub head_sha: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub number: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -10024,6 +10032,140 @@ pub struct CheckoutCiDownloadJobLogResponsePayload {
     pub error: serde_json::Value,
     #[serde(rename = "requestId")]
     pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CheckoutCiWatchRunsResponse {
+    pub payload: CheckoutCiWatchRunsResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CheckoutCiWatchRunsResponsePayload {
+    pub cwd: String,
+    pub runs: Vec<CheckoutCiWatchRunsResponsePayloadRunsItem>,
+    pub error: serde_json::Value,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CheckoutCiWatchRunsResponsePayloadRunsItem {
+    pub id: String,
+    pub provider: String,
+    pub pipeline: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub branch: Option<String>,
+    #[serde(rename = "headSha", skip_serializing_if = "Option::is_none")]
+    pub head_sha: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub number: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub trigger: Option<String>,
+    pub status: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub progress: Option<f64>,
+    #[serde(rename = "startedAt", skip_serializing_if = "Option::is_none")]
+    pub started_at: Option<String>,
+    #[serde(rename = "completedAt", skip_serializing_if = "Option::is_none")]
+    pub completed_at: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+    pub jobs: Vec<CheckoutCiWatchRunsResponsePayloadRunsItemJobsItem>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CheckoutCiWatchRunsResponsePayloadRunsItemJobsItem {
+    pub id: String,
+    pub name: String,
+    pub status: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub progress: Option<f64>,
+    #[serde(rename = "startedAt", skip_serializing_if = "Option::is_none")]
+    pub started_at: Option<String>,
+    #[serde(rename = "completedAt", skip_serializing_if = "Option::is_none")]
+    pub completed_at: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+    pub runner: serde_json::Value,
+    pub steps: Vec<CheckoutCiWatchRunsResponsePayloadRunsItemJobsItemStepsItem>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CheckoutCiWatchRunsResponsePayloadRunsItemJobsItemStepsItem {
+    pub name: String,
+    pub status: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CheckoutCiUnwatchRunsResponse {
+    pub payload: CheckoutCiUnwatchRunsResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CheckoutCiUnwatchRunsResponsePayload {
+    pub cwd: String,
+    pub error: serde_json::Value,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CheckoutCiWatchedRunsUpdate {
+    pub payload: CheckoutCiWatchedRunsUpdatePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CheckoutCiWatchedRunsUpdatePayload {
+    pub cwd: String,
+    pub runs: Vec<CheckoutCiWatchedRunsUpdatePayloadRunsItem>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CheckoutCiWatchedRunsUpdatePayloadRunsItem {
+    pub id: String,
+    pub provider: String,
+    pub pipeline: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub branch: Option<String>,
+    #[serde(rename = "headSha", skip_serializing_if = "Option::is_none")]
+    pub head_sha: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub number: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub trigger: Option<String>,
+    pub status: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub progress: Option<f64>,
+    #[serde(rename = "startedAt", skip_serializing_if = "Option::is_none")]
+    pub started_at: Option<String>,
+    #[serde(rename = "completedAt", skip_serializing_if = "Option::is_none")]
+    pub completed_at: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+    pub jobs: Vec<CheckoutCiWatchedRunsUpdatePayloadRunsItemJobsItem>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CheckoutCiWatchedRunsUpdatePayloadRunsItemJobsItem {
+    pub id: String,
+    pub name: String,
+    pub status: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub progress: Option<f64>,
+    #[serde(rename = "startedAt", skip_serializing_if = "Option::is_none")]
+    pub started_at: Option<String>,
+    #[serde(rename = "completedAt", skip_serializing_if = "Option::is_none")]
+    pub completed_at: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+    pub runner: serde_json::Value,
+    pub steps: Vec<CheckoutCiWatchedRunsUpdatePayloadRunsItemJobsItemStepsItem>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CheckoutCiWatchedRunsUpdatePayloadRunsItemJobsItemStepsItem {
+    pub name: String,
+    pub status: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

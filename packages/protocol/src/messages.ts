@@ -2860,6 +2860,24 @@ export const CheckoutCiDownloadJobLogRequestSchema = z.object({
   requestId: z.string(),
 });
 
+/**
+ * Watch the CI runs that belong to this checkout (GitHub Actions runs for its HEAD, upstream and
+ * branch). The daemon polls while at least one client watches, faster while a run is active, and
+ * pushes `checkout.ci.watched_runs.update` whenever the set changes. Idempotent per cwd.
+ */
+export const CheckoutCiWatchRunsRequestSchema = z.object({
+  type: z.literal("checkout.ci.watch_runs.request"),
+  cwd: z.string(),
+  requestId: z.string(),
+});
+
+/** Stop watching a checkout's CI runs. */
+export const CheckoutCiUnwatchRunsRequestSchema = z.object({
+  type: z.literal("checkout.ci.unwatch_runs.request"),
+  cwd: z.string(),
+  requestId: z.string(),
+});
+
 /** CI runs (GitHub Actions, Jenkins) for the checkout's current branch. */
 export const CheckoutCiListRunsRequestSchema = z.object({
   type: z.literal("checkout.ci.list_runs.request"),
@@ -3952,6 +3970,8 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   CheckoutCiListRunsRequestSchema,
   CheckoutStreamsGetGraphRequestSchema,
   CheckoutCiDownloadJobLogRequestSchema,
+  CheckoutCiWatchRunsRequestSchema,
+  CheckoutCiUnwatchRunsRequestSchema,
   CheckoutGithubSetAutoMergeRequestSchema,
   CheckoutCommitsListRequestSchema,
   CheckoutCommitFileDiffRequestSchema,
@@ -4416,6 +4436,9 @@ export const ServerInfoStatusPayloadSchema = z
         // COMPAT(directoryZip): added in v1.6.14, remove after 2027-10-15.
         // fs.directory.zip.request is available.
         directoryZip: z.boolean().optional(),
+        // COMPAT(ciRunWatch): added in v1.6.14, remove after 2027-11-25.
+        // checkout.ci.watch_runs / unwatch_runs and the watched_runs.update push.
+        ciRunWatch: z.boolean().optional(),
         // COMPAT(projectTodos): added in v1.6.5, remove after 2027-09-27.
         // project.todo.* RPCs and the project.todo.changed push event.
         projectTodos: z.boolean().optional(),
@@ -6763,6 +6786,8 @@ export const CiRunSchema = z.object({
    * hidden.
    */
   branch: z.string().nullable().optional(),
+  /** The commit the run is for, when the provider reports it. */
+  headSha: z.string().nullable().optional(),
   number: z.number().nullable(),
   trigger: z.string().nullable(),
   status: z.string(),
@@ -6786,6 +6811,39 @@ export const CheckoutCiDownloadJobLogResponseSchema = z.object({
     file: UploadedFileAttachmentSchema.nullable(),
     error: CheckoutErrorSchema.nullable(),
     requestId: z.string(),
+  }),
+});
+
+export const CheckoutCiWatchRunsResponseSchema = z.object({
+  type: z.literal("checkout.ci.watch_runs.response"),
+  payload: z.object({
+    cwd: z.string(),
+    /** The watcher's latest set; empty until the first poll lands. */
+    runs: z.array(CiRunSchema),
+    error: CheckoutErrorSchema.nullable(),
+    requestId: z.string(),
+  }),
+});
+
+export const CheckoutCiUnwatchRunsResponseSchema = z.object({
+  type: z.literal("checkout.ci.unwatch_runs.response"),
+  payload: z.object({
+    cwd: z.string(),
+    error: CheckoutErrorSchema.nullable(),
+    requestId: z.string(),
+  }),
+});
+
+/**
+ * Push to sessions watching `cwd`: its active runs plus ones that finished recently, newest
+ * first. Empty when there is nothing to show, including when `gh` is missing or unauthenticated
+ * or the remote is not on GitHub.
+ */
+export const CheckoutCiWatchedRunsUpdateSchema = z.object({
+  type: z.literal("checkout.ci.watched_runs.update"),
+  payload: z.object({
+    cwd: z.string(),
+    runs: z.array(CiRunSchema),
   }),
 });
 
@@ -8363,6 +8421,9 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   CheckoutCiListRunsResponseSchema,
   CheckoutStreamsGetGraphResponseSchema,
   CheckoutCiDownloadJobLogResponseSchema,
+  CheckoutCiWatchRunsResponseSchema,
+  CheckoutCiUnwatchRunsResponseSchema,
+  CheckoutCiWatchedRunsUpdateSchema,
   CheckoutGithubSetAutoMergeResponseSchema,
   CheckoutCommitsListResponseSchema,
   CheckoutCommitFileDiffResponseSchema,
@@ -8897,6 +8958,11 @@ export type ReleaseStreamChange = z.infer<typeof ReleaseStreamChangeSchema>;
 export type ReleaseStreamFlow = z.infer<typeof ReleaseStreamFlowSchema>;
 export type ReleaseStreamEvent = z.infer<typeof ReleaseStreamEventSchema>;
 export type ReleaseStreamsConfig = z.infer<typeof ReleaseStreamsConfigSchema>;
+export type CheckoutCiWatchRunsRequest = z.infer<typeof CheckoutCiWatchRunsRequestSchema>;
+export type CheckoutCiWatchRunsResponse = z.infer<typeof CheckoutCiWatchRunsResponseSchema>;
+export type CheckoutCiUnwatchRunsRequest = z.infer<typeof CheckoutCiUnwatchRunsRequestSchema>;
+export type CheckoutCiUnwatchRunsResponse = z.infer<typeof CheckoutCiUnwatchRunsResponseSchema>;
+export type CheckoutCiWatchedRunsUpdate = z.infer<typeof CheckoutCiWatchedRunsUpdateSchema>;
 export type CheckoutCiDownloadJobLogResponse = z.infer<
   typeof CheckoutCiDownloadJobLogResponseSchema
 >;

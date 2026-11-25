@@ -129,6 +129,8 @@ import type { PresenceService } from "./presence-service.js";
 import type { WorkspaceLabelService } from "./workspace-labels/index.js";
 import type { PluginService } from "./plugins/plugin-service.js";
 import type { ProjectTodoService } from "./project-todos/service.js";
+import { CiRunWatcher } from "../services/ci/ci-run-watcher.js";
+import { createGitHubCiScopeResolver } from "../services/ci/ci-watch-scope.js";
 import {
   APPLICATION_SOCKET_LEASE_CHECK_INTERVAL_MS,
   ApplicationSocketLease,
@@ -642,6 +644,8 @@ export class VoiceAssistantWebSocketServer {
   private pluginService: PluginService | null = null;
   private unsubscribePluginEvents: (() => void) | null = null;
   private projectTodoService: ProjectTodoService | null = null;
+  private readonly ciRunWatcher: CiRunWatcher;
+  private unsubscribeCiRunPokes: (() => void) | null = null;
   private readonly checkoutDiffManager: CheckoutDiffManager;
   private readonly github: ForgeService;
   private readonly workspaceGitService: WorkspaceGitService;
@@ -779,6 +783,7 @@ export class VoiceAssistantWebSocketServer {
     this.checkoutDiffManager = requiredServices.checkoutDiffManager;
     this.github = github ?? createGitHubService();
     this.workspaceGitService = workspaceGitService ?? createFallbackWorkspaceGitService();
+    this.ciRunWatcher = this.createCiRunWatcher();
     this.workspaceAutoName = workspaceAutoName;
     this.downloadTokenStore = downloadTokenStore;
     this.froggHome = froggHome;
@@ -1250,6 +1255,36 @@ export class VoiceAssistantWebSocketServer {
 
   /** Wire the persisted credential-role store; enables auth.device.set_role. */
   /** Installs the project to-do service before connections are accepted. */
+  /**
+   * One CI run watcher for the daemon, scoped per checkout. A push or a new HEAD changes the
+   * checkout's branch/upstream/ahead facts, which repolls a watched checkout straight away
+   * instead of waiting out the idle backoff.
+   */
+  private createCiRunWatcher(): CiRunWatcher {
+    const watcher = new CiRunWatcher({
+      resolveScope: createGitHubCiScopeResolver({
+        resolveForge: (cwd) => this.workspaceGitService.resolveForge(cwd),
+      }),
+      logger: this.logger.child({ module: "ci-run-watcher" }),
+    });
+    const signatures = new Map<string, string>();
+    const subscription = this.workspaceGitService.onSnapshotUpdated((snapshot) => {
+      const git = snapshot.git;
+      const signature = [
+        git.currentBranch,
+        git.upstreamRef,
+        git.aheadOfOrigin,
+        git.aheadBehind?.ahead,
+        git.aheadBehind?.behind,
+      ].join("|");
+      const previous = signatures.get(snapshot.cwd);
+      signatures.set(snapshot.cwd, signature);
+      if (previous !== undefined && previous !== signature) watcher.poke(snapshot.cwd);
+    });
+    this.unsubscribeCiRunPokes = () => subscription.unsubscribe();
+    return watcher;
+  }
+
   public setProjectTodoService(service: ProjectTodoService | null): void {
     this.projectTodoService = service;
   }
@@ -1374,6 +1409,8 @@ export class VoiceAssistantWebSocketServer {
     await Promise.all(cleanupPromises);
     this.providerSnapshotManager.destroy();
     this.checkoutDiffManager.dispose();
+    this.unsubscribeCiRunPokes?.();
+    this.ciRunWatcher.dispose();
     await this.workspaceGitService.dispose();
     this.pendingConnections.clear();
     this.sessions.clear();
@@ -1710,6 +1747,7 @@ export class VoiceAssistantWebSocketServer {
       workspaceLabelService: this.workspaceLabelService ?? undefined,
       pluginService: this.pluginService,
       projectTodoService: this.projectTodoService,
+      ciRunWatcher: this.ciRunWatcher,
       directorySync: this.directorySync,
       checkoutDiffManager: this.checkoutDiffManager,
       github: this.github,
@@ -2163,6 +2201,8 @@ export class VoiceAssistantWebSocketServer {
         ...(this.daemonRuntimeConfig?.webUi ? { webUiControl: true } : {}),
         // COMPAT(projectTodos): added in v1.6.5, remove after 2027-09-27.
         projectTodos: this.projectTodoService !== null,
+        // COMPAT(ciRunWatch): added in v1.6.14, remove after 2027-11-25.
+        ciRunWatch: true,
         // COMPAT(workspaceCreatedAt): added in v1.1.0, remove after 2027-03-14.
         workspaceCreatedAt: true,
         // COMPAT(spokenNotifications): added in v0.1.14, remove gate after 2027-09-03.
