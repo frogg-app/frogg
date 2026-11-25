@@ -747,7 +747,8 @@ pub fn Composer(
             slash_closed.set(true);
             return;
         }
-        if k == "Enter" && !ev.shift_key() && !ev.is_composing() {
+        // On touch screens Enter is a new line and the button sends, as in ui-next.
+        if k == "Enter" && !ev.shift_key() && !ev.is_composing() && !touch_keyboard() {
             ev.prevent_default();
             submit(false);
         }
@@ -1025,6 +1026,13 @@ pub fn Composer(
             </div>
         </div>
     }
+}
+
+/// A touch-first device, whose on-screen keyboard's Enter means a new line.
+fn touch_keyboard() -> bool {
+    web_sys::window()
+        .and_then(|w| w.match_media("(pointer: coarse)").ok().flatten())
+        .is_some_and(|m| m.matches())
 }
 
 fn opt_str(v: &Value, k: &str) -> Option<String> {

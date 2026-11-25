@@ -257,20 +257,27 @@ pub fn Chat(
             StoredValue::new_local(None::<(web_sys::ResizeObserver, Closure<dyn FnMut()>)>);
         Effect::new(move |_| {
             let Some(el) = scroller.get() else { return };
+            // A new scroller replaces the observer; the old one must stop calling a dropped closure.
+            if let Some((ro, _)) = observer.try_update_value(Option::take).flatten() {
+                ro.disconnect();
+            }
             let body = el.first_element_child();
             let el2 = el.clone();
             let cb = Closure::<dyn FnMut()>::new(move || {
                 let (h, content) = (el2.client_height(), el2.scroll_height());
-                let (ph, pc) = last.get_value();
+                // Delivered after a frame: the view may be gone by then.
+                let Some((ph, pc)) = last.try_get_value() else {
+                    return;
+                };
                 if ph != 0 && (h != ph || content != pc) {
                     let gap = (pc - ph - el2.scroll_top()).max(0);
-                    if gap <= SLACK_PX || pinned.get_value() {
+                    if gap <= SLACK_PX || pinned.try_get_value().unwrap_or(false) {
                         el2.set_scroll_top(content);
                     } else if h != ph {
                         el2.set_scroll_top((content - h - gap).max(0));
                     }
                 }
-                last.set_value((el2.client_height(), el2.scroll_height()));
+                let _ = last.try_set_value((el2.client_height(), el2.scroll_height()));
             });
             if let Ok(ro) = web_sys::ResizeObserver::new(cb.as_ref().unchecked_ref()) {
                 ro.observe(&el);
