@@ -1254,7 +1254,6 @@ export class VoiceAssistantWebSocketServer {
   }
 
   /** Wire the persisted credential-role store; enables auth.device.set_role. */
-  /** Installs the project to-do service before connections are accepted. */
   /**
    * One CI run watcher for the daemon, scoped per checkout. A push or a new HEAD changes the
    * checkout's branch/upstream/ahead facts, which repolls a watched checkout straight away
@@ -1285,6 +1284,7 @@ export class VoiceAssistantWebSocketServer {
     return watcher;
   }
 
+  /** Installs the project to-do service before connections are accepted. */
   public setProjectTodoService(service: ProjectTodoService | null): void {
     this.projectTodoService = service;
   }
