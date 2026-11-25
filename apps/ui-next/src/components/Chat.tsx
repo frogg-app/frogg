@@ -2,6 +2,13 @@ import { PARENT_AGENT_ID_LABEL } from "@frogg/protocol/agent-labels";
 import { ArrowLeft, CornerLeftUp } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import {
+  dismissFinish,
+  holdFinish,
+  NO_HOLD,
+  showsFinish,
+  useAttentionClear,
+} from "../daemon/attention";
 import { useSubWorkStore } from "../daemon/subwork";
 import { useViewers } from "../daemon/viewers";
 import { cancelTurn, openTimeline, useDaemon } from "../daemon/store";
@@ -75,10 +82,29 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
   const anchor = useBottomAnchor();
   const detail = useSubWorkStore((st) => st.detail[a.id]);
   const [typing, setTyping] = useState(false);
+  const online = conn === "online";
+  // Open in an active window = seen: the list, Inbox and rail drop it from "Ready to review".
+  const markSeen = useAttentionClear(a, online);
+  // The end-of-turn card outlives the flag until the user moves on (types, sends or leaves).
+  const [hold, setHold] = useState(NO_HOLD);
+  const held = holdFinish(hold, a);
+  if (held !== hold) setHold(held);
+  const finish = showsFinish(held, a);
+  useEffect(() => () => setHold(NO_HOLD), [a.id]);
+  const moveOn = useCallback(() => {
+    markSeen();
+    setHold(dismissFinish);
+  }, [markSeen]);
+  const onTyping = useCallback(
+    (t: boolean) => {
+      setTyping(t);
+      if (t) moveOn();
+    },
+    [moveOn],
+  );
   const viewers = useViewers(a.id, typing ? "typing" : "viewing");
   const here = useMemo(() => <Viewers viewers={viewers} />, [viewers]);
   // Loads on open, and again once the host is back: a timeline opened while connecting has none.
-  const online = conn === "online";
   useEffect(() => {
     if (!online) return;
     void openTimeline(a.id).catch((e) => toastError("Could not load conversation", e));
@@ -91,12 +117,13 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
   const running = a.status === "running";
   const onSend = useCallback(
     async (t: string, attachments: Attachment[]) => {
+      moveOn();
       // A move or clean cut is rewriting the conversation: hold the message until it lands.
       if (busy(a.id)) queueMessage(a.id, t, attachments);
       else await sendWithAttachments(a.id, t, attachments);
       forkDrafts.delete(a.id);
     },
-    [a.id],
+    [a.id, moveOn],
   );
   const blocked = useMemo(() => cutBlocked(entries, running), [entries, running]);
   const canCut = online && hasFeature("agentCleanCut");
@@ -105,13 +132,14 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
     return {
       blocked,
       onSend: (t, attachments) => {
+        moveOn();
         queueMessage(a.id, t, attachments);
         forkDrafts.delete(a.id);
         // Already cutting (from the menu or the cache notice): the message just waits for it.
         if (!busy(a.id)) runSessionOp(a.id, CUT, () => cleanCut(a.id));
       },
     };
-  }, [a.id, blocked, canCut]);
+  }, [a.id, blocked, canCut, moveOn]);
   const commands = useCallback(() => listCommands(a.id), [a.id]);
   const shellEscape = useMemo(
     () => (online && hasFeature("agentShellEscape") ? { cwd: a.cwd } : undefined),
@@ -193,7 +221,7 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
               {a.pendingPermissions.map((p) => (
                 <PermissionCard key={p.id} agentId={a.id} p={p} />
               ))}
-              <SessionState agent={a} online={conn === "online"} />
+              <SessionState agent={a} online={online} finish={finish} />
               {running && conn === "online" && (
                 <Thinking entries={entries} waiting={a.pendingPermissions.length > 0} />
               )}
@@ -213,7 +241,7 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
                 compact={!!onBack}
                 expandable
                 sizeKey={a.id}
-                onTyping={setTyping}
+                onTyping={onTyping}
                 above={here}
                 cut={cut}
                 shellEscape={shellEscape}

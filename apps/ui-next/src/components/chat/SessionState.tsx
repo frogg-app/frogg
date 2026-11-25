@@ -219,17 +219,40 @@ export function StatePreview({ kind }: { kind: Kind }) {
   );
 }
 
-/** Durable turn outcomes stay in the conversation, independent of transient toasts. */
-export function SessionState({
-  agent,
-  online,
-  variant: override,
-}: {
+interface StateProps {
   agent: Agent;
   online: boolean;
   variant?: StateVariant;
-}) {
-  const bucket = bucketOf(agent);
+  /**
+   * Whether the end-of-turn card (ready / finished / waiting) shows. Defaults to the daemon's
+   * unseen-finish flag; the chat holds it past the flag until the user moves on.
+   */
+  finish?: boolean;
+}
+
+/**
+ * Turn outcomes stay in the conversation, independent of transient toasts, until the user moves
+ * on. A card that goes away folds out rather than vanishing.
+ */
+export function SessionState(props: StateProps) {
+  const card = useCard(props);
+  const last = useRef(card);
+  if (card) last.current = card;
+  const { mounted, closing } = usePresence(!!card, stateMs.out);
+  if (!mounted) return null;
+  // Same wrapper open or closing, so the card is not remounted (and does not replay) on exit.
+  return (
+    <View style={[s.slot, closing && s.leaving, closing && m.out]}>
+      <View style={s.slotInner}>{card ?? last.current}</View>
+    </View>
+  );
+}
+
+function useCard({ agent, online, variant: override, finish }: StateProps): ReactNode {
+  const raw = bucketOf(agent);
+  const ended = raw === "review" || raw === "idle";
+  let bucket = raw;
+  if (ended && finish !== undefined) bucket = finish ? "review" : "idle";
   const pref = usePrefs((st) => st.stateStyle);
   const variant = override ?? pref;
   const reconnect = useCallback(() => {
@@ -550,10 +573,16 @@ const m = StyleSheet.create({
   beam: stateMotion.beam,
   unfold: { ...stateMotion.unfold, ...web({ overflow: "hidden" }) },
   fold: { ...stateMotion.fold, ...web({ overflow: "hidden" }) },
+  out: stateMotion.out,
 });
 
 const s = StyleSheet.create({
   wrap: { marginTop: 18 },
+  slot: web({ display: "grid", gridTemplateRows: "1fr" }),
+  // No clip: the review glow and bracket corners sit outside the card; it is faded out before
+  // the row closes.
+  slotInner: { minHeight: 0 },
+  leaving: web({ pointerEvents: "none" }),
   card: { position: "relative", overflow: "hidden" },
   edge: {},
   bar: { position: "absolute", left: 0, top: 0, bottom: 0, width: 3 },

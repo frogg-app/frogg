@@ -132,7 +132,12 @@ export async function playTurn(id: string, opts: { tool?: boolean } = {}): Promi
     await wait(70);
   }
   if (!live()) return;
-  patchAgent(id, { status: "idle", requiresAttention: true, attentionReason: "finished" });
+  patchAgent(id, {
+    status: "idle",
+    requiresAttention: true,
+    attentionReason: "finished",
+    attentionTimestamp: new Date().toISOString(),
+  });
 }
 
 function answer(id: string, requestId: string, allow: boolean): void {
@@ -293,8 +298,9 @@ const known: Record<string, (...args: never[]) => unknown> = {
     patchAgent(id, { thinkingOptionId });
     return null;
   },
-  clearAgentAttention: async (ids: string[]) => {
-    for (const id of ids) patchAgent(id, { requiresAttention: false, attentionReason: null });
+  clearAgentAttention: async (ids: string | string[]) => {
+    for (const id of typeof ids === "string" ? [ids] : ids)
+      patchAgent(id, { requiresAttention: false, attentionReason: null });
     return {};
   },
   archiveAgent: async () => ({}),

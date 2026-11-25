@@ -196,7 +196,15 @@ export const toastMotion = {
  * Session state cards (end of timeline): fade + rise on `ease`, the kind trim draws in `trimDelay`
  * later; failed flashes coral once, review glows mint once; the compaction summary unfolds.
  */
-export const stateMs = { in: 200, trim: 220, trimDelay: 60, flash: 520, glow: 900, fold: 180 };
+export const stateMs = {
+  in: 200,
+  trim: 220,
+  trimDelay: 60,
+  flash: 520,
+  glow: 900,
+  fold: 180,
+  out: 240,
+};
 export const stateFrames = {
   rise: {
     "0%": { opacity: 0, transform: "translateY(8px)" },
@@ -221,6 +229,12 @@ export const stateFrames = {
     "0%": { opacity: 1, maxHeight: 640 },
     "100%": { opacity: 0, maxHeight: 0 },
   },
+  /** A state card leaving: fades, then its row closes from its real height (grid 1fr → 0fr). */
+  out: {
+    "0%": { opacity: 1, gridTemplateRows: "1fr" },
+    "45%": { opacity: 0, gridTemplateRows: "1fr" },
+    "100%": { opacity: 0, gridTemplateRows: "0fr" },
+  },
 } satisfies Record<string, Frames>;
 const after = (ms: number) => web({ animationDelay: `${ms}ms` });
 export const stateMotion = {
@@ -233,6 +247,7 @@ export const stateMotion = {
   corner: { ...anim(frames.snap, "160ms", ease), ...after(stateMs.trimDelay) },
   unfold: anim(stateFrames.unfold, `${stateMs.fold}ms`, ease),
   fold: anim(stateFrames.fold, `${stateMs.fold - 40}ms`, "cubic-bezier(0.4, 0, 1, 1)"),
+  out: anim(stateFrames.out, `${stateMs.out}ms`, ease),
 };
 /** Kind washes for state cards. */
 export const stateWash = {
