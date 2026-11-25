@@ -36,6 +36,8 @@ import { StatusBar } from "../components/StatusBar";
 import { TerminalDetail, TerminalsPanel } from "../components/TerminalsPanel";
 import { ToolPane } from "../components/ToolPane";
 import { ToolEmpty } from "../components/shell/ToolEmpty";
+import { popBack } from "../components/shell/back";
+import { SwipeBack } from "../components/shell/SwipeBack";
 import { useHardwareBack } from "../components/shell/useHardwareBack";
 import { useKeyboardVisible } from "../components/shell/useKeyboardVisible";
 import { useDaemon } from "../daemon/store";
@@ -211,6 +213,7 @@ function Shell() {
   const closeList = useCallback(() => setListOpen(false), [setListOpen]);
   const onHardwareBack = useCallback(() => popBack(phone, openRun), [phone, openRun]);
   useHardwareBack(onHardwareBack);
+  const onSwipeBack = useCallback(() => void popBack(phone, openRun), [phone, openRun]);
   const keyboard = useKeyboardVisible();
   const { crash } = useLocalSearchParams<{ crash?: string }>();
 
@@ -243,7 +246,13 @@ function Shell() {
           {crash !== undefined && <Crash />}
           <HostToasts />
           <UsageStatsPrompt />
-          <View style={s.fill}>{phoneHasDetail ? detailEl : side}</View>
+          {phoneHasDetail ? (
+            <SwipeBack onBack={onSwipeBack} style={s.fill}>
+              {detailEl}
+            </SwipeBack>
+          ) : (
+            <View style={s.fill}>{side}</View>
+          )}
           {!phoneHasDetail && !keyboard && <PhoneTabs badges={badges} />}
         </KeyboardFrame>
         <Palette key="palette" />
@@ -305,35 +314,6 @@ function Shell() {
 /** Dev hook: `/?crash` throws during render so the root error boundary can be checked. */
 function Crash(): ReactNode {
   throw new TypeError("Simulated crash from /?crash");
-}
-
-/**
- * Android back, innermost first: palette, the new-session overlay (tablet; phone uses a Modal
- * that handles back itself), a tool's pushed detail, the open session, the portrait drawer,
- * then the non-session tab. Returns false at the root so Android leaves the app.
- */
-function popBack(phone: boolean, openRun: string | null | undefined): boolean {
-  const pop = backAction(phone, openRun);
-  pop?.();
-  return !!pop;
-}
-
-function backAction(phone: boolean, openRun: string | null | undefined): (() => void) | null {
-  const ui = useUi.getState();
-  const { tool } = ui;
-  if (ui.paletteOpen) return () => ui.setPalette(false);
-  if (ui.newSessionOpen) return () => ui.setNewSession(false);
-  if (tool === "scm" && ui.diffPath) return () => ui.openDiff(null);
-  if (tool === "terminals" && ui.terminalId) return () => ui.openTerminal(null);
-  if (sessionsTerminal(ui)) return () => ui.openSessionTerminal(null);
-  if (tool === "prs" && openRun) return closeRun;
-  if (tool === "files" && ui.filePath) return () => ui.openFile(null);
-  if (tool === "settings" && ui.settingsPage && phone) return () => ui.openSettings(null);
-  if (tool === "inbox" && ui.inboxId) return () => ui.openInbox(null);
-  if (!phone && ui.listOpen && ui.selected) return () => ui.setListOpen(false);
-  if (tool === "sessions" && ui.selected) return () => ui.select(null);
-  if (tool !== "sessions") return () => ui.setTool("sessions");
-  return null;
 }
 
 /** Phone only: whether MainDetail renders a view (otherwise the tab panel shows). */
