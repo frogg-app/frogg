@@ -222,8 +222,11 @@ export function projectIdOf(
 ): string | null {
   const w = sess.agent.workspaceId ? d.workspaces[sess.agent.workspaceId] : undefined;
   if (w) return w.projectId;
+  // No loaded workspace (archived, or not fetched yet): go by the session's project. Daemons
+  // send its project id in `projectKey`, older ones the project's own key, so match either.
   const key = sess.project?.projectKey;
-  return d.projects.find((p) => p.projectKey === key)?.projectId ?? null;
+  if (!key) return null;
+  return d.projects.find((p) => p.projectId === key || p.projectKey === key)?.projectId ?? null;
 }
 
 // ---- actions (each throws on failure so the caller can show it) ----
