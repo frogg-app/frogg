@@ -44,7 +44,14 @@ tokio = { version = "1", features = ["time"] }
 
 # Traffic lights centred on the title strip (traffic_lights.rs); same versions tao links.
 [target.'cfg(target_os = "macos")'.dependencies]
-objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSResponder", "NSView", "NSWindow", "NSControl", "NSButton"] }
+objc2-app-kit = { version = "0.3", default-features = false, features = [
+  "std",
+  "NSResponder",
+  "NSView",
+  "NSWindow",
+  "NSControl",
+  "NSButton",
+] }
 objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSGeometry"] }
 
 # Android APK updater (android_updates.rs): GitHub releases and the APK over rustls + Mozilla roots.

@@ -1,4 +1,5 @@
-import { brand, pairingScheme } from "@frogg/branding";
+import { brand } from "@frogg/branding";
+import { pairingScheme } from "@frogg/branding/identity";
 import { DaemonHomeGuard } from "./file-explorer/daemon-home-guard.js";
 import express from "express";
 import { createServer as createHTTPServer, type IncomingMessage, type ServerResponse } from "http";
@@ -1231,7 +1232,7 @@ export async function createFroggDaemon(
         };
       });
     },
-    deepLinkScheme: pairingScheme,
+    deepLinkScheme: pairingScheme(brand),
     settings: {
       read: () => ({
         claimMode: readMutableClaimMode(daemonConfigStore.get()),

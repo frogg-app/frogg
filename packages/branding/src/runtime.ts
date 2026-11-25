@@ -24,9 +24,3 @@ export const brandIdentity = Object.freeze({
 export const release = Object.freeze({ version: releaseVersion });
 
 export { isModelAllowed, isProviderAllowed, type ProviderPolicy } from "./provider-policy.js";
-
-/**
- * The deep-link scheme of the app this daemon pairs with. A Frogg Next daemon carries the stable
- * client's identity, but its pairing links must open Frogg Next, not the classic app.
- */
-export const pairingScheme: string = brand.daemonLine === "next" ? brand.next.scheme : brand.scheme;

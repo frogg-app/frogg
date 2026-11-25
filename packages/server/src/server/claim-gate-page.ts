@@ -1,4 +1,5 @@
-import { brand, pairingScheme } from "@frogg/branding";
+import { brand } from "@frogg/branding";
+import { pairingScheme } from "@frogg/branding/identity";
 /**
  * The "Claim this Frogg daemon" page: what the web server serves instead of the
  * app while the daemon is unclaimed and reached from an untrusted address (public,
@@ -47,7 +48,7 @@ const SCRIPT = `
 
 export function renderClaimGatePage(input: ClaimGatePageInput): string {
   const url = escapeHtml(input.pairingUrl);
-  const deepLink = buildPairingDeepLink(input.pairingUrl, pairingScheme);
+  const deepLink = buildPairingDeepLink(input.pairingUrl, pairingScheme(brand));
   const openInApp = deepLink
     ? `<a id="open-app" class="button" href="${escapeHtml(deepLink)}">Open in ${escapeHtml(brand.name)} app</a>`
     : "";

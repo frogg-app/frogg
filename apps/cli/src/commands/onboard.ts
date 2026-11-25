@@ -1,4 +1,5 @@
-import { brand, pairingScheme } from "@frogg/branding";
+import { brand } from "@frogg/branding";
+import { pairingScheme } from "@frogg/branding/identity";
 import { cancel, confirm, intro, isCancel, log, outro, spinner } from "@clack/prompts";
 import { Command, Option } from "commander";
 import { writeFileSync } from "node:fs";
@@ -477,7 +478,7 @@ async function printPairingOffer(
       url: pairing.url,
       qr: pairing.qr,
       columns: process.stdout.columns,
-      deepLink: buildPairingDeepLink(pairing.url, pairingScheme),
+      deepLink: buildPairingDeepLink(pairing.url, pairingScheme(brand)),
     }),
   );
   printNextSteps(pairing.url, froggHome, richUi);

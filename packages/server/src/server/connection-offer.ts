@@ -1,4 +1,5 @@
-import { pairingScheme } from "@frogg/branding";
+import { brand } from "@frogg/branding";
+import { pairingScheme } from "@frogg/branding/identity";
 import os from "node:os";
 
 import {
@@ -55,7 +56,7 @@ export function encodeOfferToPairingUrl(args: {
   const encoded = Buffer.from(json, "utf8").toString("base64url");
   return args.appBaseUrl
     ? buildPairingUrl(args.appBaseUrl, encoded)
-    : `${pairingScheme}://pair#offer=${encoded}`;
+    : `${pairingScheme(brand)}://pair#offer=${encoded}`;
 }
 
 function getPrimaryLanIp(): string | null {

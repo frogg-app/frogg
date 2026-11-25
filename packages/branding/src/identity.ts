@@ -52,3 +52,11 @@ export function brandEnv(
 export function storageKey(brand: Brand, key: string): string {
   return `${brand.storagePrefix}${key}`;
 }
+
+/**
+ * The deep-link scheme of the app a daemon pairs with. A Frogg Next daemon carries the stable
+ * client's identity, but its pairing links must open Frogg Next, not the classic app.
+ */
+export function pairingScheme(brand: Pick<Brand, "daemonLine" | "scheme" | "next">): string {
+  return brand.daemonLine === "next" ? brand.next.scheme : brand.scheme;
+}
