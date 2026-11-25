@@ -32,6 +32,17 @@ android {
         if (f.exists()) f.inputStream().use { load(it) }
     }
     signingConfigs {
+        // Without keystore.properties, release falls back to the committed, publicly known
+        // React Native debug key (SHA-256 FA:C6:17:45:...:03:3B:9C, the one ui-next's -unsigned
+        // APKs carry), never the runner's ~/.android/debug.keystore. That key is generated afresh
+        // on each CI runner, so every release had a new certificate and Android refused to
+        // update over the previous one.
+        getByName("debug") {
+            storeFile = file("public-debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
         if (keystoreProperties.getProperty("storeFile") != null) {
             create("release") {
                 storeFile = file(keystoreProperties.getProperty("storeFile"))

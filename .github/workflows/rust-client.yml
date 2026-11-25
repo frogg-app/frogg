@@ -272,6 +272,19 @@ jobs:
         run: |
           export NDK_HOME="$ANDROID_HOME/ndk/27.2.12479018"
           cargo tauri android build --apk --ci
+      # Android only updates an install signed by the same certificate. Without signing secrets
+      # the APK must carry the committed public debug key, never a per-runner one.
+      - name: Check APK signing certificate
+        run: |
+          props=apps/client/src-tauri/gen/android/keystore.properties
+          for apk in $(find apps/client/src-tauri/gen/android/app/build/outputs/apk -name '*.apk'); do
+            cert=$("$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs "$apk" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+            echo "$apk: $cert"
+            if [ ! -f "$props" ] && [ "$cert" != "fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c" ]; then
+              echo "::error::$apk is not signed with the committed public debug key; installs could not update to it."
+              exit 1
+            fi
+          done
       - uses: actions/upload-artifact@v7
         with:
           name: frogg-next-rs-android
