@@ -43,6 +43,16 @@ useUi.subscribe((st, prev) => {
 });
 
 /**
+ * Opens a session's own conversation from its row: selects it and drops any sub-work details
+ * filling its pane. Re-selecting the open session does not fire the subscriber above, so its
+ * details are cleared here.
+ */
+export function openSessionChat(sessionId: string): void {
+  useUi.getState().select(sessionId);
+  closeDetail(sessionId);
+}
+
+/**
  * Opens what a sub-work row stands for: a child session or a terminal as itself, a subagent linked
  * to a to-do as that to-do in Tasks, anything else as its details in the parent's chat pane.
  */

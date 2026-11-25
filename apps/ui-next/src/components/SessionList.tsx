@@ -21,7 +21,7 @@ import { ago } from "../util";
 import { Button } from "./Button";
 import { Cut } from "./Cut";
 import { useRunningSubWork } from "../daemon/subwork";
-import { useRowSubWork } from "./subwork/hooks";
+import { openSessionChat, useRowSubWork } from "./subwork/hooks";
 import { SubWorkBody, SubWorkChip } from "./subwork/views";
 import { useContextMenu } from "./sessions/contextMenu";
 import { isChat, openSheet, projectIdOf, useDirectory, type Prefs } from "./sessions/directory";
@@ -360,7 +360,7 @@ function Empty({ name, chats, all }: { name: string; chats: boolean; all: boolea
 async function openOnItsHost(sess: Session): Promise<void> {
   const host = sess.hostId && useHosts.getState().hosts.find((h) => h.id === sess.hostId);
   if (host) await connect(host);
-  useUi.getState().select(sess.agent.id);
+  openSessionChat(sess.agent.id);
 }
 
 function Row({

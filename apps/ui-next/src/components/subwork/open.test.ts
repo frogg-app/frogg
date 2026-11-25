@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { useSubWorkStore } from "../../daemon/subwork";
 import { useTodos, type Todo } from "../../daemon/todos";
 import { useUi } from "../../ui-store";
-import { openSubWork } from "./hooks";
+import { openSessionChat, openSubWork } from "./hooks";
 import type { SubWork } from "./model";
 
 const item = (over: Partial<SubWork>): SubWork => ({
@@ -57,6 +57,15 @@ describe("openSubWork", () => {
   it("drops a parent's details when another session is selected", () => {
     openSubWork("p", item({}));
     useUi.getState().select("q");
+    expect(useSubWorkStore.getState().detail).toEqual({});
+  });
+
+  it("pressing the selected parent's row closes its open details and shows its chat", () => {
+    openSubWork("p", item({}));
+    expect(useSubWorkStore.getState().detail).toEqual({ p: "sub:a1" });
+    openSessionChat("p");
+    expect(useUi.getState().selected).toBe("p");
+    expect(useUi.getState().sessionsPane).toBe("chat");
     expect(useSubWorkStore.getState().detail).toEqual({});
   });
 });
