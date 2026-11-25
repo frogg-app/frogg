@@ -64,7 +64,8 @@ const GAP = 8;
 const NONE = {};
 
 /**
- * Bottom-right stack of transient toasts (bottom, full width on phones). Also turns session
+ * Bottom-right stack of transient toasts (on phones: full width at the top, below the session
+ * header, so they cover neither the composer nor navigation). Also turns session
  * status changes on sessions you are not looking at into toasts. Mount once, above the shell.
  * `variant` overrides the store's (the lab switches the store; the shell uses the default).
  */
@@ -78,8 +79,8 @@ export function ToastHost({ variant }: { variant?: ToastVariant }) {
   useSessionToasts();
   const floor = useToasts((st) => st.floor);
   const pad = useMemo(
-    () => ({ bottom: Math.max(phone ? insets.bottom + 72 : 36, floor) }),
-    [phone, insets.bottom, floor],
+    () => (phone ? { top: insets.top + PHONE_TOP } : { bottom: Math.max(36, floor) }),
+    [phone, insets.top, floor],
   );
   if (toasts.length === 0) return null;
   return (
@@ -479,7 +480,12 @@ function openSession(id: string) {
   ui.select(id);
 }
 
-const tick = { position: "absolute" as const, width: 6, height: 6, borderColor: color.muted };
+const tick = {
+  position: "absolute" as const,
+  width: 6,
+  height: 6,
+  borderColor: color.muted,
+};
 const corner = { position: "absolute" as const, width: 9, height: 9 };
 
 // RN-web only compiles `animationKeyframes` that go through StyleSheet.create.
@@ -491,6 +497,9 @@ const m = StyleSheet.create({
   corner: toastMotion.corner,
   drain: toastMotion.drain,
 });
+
+/** Clears the phone session header (breadcrumb, title, status line). */
+const PHONE_TOP = 120;
 
 const s = StyleSheet.create({
   box: { position: "absolute", zIndex: 50 },
@@ -519,12 +528,33 @@ const s = StyleSheet.create({
   held: { ...web({ animationPlayState: "paused" }) },
 
   // A
-  cardA: { backgroundColor: color.raise, borderWidth: 1, borderColor: color.line2 },
+  cardA: {
+    backgroundColor: color.raise,
+    borderWidth: 1,
+    borderColor: color.line2,
+  },
   edge: { position: "absolute", left: 0, top: 10, bottom: 10, width: 2 },
   corners: { ...StyleSheet.absoluteFillObject },
-  cTL: { ...corner, left: -1, top: -1, borderLeftWidth: 1.5, borderTopWidth: 1.5 },
-  cBR: { ...corner, right: -1, bottom: -1, borderRightWidth: 1.5, borderBottomWidth: 1.5 },
-  bodyA: { paddingLeft: 16, paddingRight: 12, paddingTop: 9, paddingBottom: 12 },
+  cTL: {
+    ...corner,
+    left: -1,
+    top: -1,
+    borderLeftWidth: 1.5,
+    borderTopWidth: 1.5,
+  },
+  cBR: {
+    ...corner,
+    right: -1,
+    bottom: -1,
+    borderRightWidth: 1.5,
+    borderBottomWidth: 1.5,
+  },
+  bodyA: {
+    paddingLeft: 16,
+    paddingRight: 12,
+    paddingTop: 9,
+    paddingBottom: 12,
+  },
   head: { flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 5 },
   tag: { fontSize: 9.5, letterSpacing: 1.6 },
   actA: { alignSelf: "flex-start", marginTop: 8 },
@@ -536,7 +566,10 @@ const s = StyleSheet.create({
     borderColor: color.line2,
     ...web({
       backgroundImage: [
-        `repeating-linear-gradient(0deg, ${alpha(color.ink, 0.025)} 0px, ${alpha(color.ink, 0.025)} 1px, transparent 1px, transparent 3px)`,
+        `repeating-linear-gradient(0deg, ${alpha(color.ink, 0.025)} 0px, ${alpha(
+          color.ink,
+          0.025,
+        )} 1px, transparent 1px, transparent 3px)`,
         `linear-gradient(${alpha(color.cyan, 0.05)} 1px, transparent 1px)`,
         `linear-gradient(90deg, ${alpha(color.cyan, 0.05)} 1px, transparent 1px)`,
       ].join(", "),
@@ -546,8 +579,20 @@ const s = StyleSheet.create({
   ticks: { position: "absolute", left: -4, right: -4, top: -4, bottom: -4 },
   tTL: { ...tick, left: 0, top: 0, borderLeftWidth: 1, borderTopWidth: 1 },
   tTR: { ...tick, right: 0, top: 0, borderRightWidth: 1, borderTopWidth: 1 },
-  tBL: { ...tick, left: 0, bottom: 0, borderLeftWidth: 1, borderBottomWidth: 1 },
-  tBR: { ...tick, right: 0, bottom: 0, borderRightWidth: 1, borderBottomWidth: 1 },
+  tBL: {
+    ...tick,
+    left: 0,
+    bottom: 0,
+    borderLeftWidth: 1,
+    borderBottomWidth: 1,
+  },
+  tBR: {
+    ...tick,
+    right: 0,
+    bottom: 0,
+    borderRightWidth: 1,
+    borderBottomWidth: 1,
+  },
   hudHead: {
     flexDirection: "row",
     alignItems: "center",

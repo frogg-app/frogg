@@ -7,13 +7,15 @@ import {
   Plus,
   X,
 } from "lucide-react-native";
-import { useCallback, useMemo, type ReactNode, type RefObject } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { useCallback, useMemo, useState, type ReactNode, type RefObject } from "react";
+import { Image, Pressable, StyleSheet, View } from "react-native";
 import { color } from "../../theme/tokens";
+import { Lightbox } from "../markdown/Lightbox";
 import { T } from "../Text";
 import { toast, toastError } from "../toast/store";
 import { Menu, useAnchor, type MenuEntry } from "../tools/Menu";
 import type { Attachment } from "./actions";
+import { previewUri } from "./previewUri";
 import { canPastePicture, clipboardHasPicture, pasteClipboardPicture } from "./clipboard";
 import { canPickFiles, pickFiles } from "./pickFiles";
 import { cancelUpload, formatBytes, useUploads, type Picked } from "./upload";
@@ -41,7 +43,11 @@ export function useAttachPicker(onPicked: (picked: Picked[]) => void): {
     try {
       const picked = await pasteClipboardPicture();
       if (picked) onPicked([picked]);
-      else toast({ title: "Nothing to paste", detail: "The clipboard has no image." });
+      else
+        toast({
+          title: "Nothing to paste",
+          detail: "The clipboard has no image.",
+        });
     } catch (e) {
       toastError("Could not paste the image", e);
     }
@@ -97,7 +103,12 @@ export function AttachButton({ onPicked }: { onPicked: (picked: Picked[]) => voi
   );
 }
 
-const iconFor = { image: ImageIcon, file: FileText, fork: GitFork, upload: FileText };
+const iconFor = {
+  image: ImageIcon,
+  file: FileText,
+  fork: GitFork,
+  upload: FileText,
+};
 
 function chipIcon(a: Attachment) {
   if (a.kind === "local") return a.picked.mimeType.startsWith("image/") ? ImageIcon : FileText;
@@ -127,12 +138,38 @@ function Chip({ a, onRemove }: { a: Attachment; onRemove: (id: string) => void }
     [a.id, onRemove, uploading],
   );
   const Icon = chipIcon(a);
+  const uri = previewUri(a);
+  const thumb = useMemo(() => (uri ? { uri } : null), [uri]);
+  const [open, setOpen] = useState(false);
+  const show = useCallback(() => setOpen(true), []);
+  const hide = useCallback(() => setOpen(false), []);
   return (
     <View style={s.chip}>
-      <Icon size={12} color={color.muted} />
-      <T v="mono" style={s.name} numberOfLines={1}>
-        {a.name}
-      </T>
+      {thumb ? (
+        <Pressable
+          onPress={show}
+          style={s.preview}
+          accessibilityRole="button"
+          accessibilityLabel={`Preview ${a.name}`}
+        >
+          {({ hovered }) => (
+            <>
+              <Image source={thumb} style={[s.thumb, hovered && s.thumbHover]} />
+              <T v="mono" style={s.name} numberOfLines={1}>
+                {a.name}
+              </T>
+            </>
+          )}
+        </Pressable>
+      ) : (
+        <>
+          <Icon size={12} color={color.muted} />
+          <T v="mono" style={s.name} numberOfLines={1}>
+            {a.name}
+          </T>
+        </>
+      )}
+      {uri && <Lightbox uri={uri} alt={a.name} open={open} onClose={hide} />}
       {uploading && <UploadProgress id={a.id} size={a.size} />}
       <Pressable
         onPress={remove}
@@ -175,6 +212,26 @@ const s = StyleSheet.create({
     overflow: "hidden",
   },
   name: { color: color.text, flexShrink: 1 },
+  preview: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    flexShrink: 1,
+  },
+  thumb: {
+    width: 20,
+    height: 20,
+    borderWidth: 1,
+    borderColor: color.line,
+    opacity: 0.9,
+  },
+  thumbHover: { opacity: 1, borderColor: color.muted },
   pct: { color: color.muted, fontVariant: ["tabular-nums"] },
-  bar: { position: "absolute", left: 0, bottom: 0, height: 2, backgroundColor: color.mint },
+  bar: {
+    position: "absolute",
+    left: 0,
+    bottom: 0,
+    height: 2,
+    backgroundColor: color.mint,
+  },
 });
