@@ -22,6 +22,7 @@ import { ContextMeter } from "./chat/ContextMeter";
 import { ProviderChip } from "./chat/ProviderChip";
 import { ComposerNotices } from "./chat/Notices";
 import { SessionMenu } from "./chat/SessionMenu";
+import { FloatingCiCards } from "./ci/FloatingCiCards";
 import { SessionState } from "./chat/SessionState";
 import { headerTitle } from "./chat/title";
 import {
@@ -195,37 +196,40 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
         ) : (
           <>
             <SubWorkStrip sessionId={a.id} />
-            <ScrollView
-              ref={anchor.ref}
-              style={s.scroll}
-              contentContainerStyle={s.body}
-              onScroll={anchor.onScroll}
-              onLayout={anchor.onLayout}
-              onContentSizeChange={anchor.onContentSizeChange}
-              scrollEventThrottle={anchor.scrollEventThrottle}
-            >
-              {!rows && <TimelineLoading connecting={!online} />}
-              {rows?.length === 0 && !running && (
-                <T v="label" style={s.empty}>
-                  no messages yet · say what to do below
-                </T>
-              )}
-              {rows?.map((r) => (
-                <TimelineItem
-                  key={r.key}
-                  e={r.e}
-                  provider={provider}
-                  streaming={running && r === rows[rows.length - 1]}
-                />
-              ))}
-              {a.pendingPermissions.map((p) => (
-                <PermissionCard key={p.id} agentId={a.id} p={p} />
-              ))}
-              <SessionState agent={a} online={online} finish={finish} />
-              {running && conn === "online" && (
-                <Thinking entries={entries} waiting={a.pendingPermissions.length > 0} />
-              )}
-            </ScrollView>
+            <View style={s.scrollWrap}>
+              <ScrollView
+                ref={anchor.ref}
+                style={s.scroll}
+                contentContainerStyle={s.body}
+                onScroll={anchor.onScroll}
+                onLayout={anchor.onLayout}
+                onContentSizeChange={anchor.onContentSizeChange}
+                scrollEventThrottle={anchor.scrollEventThrottle}
+              >
+                {!rows && <TimelineLoading connecting={!online} />}
+                {rows?.length === 0 && !running && (
+                  <T v="label" style={s.empty}>
+                    no messages yet · say what to do below
+                  </T>
+                )}
+                {rows?.map((r) => (
+                  <TimelineItem
+                    key={r.key}
+                    e={r.e}
+                    provider={provider}
+                    streaming={running && r === rows[rows.length - 1]}
+                  />
+                ))}
+                {a.pendingPermissions.map((p) => (
+                  <PermissionCard key={p.id} agentId={a.id} p={p} />
+                ))}
+                <SessionState agent={a} online={online} finish={finish} />
+                {running && conn === "online" && (
+                  <Thinking entries={entries} waiting={a.pendingPermissions.length > 0} />
+                )}
+              </ScrollView>
+              <FloatingCiCards cwd={a.cwd} />
+            </View>
             <View style={s.composer}>
               <Composer
                 key={a.id}
@@ -355,6 +359,7 @@ const s = StyleSheet.create({
   subT: { fontSize: 12, color: color.muted },
   dot: { color: color.faint, fontSize: 12 },
   scroll: { flex: 1 },
+  scrollWrap: { flex: 1 },
   body: {
     paddingHorizontal: 24,
     paddingVertical: 18,

@@ -1,4 +1,5 @@
 import {
+  Activity,
   AppWindow,
   Archive,
   Copy,
@@ -25,6 +26,7 @@ import { StatusGlyph } from "../StatusGlyph";
 import { T } from "../Text";
 import { toast, toastError } from "../toast/store";
 import { Dialog } from "../tools/Dialog";
+import { showFloatingCi, useHasHiddenActive } from "../ci/floating";
 import { Menu, useAnchor, type MenuEntry } from "../tools/Menu";
 import {
   checkoutRisk,
@@ -70,6 +72,7 @@ export function SessionMenu({
   const doCut = useCallback(() => {
     runSessionOp(a.id, CUT, () => cleanCut(a.id));
   }, [a.id]);
+  const ciHidden = useHasHiddenActive(a.cwd);
   const isChild = !!a.labels?.[PARENT_AGENT_ID_LABEL];
   const doDetach = useCallback(() => {
     detachSession(a.id).then(
@@ -126,6 +129,13 @@ export function SessionMenu({
             ?.catch((e: unknown) => toastError("Could not open a window", e));
         },
       });
+    if (ciHidden)
+      list.push({
+        label: "Show floating CI jobs",
+        icon: Activity,
+        hint: "Bring back the cards you closed",
+        onPress: () => showFloatingCi(a.cwd),
+      });
     list.push({ label: "Copy session ID", icon: Copy, onPress: copyId });
     list.push("-", {
       label: "Archive session…",
@@ -134,7 +144,20 @@ export function SessionMenu({
       onPress: () => setOpen("archive"),
     });
     return list;
-  }, [doFork, doCut, doDetach, isChild, copyId, canRewind, target, a.id, a.status, op]);
+  }, [
+    doFork,
+    doCut,
+    doDetach,
+    isChild,
+    copyId,
+    canRewind,
+    target,
+    a.id,
+    a.cwd,
+    a.status,
+    op,
+    ciHidden,
+  ]);
   return (
     <>
       <View ref={anchor.ref} collapsable={false}>
