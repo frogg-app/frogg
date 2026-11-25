@@ -1,50 +1,108 @@
-import { FileText, GitFork, Image as ImageIcon, Plus, X } from "lucide-react-native";
-import { useCallback } from "react";
+import {
+  ClipboardPaste,
+  FileText,
+  GitFork,
+  Image as ImageIcon,
+  Paperclip,
+  Plus,
+  X,
+} from "lucide-react-native";
+import { useCallback, useMemo, type ReactNode, type RefObject } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { color } from "../../theme/tokens";
 import { T } from "../Text";
 import { toast, toastError } from "../toast/store";
-import { attachPicked, type Attachment } from "./actions";
+import { Menu, useAnchor, type MenuEntry } from "../tools/Menu";
+import type { Attachment } from "./actions";
+import { canPastePicture, clipboardHasPicture, pasteClipboardPicture } from "./clipboard";
 import { canPickFiles, pickFiles } from "./pickFiles";
-import { cancelUpload, formatBytes, useUploads } from "./upload";
+import { cancelUpload, formatBytes, useUploads, type Picked } from "./upload";
 
 /**
- * The composer's + button: opens the file chooser straight away. Small images go to the model;
- * everything else uploads to the host.
+ * What an attach button does when pressed: opens the file chooser straight away or, on a phone
+ * with a picture on the clipboard, a menu that can paste it instead. Render `menu` beside the
+ * button and put `ref` on the View around it.
  */
-export function AttachButton({
-  onAdd,
-  onRemove,
-}: {
-  onAdd: (a: Attachment[]) => void;
-  onRemove: (id: string) => void;
-}) {
-  const pick = useCallback(async () => {
+export function useAttachPicker(onPicked: (picked: Picked[]) => void): {
+  ref: RefObject<View | null>;
+  press: () => void;
+  menu: ReactNode;
+} {
+  const { ref, rect, open, close } = useAnchor();
+  const choose = useCallback(async () => {
+    try {
+      const picked = await pickFiles();
+      if (picked.length) onPicked(picked);
+    } catch (e) {
+      toastError("Could not attach", e);
+    }
+  }, [onPicked]);
+  const paste = useCallback(async () => {
+    try {
+      const picked = await pasteClipboardPicture();
+      if (picked) onPicked([picked]);
+      else toast({ title: "Nothing to paste", detail: "The clipboard has no image." });
+    } catch (e) {
+      toastError("Could not paste the image", e);
+    }
+  }, [onPicked]);
+  const press = useCallback(() => {
     if (!canPickFiles) {
       toast({ title: "Attaching isn't available on this device yet" });
       return;
     }
-    try {
-      attachPicked(await pickFiles(), onAdd, onRemove);
-    } catch (e) {
-      toastError("Could not attach", e);
+    if (!canPastePicture) {
+      void choose();
+      return;
     }
-  }, [onAdd, onRemove]);
-  const press = useCallback(() => void pick(), [pick]);
+    void clipboardHasPicture().then((has) => (has ? open() : choose()));
+  }, [choose, open]);
+  const items = useMemo<MenuEntry[]>(
+    () => [
+      {
+        label: "Paste image",
+        hint: "The picture on the clipboard",
+        icon: ClipboardPaste,
+        onPress: () => void paste(),
+      },
+      { label: "Choose files", icon: Paperclip, onPress: () => void choose() },
+    ],
+    [paste, choose],
+  );
+  const menu = canPastePicture ? (
+    <Menu rect={rect} onClose={close} items={items} width={240} />
+  ) : null;
+  return { ref, press, menu };
+}
+
+/**
+ * The composer's + button: opens the file chooser (or, with a picture on a phone's clipboard,
+ * offers to paste it). Small images go to the model; everything else uploads to the host.
+ */
+export function AttachButton({ onPicked }: { onPicked: (picked: Picked[]) => void }) {
+  const { ref, press, menu } = useAttachPicker(onPicked);
   return (
-    <Pressable
-      onPress={press}
-      accessibilityRole="button"
-      accessibilityLabel="Attach images or files"
-      accessibilityHint="Images go to the model; files go to the host"
-      hitSlop={6}
-    >
-      {({ hovered }) => <Plus size={16} color={hovered ? color.text : color.muted} />}
-    </Pressable>
+    <View ref={ref} collapsable={false}>
+      <Pressable
+        onPress={press}
+        accessibilityRole="button"
+        accessibilityLabel="Attach images or files"
+        accessibilityHint="Images go to the model; files go to the host"
+        hitSlop={6}
+      >
+        {({ hovered }) => <Plus size={16} color={hovered ? color.text : color.muted} />}
+      </Pressable>
+      {menu}
+    </View>
   );
 }
 
 const iconFor = { image: ImageIcon, file: FileText, fork: GitFork, upload: FileText };
+
+function chipIcon(a: Attachment) {
+  if (a.kind === "local") return a.picked.mimeType.startsWith("image/") ? ImageIcon : FileText;
+  return iconFor[a.kind];
+}
 
 export function AttachChips({
   items,
@@ -68,7 +126,7 @@ function Chip({ a, onRemove }: { a: Attachment; onRemove: (id: string) => void }
     () => (uploading ? cancelUpload(a.id) : onRemove(a.id)),
     [a.id, onRemove, uploading],
   );
-  const Icon = iconFor[a.kind];
+  const Icon = chipIcon(a);
   return (
     <View style={s.chip}>
       <Icon size={12} color={color.muted} />

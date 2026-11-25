@@ -11,12 +11,12 @@ import {
   type TextInputKeyPressEventData,
 } from "react-native";
 import { color, ease, font, web } from "../theme/tokens";
-import { attachPicked, type Attachment, type SlashCommand } from "./chat/actions";
+import { attachPicked, holdPicked, type Attachment, type SlashCommand } from "./chat/actions";
 import type { Picked } from "./chat/upload";
 import { AttachChips, AttachButton } from "./chat/Attach";
 import { useComposerHeight } from "./chat/composerSize";
 import { useDropFiles } from "./chat/dropFiles";
-import { usePasteImages } from "./chat/pasteImages";
+import { usePastePictures } from "./chat/pasteImages";
 import { SlashMenu, matchCommands } from "./chat/SlashMenu";
 import { toast, toastError } from "./toast/store";
 import { Cut } from "./Cut";
@@ -55,6 +55,7 @@ export function Composer({
   children,
   loadCommands,
   attach,
+  hold,
   notices,
   initialAttachments,
   right,
@@ -78,6 +79,11 @@ export function Composer({
   loadCommands?: () => Promise<SlashCommand[]>;
   /** Show the + attach menu and attachment chips. */
   attach?: boolean;
+  /**
+   * Attached files stay on this device as `local` attachments for `onSend` to take, instead of
+   * going to the active host straight away (Home, where the host is chosen afterwards).
+   */
+  hold?: boolean;
   /** Notice strips drawn above the input (stale cache, auto-resume). */
   notices?: ReactNode;
   /** Attachments already waiting (a fork's context). */
@@ -235,13 +241,16 @@ export function Composer({
   const removeAtt = useCallback((id: string) => setAtts((a) => a.filter((x) => x.id !== id)), []);
   const anchor = useRef<View>(null);
   const input = useRef<TextInput>(null);
-  usePasteImages(input, addAtts, removeAtt, !!attach && !disabled);
-  const box = useRef<View>(null);
-  const dropped = useCallback(
-    (picked: Picked[]) => attachPicked(picked, addAtts, removeAtt),
-    [addAtts, removeAtt],
+  // Picked, pasted and dropped files all land the same way.
+  const take = useCallback(
+    (picked: Picked[]) =>
+      hold ? holdPicked(picked, addAtts) : attachPicked(picked, addAtts, removeAtt),
+    [hold, addAtts, removeAtt],
   );
-  const dragOver = useDropFiles(box, dropped, { enabled: !!attach && !disabled });
+  const canAttach = !!attach && !disabled;
+  usePastePictures(input, take, canAttach);
+  const box = useRef<View>(null);
+  const dragOver = useDropFiles(box, take, { enabled: canAttach });
   const highlight = Math.min(hi, Math.max(0, matches.length - 1));
   const slashMenu = useCallback(
     (p: { up: boolean; maxHeight: number }) => (
@@ -298,11 +307,7 @@ export function Composer({
             />
           </Animated.View>
           <View style={s.bar}>
-            {attach ? (
-              <AttachButton onAdd={addAtts} onRemove={removeAtt} />
-            ) : (
-              <Plus size={16} color={color.muted} />
-            )}
+            {attach ? <AttachButton onPicked={take} /> : <Plus size={16} color={color.muted} />}
             {chips.map((c, n) => (
               <View key={c} style={s.chip}>
                 {n === 0 && <View style={s.chipDot} />}

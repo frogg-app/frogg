@@ -21,7 +21,9 @@ export type Attachment =
   | { kind: "image"; id: string; name: string; mimeType: string; data: string }
   | { kind: "file"; id: string; name: string; file: UploadedFile }
   | { kind: "upload"; id: string; name: string; size: number }
-  | { kind: "fork"; id: string; name: string; context: ForkContext };
+  | { kind: "fork"; id: string; name: string; context: ForkContext }
+  /** Kept on this device until the message goes somewhere (Home, before a host is chosen). */
+  | { kind: "local"; id: string; name: string; picked: Picked };
 
 function client(): Client {
   const c = getClient();
@@ -69,6 +71,16 @@ export function attachPicked(
       },
     );
   }
+}
+
+/** Turns picks into attachments held on this device: nothing is read into or sent to a host yet. */
+export function holdPicked(picked: Picked[], add: (a: Attachment[]) => void): void {
+  add(
+    picked.map((p) => {
+      attachSeq += 1;
+      return { kind: "local", id: `a${attachSeq}`, name: p.name, picked: p };
+    }),
+  );
 }
 
 export async function sendWithAttachments(

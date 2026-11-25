@@ -3,7 +3,7 @@ import { StyleSheet, View } from "react-native";
 import { Chat } from "../../components/Chat";
 import { AccountChip } from "../../components/chat/AccountChip";
 import { ContextMeter } from "../../components/chat/ContextMeter";
-import type { Attachment, SlashCommand } from "../../components/chat/actions";
+import { holdPicked, type Attachment, type SlashCommand } from "../../components/chat/actions";
 import { AttachChips, AttachButton } from "../../components/chat/Attach";
 import { SessionMenu } from "../../components/chat/SessionMenu";
 import { SlashMenu } from "../../components/chat/SlashMenu";
@@ -19,7 +19,7 @@ import { color } from "../../theme/tokens";
 import { useUi } from "../../ui-store";
 import { commands as COMMANDS, entry, ID, toolDetails, toolItem } from "../fixtures";
 import { LAB_ATTACHMENTS } from "../sim/fs";
-import { useUploads } from "../../components/chat/upload";
+import { useUploads, type Picked } from "../../components/chat/upload";
 import { Above, Case, Cases, Fill, W, type Entry } from "../kit";
 
 type ToolItem = Extract<TimelineItem, { type: "tool_call" }>;
@@ -390,11 +390,20 @@ const SlashError = () => (
 function Attachments() {
   const [items, setItems] = useState<Attachment[]>(ATTACHMENTS);
   const remove = useCallback((id: string) => setItems((l) => l.filter((a) => a.id !== id)), []);
-  const add = useCallback((a: Attachment[]) => setItems((l) => [...l, ...a]), []);
+  // The lab has no host to upload to, so picks are held on the device as on Home.
+  const pick = useCallback(
+    (p: Picked[]) => holdPicked(p, (a) => setItems((l) => [...l, ...a])),
+    [],
+  );
   return (
     <Cases>
-      <Case name="AttachButton" props="onAdd" note="Click + to open the file chooser (web)." plain>
-        <AttachButton onAdd={add} onRemove={remove} />
+      <Case
+        name="AttachButton"
+        props="onPicked"
+        note="Click + to open the file chooser (web). On a phone with an image on the clipboard it opens Paste image / Choose files."
+        plain
+      >
+        <AttachButton onPicked={pick} />
       </Case>
       <Case
         name="AttachChips"
