@@ -43,6 +43,10 @@ export interface Prefs {
   show: Record<ShowKey, boolean>;
   label: string | null;
   showHidden: boolean;
+  /** One collapsible section per host, outermost, with `group` nested inside. */
+  byHost: boolean;
+  /** Host ids whose section is collapsed. */
+  collapsedHosts: string[];
 }
 
 export type Sheet =
@@ -58,9 +62,11 @@ export const DEFAULT_PREFS: Prefs = {
   group: "attention",
   sort: "recent",
   title: "title",
-  show: { project: true, branch: true, host: false, labels: true, provider: false },
+  show: { project: true, branch: true, host: true, labels: true, provider: false },
   label: null,
   showHidden: false,
+  byHost: false,
+  collapsedHosts: [],
 };
 
 interface DirState {
@@ -124,6 +130,13 @@ void ready.then(() =>
       );
   }),
 );
+
+export function toggleHostCollapsed(hostId: string): void {
+  const cur = useDirectory.getState().prefs.collapsedHosts;
+  setPrefs({
+    collapsedHosts: cur.includes(hostId) ? cur.filter((x) => x !== hostId) : [...cur, hostId],
+  });
+}
 
 export function toggleHidden(agentId: string): void {
   useDirectory.setState((st) => ({

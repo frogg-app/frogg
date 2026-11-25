@@ -210,6 +210,7 @@ const pickSort = (sort: Sort) => setPrefs({ sort });
 const pickTitle = (title: "title" | "branch") => setPrefs({ title });
 const pickLabel = (v: string) => setPrefs({ label: v === ANY ? null : v });
 const pickHidden = (showHidden: boolean) => setPrefs({ showHidden });
+const pickByHost = (byHost: boolean) => setPrefs({ byHost });
 
 /** The filter-icon popover: grouping, sort, row title, visible fields, label filter. */
 export function DisplayMenu({ rect, onClose }: { rect: Rect | null; onClose: () => void }) {
@@ -237,6 +238,10 @@ export function DisplayMenu({ rect, onClose }: { rect: Rect | null; onClose: () 
         <View style={s.line}>
           <T style={s.k}>Title</T>
           <Seg options={TITLES} value={prefs.title} onChange={pickTitle} />
+        </View>
+        <View style={s.line}>
+          <T style={s.k}>Separate by host</T>
+          <Toggle value={prefs.byHost} onChange={pickByHost} />
         </View>
         <T v="label" style={s.head}>
           Show

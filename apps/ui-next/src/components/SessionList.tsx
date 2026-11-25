@@ -1,5 +1,6 @@
 import {
   ChevronDown,
+  ChevronRight,
   Filter,
   FolderGit2,
   History,
@@ -15,7 +16,7 @@ import { useHosts } from "../daemon/hosts";
 import { parseQuestions } from "./chat/QuestionCard";
 import { answerPermission, connect, useDaemon, useOtherHostSessions } from "../daemon/store";
 import { bucketOf, type Bucket, type Session } from "../daemon/types";
-import { alpha, anim, color, font, web } from "../theme/tokens";
+import { alpha, anim, color, ease, font, motion, web } from "../theme/tokens";
 import { useUi } from "../ui-store";
 import { ago } from "../util";
 import { Button } from "./Button";
@@ -24,10 +25,18 @@ import { useRunningSubWork } from "../daemon/subwork";
 import { openSessionChat, useRowSubWork } from "./subwork/hooks";
 import { SubWorkBody, SubWorkChip } from "./subwork/views";
 import { useContextMenu } from "./sessions/contextMenu";
-import { isChat, openSheet, projectIdOf, useDirectory, type Prefs } from "./sessions/directory";
+import {
+  isChat,
+  openSheet,
+  projectIdOf,
+  toggleHostCollapsed,
+  useDirectory,
+  type Prefs,
+} from "./sessions/directory";
 import { buildFamily, familyRows, sessionKey } from "./sessions/family";
 import { ageGroup, HistoryList } from "./sessions/history";
 import { DisplayMenu, ScopeMenu, SessionMenu } from "./sessions/menus";
+import { splitByHost, type HostSection } from "./sessions/hostSections";
 import { groupByHost, HostTerminals, useMergedTerminals } from "./sessions/merged";
 import type { TerminalInfo } from "../daemon/terminals";
 import { usePrefs } from "../prefs";
@@ -157,8 +166,13 @@ function useListModel(needle: string, terminals: Record<string, TerminalInfo[]> 
       groups.push(...groupByHost(visible, hosts, activeId, withTerminals));
     } else if (prefs.group === "project") {
       for (const x of visible) {
+        // Host sections already name the host, so the project label drops it.
         if (x.hostId)
-          push(`${x.hostId}:${projectName(x)}`, `${projectName(x)} · ${hostName(x)}`, x);
+          push(
+            `${x.hostId}:${projectName(x)}`,
+            prefs.byHost ? projectName(x) : `${projectName(x)} · ${hostName(x)}`,
+            x,
+          );
         else push(projectIdOf(x, dir) ?? projectName(x), projectName(x), x);
       }
       groups.sort((a, b) => a.label.localeCompare(b.label));
@@ -175,15 +189,30 @@ function useListModel(needle: string, terminals: Record<string, TerminalInfo[]> 
         if (list.length) groups.push({ key: o.b, label: o.label, hint: o.hint, list });
       }
     }
-    const activeName = hosts.find((h) => h.id === useHosts.getState().activeId)?.name;
-    // Rows name their host once sessions from more than one host share the list.
-    const mixed = others.length > 0 && scope === "all";
+    const activeId = useHosts.getState().activeId;
+    const activeName = hosts.find((h) => h.id === activeId)?.name;
+    // The Show > Host chip: every row names its host while it is on, none while it is off.
     const hostOf = (x: Session) => {
-      if (x.hostId) return hostName(x);
-      return mixed ? activeName : undefined;
+      if (!prefs.show.host) return undefined;
+      return x.hostId ? hostName(x) : activeName;
     };
     for (const g of groups) g.list = withKids(g.list);
-    return { groups, counts, total: inScope.length, scopeName: scopeName(dir), hostOf, nested };
+    // Separate by host: one section per host around the grouping. A single host gets no
+    // section header (it would only repeat the one name), so the list looks as it did.
+    const split =
+      prefs.byHost && !chats && !terminals
+        ? splitByHost(groups, activeId, (id) => hosts.find((h) => h.id === id)?.name ?? "host")
+        : null;
+    const sections = split && split.length > 1 ? split : null;
+    return {
+      groups,
+      sections,
+      counts,
+      total: inScope.length,
+      scopeName: scopeName(dir),
+      hostOf,
+      nested,
+    };
   }, [sessions, others, hosts, dir, needle, terminals]);
 }
 
@@ -211,6 +240,7 @@ export function SessionList() {
   const terminals = useMergedTerminals(merged);
   const {
     groups,
+    sections,
     counts,
     total,
     scopeName: name,
@@ -229,8 +259,13 @@ export function SessionList() {
   const [menu, setMenu] = useState<{ id: string; rect: Rect } | null>(null);
   const closeMenu = useCallback(() => setMenu(null), []);
   const openMenu = useCallback((id: string, rect: Rect) => setMenu({ id, rect }), []);
+  const collapsed = useDirectory((d) => d.prefs.collapsedHosts);
   const chats = scope === "chats";
   const history = scope === "archived";
+  const ctx = useMemo<GroupCtx>(
+    () => ({ chats, hostOf, nested, openMenu, merged, terminals, needle }),
+    [chats, hostOf, nested, openMenu, merged, terminals, needle],
+  );
   let body: ReactNode;
   if (history) body = <HistoryList />;
   else if (!total && !terminalCount)
@@ -253,40 +288,16 @@ export function SessionList() {
         </Cut>
         <ScrollView style={s.scroll} contentContainerStyle={s.scrollBody}>
           <BracketScope>
-            {groups.map((g) => (
-              <View key={g.key}>
-                <View style={s.groupHead}>
-                  <View style={s.groupText}>
-                    <T v="label">{g.label}</T>
-                    {g.hint && (
-                      <T style={s.groupHint} numberOfLines={1}>
-                        {g.hint}
-                      </T>
-                    )}
-                  </View>
-                  <T v="mono" style={s.groupN}>
-                    {g.list.length + (g.hostId ? (terminals[g.hostId]?.length ?? 0) : 0)}
-                  </T>
-                </View>
-                {g.list.map((sess) => (
-                  <Row
-                    key={`${sess.hostId ?? ""}:${sess.agent.id}`}
-                    sess={sess}
-                    chat={chats}
-                    host={hostOf(sess)}
-                    nested={nested.has(sessionKey(sess))}
-                    onMenu={openMenu}
+            {sections
+              ? sections.map((sec) => (
+                  <HostSectionView
+                    key={sec.key}
+                    sec={sec}
+                    open={!collapsed.includes(sec.key)}
+                    ctx={ctx}
                   />
-                ))}
-                {merged && g.hostId && (
-                  <HostTerminals
-                    hostId={g.hostId}
-                    list={terminals[g.hostId] ?? []}
-                    needle={needle}
-                  />
-                )}
-              </View>
-            ))}
+                ))
+              : groups.map((g) => <GroupView key={g.key} g={g} ctx={ctx} />)}
           </BracketScope>
           {!groups.length && <T style={s.none}>Nothing matches.</T>}
         </ScrollView>
@@ -327,6 +338,94 @@ export function SessionList() {
     </View>
   );
 }
+
+interface GroupCtx {
+  chats: boolean;
+  hostOf: (x: Session) => string | undefined;
+  nested: ReadonlySet<string>;
+  openMenu: (id: string, r: Rect) => void;
+  merged: boolean;
+  terminals: Record<string, TerminalInfo[]>;
+  needle: string;
+}
+
+function GroupView({ g, ctx }: { g: Group; ctx: GroupCtx }) {
+  const { terminals } = ctx;
+  return (
+    <View>
+      <View style={s.groupHead}>
+        <View style={s.groupText}>
+          <T v="label">{g.label}</T>
+          {g.hint && (
+            <T style={s.groupHint} numberOfLines={1}>
+              {g.hint}
+            </T>
+          )}
+        </View>
+        <T v="mono" style={s.groupN}>
+          {g.list.length + (g.hostId ? (terminals[g.hostId]?.length ?? 0) : 0)}
+        </T>
+      </View>
+      {g.list.map((sess) => (
+        <Row
+          key={`${sess.hostId ?? ""}:${sess.agent.id}`}
+          sess={sess}
+          chat={ctx.chats}
+          host={ctx.hostOf(sess)}
+          nested={ctx.nested.has(sessionKey(sess))}
+          onMenu={ctx.openMenu}
+        />
+      ))}
+      {ctx.merged && g.hostId && (
+        <HostTerminals hostId={g.hostId} list={terminals[g.hostId] ?? []} needle={ctx.needle} />
+      )}
+    </View>
+  );
+}
+
+function HostSectionView({
+  sec,
+  open,
+  ctx,
+}: {
+  sec: HostSection<Group>;
+  open: boolean;
+  ctx: GroupCtx;
+}) {
+  const toggle = useCallback(() => toggleHostCollapsed(sec.key), [sec.key]);
+  return (
+    <View>
+      <Pressable
+        onPress={toggle}
+        accessibilityRole="button"
+        accessibilityState={open ? EXPANDED : COLLAPSED}
+        accessibilityLabel={`${sec.name}, ${sec.count} sessions`}
+      >
+        {({ hovered }) => (
+          <View style={[s.hostHead, hovered && s.hostHeadHover]}>
+            <ChevronRight size={13} color={color.faint} style={open ? s.chevOpen : s.chev} />
+            <T style={s.hostName} numberOfLines={1}>
+              {sec.name}
+            </T>
+            <T v="mono" style={s.groupN}>
+              {sec.count}
+            </T>
+          </View>
+        )}
+      </Pressable>
+      {open && (
+        <View style={s.hostBody}>
+          {sec.groups.map((g) => (
+            <GroupView key={g.key} g={g} ctx={ctx} />
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
+const EXPANDED = { expanded: true };
+const COLLAPSED = { expanded: false };
 
 function Empty({ name, chats, all }: { name: string; chats: boolean; all: boolean }) {
   let title = `No sessions in ${name} yet`;
@@ -653,6 +752,22 @@ const s = StyleSheet.create({
     paddingBottom: 6,
   },
   groupN: { color: color.faint, fontSize: 10.5 },
+  hostHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: color.line,
+    ...web({ transition: `background-color 150ms ${ease}` }),
+  },
+  hostHeadHover: { backgroundColor: alpha(color.cyan, 0.04) },
+  hostName: { flex: 1, fontSize: 13, color: color.text },
+  hostBody: { ...motion.fade },
+  chev: { transform: [{ rotate: "0deg" }], ...web({ transition: `transform 200ms ${ease}` }) },
+  chevOpen: { transform: [{ rotate: "90deg" }], ...web({ transition: `transform 200ms ${ease}` }) },
   groupText: { flex: 1, gap: 2 },
   groupHint: { fontSize: 11, color: color.faint },
   rowNested: { marginLeft: 26, borderLeftWidth: 1, borderLeftColor: color.line },
