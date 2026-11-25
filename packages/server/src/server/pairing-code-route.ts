@@ -1,4 +1,4 @@
-import { brand } from "@frogg/branding";
+import { pairingScheme } from "@frogg/branding";
 /**
  * `GET /code/:code` and `GET /pair?code=…`: the pairing landing page the
  * daemon serves for its own pairing links, so `pair.frogg.app` can be
@@ -83,7 +83,7 @@ export function createPairingCodeHandler(
       }
       const url = deps.pairingBaseUrl()
         ? `${deps.pairingBaseUrl().replace(/\/+$/, "")}/code/${code}`
-        : `${brand.scheme}://pair#offer=${code}`;
+        : `${pairingScheme}://pair#offer=${code}`;
       res.status(200).send(
         renderPairingCodePage({
           code,

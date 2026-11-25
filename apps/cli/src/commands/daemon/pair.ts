@@ -1,4 +1,4 @@
-import { brand } from "@frogg/branding";
+import { brand, pairingScheme } from "@frogg/branding";
 import { confirm, isCancel, log } from "@clack/prompts";
 import { Command } from "commander";
 import chalk from "chalk";
@@ -352,7 +352,7 @@ function outputPairingResult(
     return;
   }
 
-  const deepLink = buildPairingDeepLink(pairing.url, brand.scheme);
+  const deepLink = buildPairingDeepLink(pairing.url, pairingScheme);
   if (options.json) {
     output.writeStdout(
       `${JSON.stringify(

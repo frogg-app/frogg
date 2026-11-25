@@ -247,3 +247,44 @@ export function isRelayClientWebSocketUrl(url: string): boolean {
     return false;
   }
 }
+
+/** One IPv4 or IPv6 address of a network interface, shaped like `os.networkInterfaces()`. */
+export interface LanInterfaceAddress {
+  address: string;
+  family: string | number;
+  internal: boolean;
+}
+
+/**
+ * Container, VM and VPN-bridge interfaces: Docker (`docker0`, `br-…`), veth pairs, libvirt,
+ * Kubernetes CNIs, LXD and WSL/Hyper-V virtual switches. Their addresses only reach this
+ * machine's own guests, so a pairing link must not lead with one.
+ */
+const VIRTUAL_INTERFACE =
+  /^(docker\d*|br-[0-9a-f]+|veth|virbr|vmnet|vboxnet|cni|flannel|cali|weave|kube|lxcbr|lxdbr|podman|vEthernet)/i;
+
+export function isVirtualInterfaceName(name: string): boolean {
+  return VIRTUAL_INTERFACE.test(name);
+}
+
+/**
+ * This machine's external IPv4 addresses, the ones other devices can most likely reach first:
+ * physical and VPN interfaces before container bridges, each group in interface-name order.
+ */
+export function rankLanIpv4Addresses(
+  interfaces: Record<string, readonly LanInterfaceAddress[] | undefined>,
+): string[] {
+  const names = Object.keys(interfaces).sort();
+  const ordered = [
+    ...names.filter((name) => !isVirtualInterfaceName(name)),
+    ...names.filter(isVirtualInterfaceName),
+  ];
+  const found: string[] = [];
+  for (const name of ordered) {
+    for (const entry of interfaces[name] ?? []) {
+      const ipv4 = entry.family === "IPv4" || entry.family === 4;
+      if (ipv4 && !entry.internal && !found.includes(entry.address)) found.push(entry.address);
+    }
+  }
+  return found;
+}

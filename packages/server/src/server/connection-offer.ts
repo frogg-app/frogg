@@ -1,4 +1,4 @@
-import { brand } from "@frogg/branding";
+import { pairingScheme } from "@frogg/branding";
 import os from "node:os";
 
 import {
@@ -7,6 +7,7 @@ import {
   type ConnectionOffer,
   type ConnectionOfferV3,
 } from "@frogg/protocol/connection-offer";
+import { rankLanIpv4Addresses } from "@frogg/protocol/daemon-endpoints";
 
 interface BuildOfferEndpointsArgs {
   listenHost: string;
@@ -54,25 +55,13 @@ export function encodeOfferToPairingUrl(args: {
   const encoded = Buffer.from(json, "utf8").toString("base64url");
   return args.appBaseUrl
     ? buildPairingUrl(args.appBaseUrl, encoded)
-    : `${brand.scheme}://pair#offer=${encoded}`;
+    : `${pairingScheme}://pair#offer=${encoded}`;
 }
 
 function getPrimaryLanIp(): string | null {
   const override = process.env.FROGG_PRIMARY_LAN_IP?.trim();
   if (override) return override;
-
-  const nets = os.networkInterfaces();
-  const names = Object.keys(nets).sort();
-
-  for (const name of names) {
-    const addrs = nets[name] ?? [];
-    for (const addr of addrs) {
-      if (addr.family === "IPv4" && !addr.internal) {
-        return addr.address;
-      }
-    }
-  }
-  return null;
+  return rankLanIpv4Addresses(os.networkInterfaces())[0] ?? null;
 }
 
 function dedupePreserveOrder(values: string[]): string[] {

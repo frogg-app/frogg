@@ -1,6 +1,7 @@
 import { brand } from "@frogg/branding";
 import { matchesBrand } from "@frogg/branding/identity";
 import os from "node:os";
+import { rankLanIpv4Addresses } from "@frogg/protocol/daemon-endpoints";
 
 import type { DaemonIdentity } from "@frogg/server";
 
@@ -83,16 +84,7 @@ export function listLanAddresses(listen: string): string[] {
     return loopback ? [] : [`http://${bindHost}:${port}`];
   }
 
-  const addresses: string[] = [];
-  const interfaces = os.networkInterfaces();
-  for (const name of Object.keys(interfaces).sort()) {
-    for (const entry of interfaces[name] ?? []) {
-      if (entry.family === "IPv4" && !entry.internal) {
-        addresses.push(`http://${entry.address}:${port}`);
-      }
-    }
-  }
-  return Array.from(new Set(addresses));
+  return rankLanIpv4Addresses(os.networkInterfaces()).map((address) => `http://${address}:${port}`);
 }
 
 export type DaemonAccessMode = "password" | "lan_trusted" | "pairing_required";

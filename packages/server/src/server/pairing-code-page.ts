@@ -1,4 +1,4 @@
-import { brand } from "@frogg/branding";
+import { brand, pairingScheme } from "@frogg/branding";
 /**
  * The pairing landing page behind `https://pair.frogg.app/code/<code>`: the
  * daemon renders it itself, so an owner can point that hostname at their own
@@ -75,7 +75,7 @@ const SCRIPT = `
 
 export function renderPairingCodePage(input: PairingCodePageInput): string {
   const code = escapeHtml(input.code);
-  const deepLink = buildPairingDeepLink(`#offer=${input.code}`, brand.scheme);
+  const deepLink = buildPairingDeepLink(`#offer=${input.code}`, pairingScheme);
   const openInApp = deepLink
     ? `<a class="button" href="${escapeHtml(deepLink)}">Open in ${escapeHtml(brand.name)}</a>`
     : "";

@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, it, test } from "vitest";
 
 import {
   buildDaemonWebSocketUrl,
@@ -10,6 +10,8 @@ import {
   serializeConnectionUri,
   serializeConnectionUriForStorage,
   shouldUseTlsForDefaultHostedRelay,
+  isVirtualInterfaceName,
+  rankLanIpv4Addresses,
 } from "./daemon-endpoints.js";
 
 describe("connection URI parsing", () => {
@@ -209,5 +211,40 @@ describe("shouldUseTlsForDefaultHostedRelay", () => {
 
   test("returns false for malformed endpoints", () => {
     expect(shouldUseTlsForDefaultHostedRelay("not-an-endpoint")).toBe(false);
+  });
+});
+
+describe("rankLanIpv4Addresses", () => {
+  const v4 = (address: string, internal = false) => ({ address, family: "IPv4", internal });
+
+  it("puts the physical interface ahead of Docker bridges that sort first by name", () => {
+    expect(
+      rankLanIpv4Addresses({
+        "br-1ea1fa522000": [v4("172.25.0.1")],
+        docker0: [v4("172.17.0.1")],
+        ens18: [v4("192.168.1.17"), { address: "fe80::1", family: "IPv6", internal: false }],
+        lo: [v4("127.0.0.1", true)],
+        veth12ab: [v4("172.17.0.9")],
+      }),
+    ).toEqual(["192.168.1.17", "172.25.0.1", "172.17.0.1", "172.17.0.9"]);
+  });
+
+  it("keeps VPN interfaces such as Tailscale in the preferred group", () => {
+    expect(
+      rankLanIpv4Addresses({ "br-abc": [v4("172.20.0.1")], tailscale0: [v4("100.64.0.7")] }),
+    ).toEqual(["100.64.0.7", "172.20.0.1"]);
+  });
+
+  it("falls back to a bridge when it is the only external interface", () => {
+    expect(rankLanIpv4Addresses({ docker0: [v4("172.17.0.1")] })).toEqual(["172.17.0.1"]);
+  });
+
+  it("recognises virtual interface names", () => {
+    for (const name of ["docker0", "br-1ea1fa522000", "veth9f", "virbr0", "vEthernet (WSL)"]) {
+      expect(isVirtualInterfaceName(name)).toBe(true);
+    }
+    for (const name of ["ens18", "eth0", "wlan0", "en0", "tailscale0", "bridge0"]) {
+      expect(isVirtualInterfaceName(name)).toBe(false);
+    }
   });
 });
