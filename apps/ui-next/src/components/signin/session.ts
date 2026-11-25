@@ -1,7 +1,13 @@
 import type { DaemonClient } from "@frogg/client/internal/daemon-client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getHostClient } from "../../daemon/store";
-import { LOGIN_COMMANDS, parseLogin, type LoginState } from "./login-flow";
+import {
+  CODE_CHECK_TIMEOUT_MS,
+  LOGIN_COMMANDS,
+  parseLogin,
+  settleOnExit,
+  type LoginState,
+} from "./login-flow";
 import type { SignInTarget } from "./store";
 
 type Account = Awaited<ReturnType<DaemonClient["listProviderAccounts"]>>["accounts"][number];
@@ -50,16 +56,35 @@ export function useLoginSession(target: SignInTarget): LoginSession {
   const [error, setError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const term = useRef<{ client: DaemonClient; id: string } | null>(null);
+  // Set by the effect once the login is running; sendCode arms its timeout through it.
+  const armCheck = useRef<(() => void) | null>(null);
   const headless = Boolean(LOGIN_COMMANDS[target.provider]);
 
   useEffect(() => {
     let live = true;
     let off: (() => void) | null = null;
+    const offs: (() => void)[] = [];
     let poll: ReturnType<typeof setInterval> | null = null;
+    let codeTimer: ReturnType<typeof setTimeout> | null = null;
+    let settled = false;
+    const stopTimers = () => {
+      if (poll) clearInterval(poll);
+      if (codeTimer) clearTimeout(codeTimer);
+      poll = null;
+      codeTimer = null;
+    };
     const fail = (msg: string) => {
-      if (!live) return;
+      if (!live || settled) return;
+      settled = true;
+      stopTimers();
       setError(msg);
       setPhase("failed");
+    };
+    const finish = () => {
+      if (!live || settled) return;
+      settled = true;
+      stopTimers();
+      setPhase("done");
     };
     const run = async () => {
       const client = getHostClient(target.hostId);
@@ -107,22 +132,64 @@ export function useLoginSession(target: SignInTarget): LoginSession {
         const next = parseLogin(raw);
         setState(next);
         setTail(raw.slice(-2000));
-        if (next.done) setPhase("done");
+        if (next.done) finish();
       });
-      await client.subscribeTerminal(id, { restore: { mode: "full-snapshot", size: SIZE } });
+      const authenticatedNow = async () => {
+        const r = await client.listProviderAccounts({ provider: target.provider as never });
+        return Boolean(r.accounts.find((a) => a.id === acct.id)?.authenticated);
+      };
+      // The login command ended: its output, or a credential that appeared, says how it went.
+      const settle = async () => {
+        if (!live || settled) return;
+        const now = await authenticatedNow().catch(() => false);
+        const out = settleOnExit({ raw, wasSignedIn, authenticatedNow: now });
+        if (out.done) finish();
+        else fail(out.error);
+      };
+      offs.push(
+        client.on("terminal_stream_exit", (m) => {
+          if (m.payload.terminalId === id) void settle();
+        }),
+      );
+      // A phone drops its connection while the user is in the browser, and the daemon forgets the
+      // stream subscription with it. Resubscribe with a full snapshot so the CLI's success line
+      // still arrives; a login that ended meanwhile is gone, so settle it from what we know.
+      const subscribe = async () => {
+        const r = await client.subscribeTerminal(id, {
+          restore: { mode: "full-snapshot", size: SIZE },
+        });
+        if (r.error) await settle();
+      };
+      let wasOnline = true;
+      offs.push(
+        client.subscribeConnectionStatus((st) => {
+          const online = st.status === "connected";
+          if (online && !wasOnline && live && !settled) void subscribe().catch(() => undefined);
+          wasOnline = online;
+        }),
+      );
+      await subscribe();
       // A signed-out account that turns signed-in is done even if the CLI said nothing we know.
       const check = async () => {
-        const r = await client.listProviderAccounts({ provider: target.provider as never });
-        const now = r.accounts.find((a) => a.id === acct.id);
-        if (live && now?.authenticated && !wasSignedIn) setPhase("done");
+        if (live && !wasSignedIn && (await authenticatedNow())) finish();
       };
       if (!wasSignedIn) poll = setInterval(() => void check().catch(() => undefined), POLL_MS);
+      // Never leave "Checking with the provider" up forever once a code goes in.
+      armCheck.current = () => {
+        if (codeTimer) clearTimeout(codeTimer);
+        codeTimer = setTimeout(
+          () => fail("The provider did not confirm the sign-in. Check the code, then try again."),
+          CODE_CHECK_TIMEOUT_MS,
+        );
+      };
     };
     run().catch((e: unknown) => fail(e instanceof Error ? e.message : String(e)));
     return () => {
       live = false;
       off?.();
-      if (poll) clearInterval(poll);
+      for (const o of offs) o();
+      stopTimers();
+      armCheck.current = null;
       const t = term.current;
       term.current = null;
       if (t) {
@@ -134,7 +201,9 @@ export function useLoginSession(target: SignInTarget): LoginSession {
 
   const sendCode = useCallback((code: string) => {
     const t = term.current;
-    if (t) t.client.sendTerminalInput(t.id, { type: "input", data: `${code.trim()}\r` });
+    if (!t) return;
+    t.client.sendTerminalInput(t.id, { type: "input", data: `${code.trim()}\r` });
+    armCheck.current?.();
   }, []);
 
   const confirm = useCallback(() => setConfirmed(true), []);
