@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { Picked } from "./components/chat/upload";
 import { onHostSwitch } from "./daemon/store";
 import { track, usageSlug } from "./usage-stats/store";
 
@@ -44,7 +45,9 @@ interface UiState {
   openSettings: (id: string | null) => void;
   newSessionOpen: boolean;
   newSessionPrompt: string;
-  setNewSession: (open: boolean, prompt?: string) => void;
+  /** Files handed to the sheet with the prompt (attached on Home), taken when it opens. */
+  newSessionFiles: Picked[];
+  setNewSession: (open: boolean, prompt?: string, files?: Picked[]) => void;
   paletteOpen: boolean;
   setPalette: (open: boolean) => void;
   setTool: (tool: Tool) => void;
@@ -74,8 +77,13 @@ export const useUi = create<UiState>((set) => ({
   },
   newSessionOpen: false,
   newSessionPrompt: "",
-  setNewSession: (newSessionOpen, prompt) =>
-    set(prompt === undefined ? { newSessionOpen } : { newSessionOpen, newSessionPrompt: prompt }),
+  newSessionFiles: [],
+  setNewSession: (newSessionOpen, prompt, files) =>
+    set({
+      newSessionOpen,
+      ...(prompt === undefined ? {} : { newSessionPrompt: prompt }),
+      ...(files === undefined ? {} : { newSessionFiles: files }),
+    }),
   paletteOpen: false,
   setPalette: (paletteOpen) => set({ paletteOpen }),
   setTool: (tool) => {

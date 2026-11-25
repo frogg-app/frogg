@@ -80,9 +80,11 @@ const PREVIEW_WINDOW = { session: ID.preview, host: null };
 const MISSING_WINDOW = { session: "agt_gone", host: null };
 const SessionWindowDemo = () => <SessionWindow route={PREVIEW_WINDOW} />;
 const MissingWindowDemo = () => <SessionWindow route={MISSING_WINDOW} />;
+// Ask anything (and its attachments) opens the new-session sheet.
 const HomeDemo = () => (
   <Fill>
     <Home />
+    <NewSession />
   </Fill>
 );
 

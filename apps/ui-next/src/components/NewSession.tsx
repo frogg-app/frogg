@@ -24,7 +24,7 @@ import {
   type Project,
 } from "../daemon/store";
 import { useFormFactor } from "../theme/layout";
-import { color, font, overlayMs, web } from "../theme/tokens";
+import { color, ease, font, overlayMs, web } from "../theme/tokens";
 import { useUi } from "../ui-store";
 import { track, usageSlug } from "../usage-stats/store";
 import { providerLabel } from "../util";
@@ -32,9 +32,11 @@ import { Button } from "./Button";
 import { Cut } from "./Cut";
 import { Seg } from "./settings/controls";
 import { Select } from "./Select";
-import { canPickFiles, pickFiles } from "./chat/pickFiles";
-import { UploadBar, UploadProgress } from "./chat/Attach";
-import { cancelUpload, useUploads } from "./chat/upload";
+import { canPickFiles } from "./chat/pickFiles";
+import { UploadBar, UploadProgress, useAttachPicker } from "./chat/Attach";
+import { useDropFiles } from "./chat/dropFiles";
+import { usePastePictures } from "./chat/pasteImages";
+import { cancelUpload, useUploads, type Picked } from "./chat/upload";
 import {
   isImage,
   loadBranches,
@@ -414,43 +416,44 @@ function agentInput(
   };
 }
 
-/** Each opening starts on the active host and takes any prompt handed to the sheet. */
+/** Each opening starts on the active host and takes any prompt and files handed to the sheet. */
 function useOnOpen(
   open: boolean,
   setHostId: (id: string | null) => void,
   setPrompt: (p: string) => void,
+  addFiles: (picked: Picked[]) => void,
 ): void {
   useEffect(() => {
     if (!open) return;
     setHostId(useHosts.getState().activeId);
-    const seed = useUi.getState().newSessionPrompt;
+    const { newSessionPrompt: seed, newSessionFiles: files } = useUi.getState();
     if (seed) {
       setPrompt(seed);
       useUi.setState({ newSessionPrompt: "" });
     }
-  }, [open, setHostId, setPrompt]);
+    if (files.length) {
+      addFiles(files);
+      useUi.setState({ newSessionFiles: [] });
+    }
+  }, [open, setHostId, setPrompt, addFiles]);
 }
 
-/** Files picked for the first prompt; they are sent once the session exists. */
-function useDrafts(setError: (e: string | null) => void) {
+/** Files picked, pasted or dropped for the first prompt; they are sent once the session exists. */
+function useDrafts() {
   const [drafts, setDrafts] = useState<Draft[]>([]);
-  const attachFiles = useCallback(() => {
-    pickFiles({ images: false })
-      .then((picked) => {
-        if (picked.length) setDrafts((d) => [...d, ...picked.map(toDraft)]);
-        return undefined;
-      })
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
-  }, [setError]);
+  const addFiles = useCallback(
+    (picked: Picked[]) => setDrafts((d) => [...d, ...picked.map(toDraft)]),
+    [],
+  );
   const dropDraft = useCallback((id: string) => setDrafts((d) => d.filter((x) => x.id !== id)), []);
-  return { drafts, setDrafts, attachFiles, dropDraft };
+  return { drafts, setDrafts, addFiles, dropDraft };
 }
 
 type HostOption = ReturnType<typeof useHostOptions>[number];
 
 interface SheetFieldsProps {
   agentKind: boolean;
-  attachFiles: () => void;
+  addFiles: (picked: Picked[]) => void;
   base: string;
   branchOptions: BranchOption[];
   branches: BranchOption[] | null;
@@ -500,7 +503,7 @@ interface SheetFieldsProps {
 /** Every field of the sheet, top to bottom; NewSession owns the state. */
 function SheetFields({
   agentKind,
-  attachFiles,
+  addFiles,
   base,
   branchOptions,
   branches,
@@ -614,7 +617,7 @@ function SheetFields({
           setTitle={setTitle}
           drafts={drafts}
           onRemove={dropDraft}
-          onAttach={attachFiles}
+          onPicked={addFiles}
         />
       )}
       {(phone || !agentKind) && (
@@ -660,8 +663,8 @@ export function NewSession() {
       setProjectId(projects[0]?.projectId ?? null);
   }, [projects, projectId, setProjectId]);
 
-  useOnOpen(open, setHostId, setPrompt);
-  const { drafts, setDrafts, attachFiles, dropDraft } = useDrafts(setError);
+  const { drafts, setDrafts, addFiles, dropDraft } = useDrafts();
+  useOnOpen(open, setHostId, setPrompt, addFiles);
   const { ready, entry, setProvider, model, setModel, mode, setMode } = useAgentChoice(providers);
   const project = projects?.find((p) => p.projectId === projectId);
   const isGit = project?.projectKind === "git";
@@ -731,7 +734,7 @@ export function NewSession() {
   const fields = (
     <SheetFields
       agentKind={agentKind}
-      attachFiles={attachFiles}
+      addFiles={addFiles}
       base={base}
       branchOptions={branchOptions}
       branches={branches}
@@ -1045,7 +1048,7 @@ function PromptBox({
   setTitle,
   drafts,
   onRemove,
-  onAttach,
+  onPicked,
 }: {
   phone: boolean;
   prompt: string;
@@ -1054,12 +1057,19 @@ function PromptBox({
   setTitle: (v: string) => void;
   drafts: Draft[];
   onRemove: (id: string) => void;
-  onAttach: () => void;
+  /** Files picked with Attach, pasted into the prompt or dropped on it. */
+  onPicked: (picked: Picked[]) => void;
 }) {
+  const input = useRef<TextInput>(null);
+  usePastePictures(input, onPicked, true);
+  const box = useRef<View>(null);
+  const dragOver = useDropFiles(box, onPicked, { enabled: true });
+  const picker = useAttachPicker(onPicked);
   return (
-    <View style={s.prompt}>
+    <View ref={box} collapsable={false} style={[s.prompt, dragOver && s.promptDrop]}>
       {drafts.length > 0 && <DraftChips drafts={drafts} onRemove={onRemove} />}
       <TextInput
+        ref={input}
         autoFocus={!phone}
         multiline
         value={prompt}
@@ -1071,14 +1081,21 @@ function PromptBox({
       />
       <View style={s.promptFoot}>
         {canPickFiles && (
-          <Pressable onPress={onAttach} accessibilityLabel="Attach files" hitSlop={6}>
-            {({ hovered }) => (
-              <View style={s.attach}>
-                <Paperclip size={14} color={hovered ? color.text : color.muted} />
-                <T style={hovered ? s.attachTOn : s.attachT}>Attach</T>
-              </View>
-            )}
-          </Pressable>
+          <View ref={picker.ref} collapsable={false}>
+            <Pressable
+              onPress={picker.press}
+              accessibilityLabel="Attach images or files"
+              hitSlop={6}
+            >
+              {({ hovered }) => (
+                <View style={s.attach}>
+                  <Paperclip size={14} color={hovered ? color.text : color.muted} />
+                  <T style={hovered ? s.attachTOn : s.attachT}>Attach</T>
+                </View>
+              )}
+            </Pressable>
+            {picker.menu}
+          </View>
         )}
         {!phone && (
           <TextInput
@@ -1378,7 +1395,10 @@ const s = StyleSheet.create({
     borderColor: color.line,
     padding: 12,
     gap: 8,
+    ...web({ transition: `border-color 140ms ${ease}, background-color 140ms ${ease}` }),
   },
+  // As the composer's drop highlight.
+  promptDrop: { borderColor: color.cyan2, backgroundColor: color.wash2 },
   promptT: {
     minHeight: 90,
     color: color.text,

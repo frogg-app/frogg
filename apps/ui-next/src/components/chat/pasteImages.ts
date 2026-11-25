@@ -1,14 +1,13 @@
 import type { RefObject } from "react";
 import type { TextInput } from "react-native";
-import type { Attachment } from "./actions";
+import type { Picked } from "./upload";
 
 /**
- * Native TextInput exposes no paste event and this build has no clipboard module, so pasted
- * images are a web/desktop feature for now.
+ * Native TextInput has no paste event, so a picture on the clipboard comes in through the +
+ * button's "Paste image" instead (see `clipboardImage.ts`).
  */
-export function usePasteImages(
+export function usePastePictures(
   _input: RefObject<TextInput | null>,
-  _onAdd: (a: Attachment[]) => void,
-  _onRemove: (id: string) => void,
+  _onPicked: (picked: Picked[]) => void,
   _enabled: boolean,
 ): void {}

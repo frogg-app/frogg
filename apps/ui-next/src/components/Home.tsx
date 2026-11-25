@@ -2,6 +2,7 @@ import { Plus, QrCode, Upload, Zap, type LucideIcon } from "lucide-react-native"
 import { useCallback } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useDaemon } from "../daemon/store";
+import type { Attachment } from "./chat/actions";
 import { useFormFactor } from "../theme/layout";
 import { color } from "../theme/tokens";
 import { useUi } from "../ui-store";
@@ -49,7 +50,11 @@ const ASK_CHIPS = ["Claude Code", "Opus 5.5"];
 export function Home() {
   const host = useDaemon((s) => s.serverName);
   const phone = useFormFactor() === "phone";
-  const ask = useCallback((t: string) => useUi.getState().setNewSession(true, t), []);
+  // The sheet picks the project and host; held files go with the first prompt there.
+  const ask = useCallback((t: string, atts: Attachment[]) => {
+    const files = atts.flatMap((a) => (a.kind === "local" ? [a.picked] : []));
+    useUi.getState().setNewSession(true, t, files);
+  }, []);
   return (
     <View style={s.root}>
       <View style={s.head}>
@@ -72,7 +77,7 @@ export function Home() {
             text="What do you want to know?"
             style={phone ? s.askTitlePhone : s.askTitle}
           />
-          <Composer placeholder="Ask anything…" chips={ASK_CHIPS} onSend={ask} />
+          <Composer placeholder="Ask anything…" chips={ASK_CHIPS} onSend={ask} attach hold />
         </View>
       </ScrollView>
     </View>
