@@ -214,10 +214,21 @@ pub fn Chat(
     let scroller = NodeRef::<leptos::html::Div>::new();
     let pinned = StoredValue::new(true);
     let restore_from_bottom = StoredValue::new(None::<i32>);
+    let last_top = StoredValue::new(0i32);
+    // Only a move up unpins. The scroll event from our own jump to the end lands a frame later,
+    // after streamed content has grown again, so its gap can exceed PIN_PX without the user
+    // having moved; reading that as "scrolled away" stopped the view following.
     let on_scroll = move |_| {
         if let Some(el) = scroller.get_untracked() {
-            let gap = el.scroll_height() - el.scroll_top() - el.client_height();
-            pinned.set_value(gap < PIN_PX);
+            let top = el.scroll_top();
+            let gap = el.scroll_height() - top - el.client_height();
+            let prev = last_top.try_get_value().unwrap_or(top);
+            if gap < PIN_PX {
+                pinned.set_value(true);
+            } else if top < prev {
+                pinned.set_value(false);
+            }
+            last_top.set_value(top);
         }
     };
     let keep_place = move || {
